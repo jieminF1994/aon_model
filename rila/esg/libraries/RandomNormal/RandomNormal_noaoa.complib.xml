@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="RandomNormal_noaoa" version="master" format-version="20">
+  <inputs>
+    <input name="N_HYBRID_INDEX" type="int" modifier="Constant" />
+  </inputs>
+  <results>
+    <result name="v" ref="=projection.variance" />
+    <result name="rate" ref="=projection.rate" />
+    <result name="equity" ref="=projection.equity" />
+    <result name="hybrid_index_equity_basis" ref="=projection.hybrid_index_equity_basis" />
+    <result name="hybrid_index_bond_basis" ref="=projection.hybrid_index_bond_basis" />
+    <result name="nasdaq" ref="=Projection.equity_nasdaq" />
+    <result name="nasdaq_vol" ref="=Projection.nasdaq_vol" />
+    <result name="mxea" ref="=Projection.equity_mxea" />
+    <result name="mxea_vol" ref="=Projection.mxea_vol" />
+    <result name="r2k" ref="=Projection.equity_r2k" />
+    <result name="r2k_vol" ref="=Projection.r2_vol" />
+    <result name="sa_tracking" ref="=Projection.sa_track_error" />
+    <result name="hybrid_taget_vol" ref="=Projection.hybrid_target_vol" />
+  </results>
+  <calculations>
+    <table name="Projection" type="CashFlow">
+      <column-groups>
+        <g name="g2">=\sN_HYBRID_INDEX</g>
+        <g name="g1">=\sN_HYBRID_INDEX</g>
+        <g name="g3" repeat-count="13" />
+        <g name="g4" repeat-count="2" />
+      </column-groups>
+      <columns>
+        <c name="equity" datatype="real" />
+        <c name="equity_nasdaq" datatype="real" />
+        <c name="equity_r2k" datatype="real" />
+        <c name="equity_mxea" datatype="real" />
+        <c name="variance" datatype="real" />
+        <c name="nasdaq_vol" datatype="real" />
+        <c name="r2_vol" datatype="real" />
+        <c name="mxea_vol" datatype="real" />
+        <c name="rate" datatype="real" />
+        <c name="hybrid_index_equity_basis" datatype="real" group="g2" />
+        <c name="hybrid_index_bond_basis" datatype="real" group="g1" />
+        <c name="sa_track_error" datatype="real" group="g3" />
+        <c name="hybrid_target_vol" datatype="real" group="g4" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="equity">//\sHeston\smodel\sequity\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="equity_nasdaq">=\srng.normal()</c>
+            <c name="equity_r2k">=\srng.normal()</c>
+            <c name="equity_mxea">=\srng.normal()</c>
+            <c name="variance">//\sHeston\smodel\svariance\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="nasdaq_vol">=\srng.normal()</c>
+            <c name="r2_vol">=\srng.normal()</c>
+            <c name="mxea_vol">=\srng.normal()</c>
+            <c name="rate">//\sG2++\smodel\s0'th\sfactor\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="hybrid_index_equity_basis">=rng.normal()</c>
+            <c name="hybrid_index_bond_basis">=rng.normal()</c>
+            <c name="sa_track_error">//\sstructured\sannuity\stracking\serror\sindex\s=\s0\sfor\s50%\son\sdown\s&amp;\sx%\son\sup\r\n
+//\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sindex\s=\s1\sfor\s10%\sfloor\son\sdown\s&amp;\sx%\son\sup\r\n
+\r\n
+=\s0</c>
+            <c name="hybrid_target_vol">=0</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="equity">//\sHeston\smodel\sequity\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="equity_nasdaq">=\srng.normal()</c>
+            <c name="equity_r2k">=\srng.normal()</c>
+            <c name="equity_mxea">=\srng.normal()</c>
+            <c name="variance">//\sHeston\smodel\svariance\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="nasdaq_vol">=\srng.normal()</c>
+            <c name="r2_vol">=\srng.normal()</c>
+            <c name="mxea_vol">=\srng.normal()</c>
+            <c name="rate">//\sG2++\smodel\s0'th\sfactor\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="hybrid_index_equity_basis">=rng.normal()</c>
+            <c name="hybrid_index_bond_basis">=rng.normal()</c>
+            <c name="sa_track_error">//\sstructured\sannuity\stracking\serror\s\r\n
+//\sindex\s=\s0\s\scap\s&amp;\sbuffer\sstrategy\r\n
+//\sindex\s=\s1\s\sspread\s&amp;\sbuffer\sstrategy\r\n
+//\sindex\s=\s2\s\sparticipation\sstrategy\s(50%\son\sdown\s&amp;\sx\s%\son\sup)\r\n
+//\sindex\s=\s3\s\sparticipation\sstrategy\s(10%\sfloor\son\sdown\s&amp;\sx\s%\son\sup)\r\n
+//\sindex\s=\s4\s6\smonth\s10%\sbuffer\sand\spar\srate\sstrategy\r\n
+//\sindex\s=\s5\s6\smonth\sparticipation\sstrategy\s(50%\son\sdown\s&amp;\sx\s%\son\sup)\r\n
+//\sindex\s=\s6\s6yr\s20%\sbuffer\sand\spar\srate\sstartegy\s\r\n
+//\sindex\s=\s7\s6\syr\sparticipation\sstrategy\s(50%\son\sdown\s&amp;\sx\s%\son\sup)\r\n
+//\sindex\s=\s8\s1\syr\s10%\sfloor/spread\s\r\n
+//\sindex\s=\s9\s6m\s10%\sbuffer\sdigital\scall\sstrategy\r\n
+//index\s=\s10~12\sstacker\sfund\r\n
+=\s0</c>
+            <c name="hybrid_target_vol">=0</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="hybrid_index_bond_basis[0]" formattype="General" width="80" />
+      <c name="hybrid_index_equity_basis[0]" formattype="General" width="80" />
+      <c name="hybrid_target_vol[0]" formattype="General" width="80" />
+      <c name="rate" formattype="General" width="80" />
+      <c name="sa_track_error[0]" formattype="General" width="80" />
+      <c name="variance" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

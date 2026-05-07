@@ -1,0 +1,838 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="HullWhite" version="master" format-version="20">
+  <UserUDFs>
+    <udf name="interp_spot">/*\sComputes\sthe\szero\srates\s\\(R(t)\\)\sat\s\\(t\\)\sby\slinearly\sinterpolating\sbetween\sthe\stwo\stenors\sclosest\sto\st.\r\n
+$$R((1-a)t_i+at_{i+1})\s=\s\\frac{(1-a)R(t_i)t_i+aR(t_{i+1})t_{i+1}}{(1-a)t_i+at_{i+1}}$$\r\n
+*/\r\n
+real\sinterp_spot(real\st,\sreal[N]\stenors,\sreal[N]\sspot_curve)\r\n
+\s\s\s\sreal[N]\slog_df\r\n
+\s\s\s\sreal\sforward_infinity\r\n
+\s\s\s\sreal\slog_df_infinity\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN-1\r\n
+\s\s\s\s\s\s\s\slog_df[i]\s=\sspot_curve[i]\s*\stenors[i]\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s//\suse\sflat\sforward\srate\safter\s30\syears\r\n
+\s\s\s\sforward_infinity\s=\s(log_df[N-2]\s-\slog_df[N-1])\s/\s(tenors[N-1]\s-\stenors[N-2])\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(t\s&lt;=\stenors[0],\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sspot_curve[0]\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sif\scompare(t\s&gt;=\stenors[N-1],\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\slog_df_infinity\s=\slog_df[N-1]\s-\sforward_infinity\s*\s(t\s-\stenors[N-1])\r\n
+\s\s\s\s\s\s\s\s$result\s=\slog_df_infinity\s/\st\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\sinterp1(t,\stenors,\slog_df)\s/\st\r\n
+end</udf>
+    <udf name="intg_exp">/*$$\\frac{1-e^{-xt}}{x}$$\r\n
+for\ssmall\sand\snot-small\s\\(x\\).\r\n
+*/\r\n
+real\sintg_exp(real\sx,\sreal\st)\r\n
+\s\s\s\sif\scompare(x==0,\s0.0001)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\st\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\s(1\s-\sexp(-x\s*\st))\s/\sx\r\n
+\s\s\s\sendif\r\n
+end</udf>
+    <udf name="calc_rate_intg_var">//\sEq\s4.10\sin\sBrigo\sand\sMercurio,\ssecond\sedition,\spage\s145\r\n
+/*\\begin{align*}\r\n
+V(t,T)&amp;=\\Big(\\frac{\\sigma}{a}\\Big)^2\\big(\\tau-2c(a,\\tau)+c(2a,\\tau)\\big)\s\\\\\r\n
+&amp;+\\Big(\\frac{\\eta}{b}\\Big)^2\\big(\\tau-2c(b,\\tau)+c(2b,\\tau)\\big)\s\\\\\r\n
+&amp;+2\\rho\\frac{\\sigma\\eta}{ab}\\big(\\tau-c(a,\\tau)-c(b,\\tau)+c(a+b,\\tau)\\big),\r\n
+\\end{align*}\r\n
+where\r\n
+$$\\tau\s=\sT-t,\s\\quad\sc(x,\\tau)=\\frac{1-e^{-x\\tau}}{x}$$*/\r\n
+real\scalc_rate_intg_var(real\sk,\sreal\ssigma,\sreal\stau,\sreal\slambda)\r\n
+\s\s\s\s$result\s=\s((1\s-\s2\s*\slambda\s*\sk\s/\ssigma)\s*\stau\r\n
+\s\s\s\s-\s2\s*\s(1\s-\slambda\s*\sk\s/\ssigma)\s*\sintg_exp(k,\stau)\s\r\n
+\s\s\s\s+\sintg_exp(2\s*\sk,\stau))\s*\s(sigma\s/\sk)\s**\s2\r\n
+end</udf>
+    <udf name="find_idx">int\sfind_idx(real\sarg,\sreal[N]\sarray)\r\n
+\s\s\s\s$result\s=\s-1\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN\s-\s1\r\n
+\s\s\s\s\s\s\s\sif\scompare(arg\s==\sarray[i],\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\si\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="left_const_interp">///&lt;summary&gt;\r\n
+///One-dimensional\sdata\sinterpolation\s(table\slookup).\r\n
+///Returns\sa\svalue\scorresponding\sto\sa\sgiven\sreal\sx\sdetermined\sby\sone-dimensional\sconstant\sinterpolation/extrapolation\susing\sspecified\svectors\svx\sand\svy.\r\n
+///&lt;/summary&gt;\r\n
+///&lt;param\sname="x"&gt;A\sreal\sscalar\sat\swhich\sthe\sinterpolated\svalue\sof\sthe\sfunction\sis\sneeded&lt;/param&gt;\r\n
+///&lt;param\sname="vx"&gt;A\sreal\svector\ssepcifying\sthe\spoints\sat\swhich\sthe\sfunction\svalues\sare\sknown&lt;/param&gt;\r\n
+///&lt;param\sname="vy"&gt;A\sreal\svector\scontaining\sthe\svalues\sof\sthe\sfunction\sto\sbe\sinterpolated\sat\sthe\spoints\sof\svx\s&lt;/param&gt;\r\n
+///&lt;returns&gt;&lt;/returns&gt;\r\n
+real\sleft_const_interp(real\sx,\sreal[N]\svx,\sreal[N]\svy)\r\n
+\s\s\s\sint\si\s=\sfind_interp_point(vx,\sx,\s1)\r\n
+\s\s\s\s$result\s=\svy[i-1]\r\n
+end</udf>
+    <udf name="zcb_formula">real\szcb_formula(real\st,\sreal\stau,\sreal[12,2]\sspot_rate,\sreal\sa,\sreal\ssigma,\sreal\slambda,\sreal\sfactor)\r\n
+\s\s\s\s$result\s=\sexp(\r\n
+\s\s\s\s-(t\s+\stau)\s*\sinterp_spot(t\s+\stau,\sspot_rate[:,\s0],\sspot_rate[:,\s1])\s\r\n
+\s\s\s\s+\st\s*\sinterp_spot(t,\sspot_rate[:,\s0],\sspot_rate[:,\s1])\r\n
+\s\s\s\s+\s0.5\s*\s(calc_rate_intg_var(a,\ssigma,\st,\slambda)\r\n
+\s\s\s\s-\scalc_rate_intg_var(a,\ssigma,\st\s+\stau,\slambda)\r\n
+\s\s\s\s+\scalc_rate_intg_var(a,\ssigma,\stau,\slambda))\r\n
+\s\s\s\s-\sintg_exp(a,\stau)\s*\sfactor\r\n
+\s\s\s\s)\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="params" type="composite">
+      <field name="a" type="real" />
+      <field name="sigma_t" type="real" shape="*,*" />
+      <field name="rate_risk_premium" type="real" />
+    </input>
+    <input name="rate_randn" type="real" modifier="Cashflow" />
+    <input name="dt" type="real" shape="*" />
+    <input name="n_step_proj" type="int" />
+    <input name="time_t" type="real" shape="*" />
+    <input name="interest_curves" type="composite">
+      <field name="swap_rate_spot" type="real" shape="*,*" />
+      <field name="credit_spread_spot" type="real" shape="*,*" />
+      <field name="swap_spread_spot" type="real" shape="*,*" />
+      <field name="npa_spread_spot" type="real" shape="*,*" />
+      <field name="libor_spot_proxy" type="real" shape="*,*" />
+      <field name="credit_spread_spot_crbg" type="real" shape="*,*" />
+    </input>
+    <input name="hw_factor_init" type="real" />
+    <input name="BOND_PORTFOLIO_TENORS" type="real" shape="*" />
+    <input name="BOND_PORTFOLIO_TENORS_LEN" type="int" />
+    <input name="MLSB_BOND_T" type="real" />
+    <input name="rho" type="real" />
+    <input name="npa_margin" type="real" />
+    <input name="run_deterministic_rate" type="bool" />
+    <input name="run_deterministic_df_only" type="bool" />
+    <input name="is_running_dac" type="bool" />
+    <input name="option_1y_ttm" type="real" shape="*" />
+    <input name="is_anniversary" type="bool" shape="*" />
+    <input name="option_6m_ttm" type="real" shape="*" />
+    <input name="is_6monthversary" type="bool" shape="*" />
+    <input name="option_6y_ttm" type="real" shape="*" />
+    <input name="option_3y_ttm" type="real" shape="*" />
+    <input name="is_6th_anniversary" type="bool" shape="*" />
+    <input name="option_3m_ttm" type="real" shape="*" />
+    <input name="option_2y_ttm_hdv_3y" type="real" shape="*" />
+    <input name="option_4y_ttm_hdv_6y" type="real" shape="*" />
+    <input name="option_5y_ttm_hdv_6y" type="real" shape="*" />
+    <input name="run_deterministic_equity_vol_rate" type="bool" />
+    <input name="option_5y_ttm" type="real" shape="*" />
+    <input name="option_7y_ttm" type="real" shape="*" />
+  </inputs>
+  <results>
+    <result name="forward_rate" ref="=Projection.revised_short_rate" />
+    <result name="zcb_return" ref="=Projection.zcb_return" />
+    <result name="swap_tenors" ref="=Dictionary.swap_tenors" />
+    <result name="money_market" ref="=Projection.money_market" />
+    <result name="df" ref="=Projection.df" />
+    <result name="swap_curve_df" ref="=Projection.zcb" />
+    <result name="zcb_std" ref="=Projection.zcb_std" />
+    <result name="df_credit" ref="=Projection.df_credit" />
+    <result name="factor" ref="=Projection.factor" />
+    <result name="swap_curve_spot" ref="=Projection.spot_curve" />
+    <result name="libor_curve_spot" ref="=Projection.spot_curve_libor" />
+    <result name="swap_table" ref="=Projection.swap_table" />
+    <result name="libor_swap_table" ref="=Projection.libor_swap_table" />
+    <result name="treasury_yields" ref="=Projection.treasury_table" />
+    <result name="corporate_table" ref="=Projection.corporate_table" />
+    <result name="bp_zcb_credit" ref="=Projection.zcb_credit" />
+    <result name="bp_zcb_credit_std" ref="=Projection.zcb_credit_std" />
+    <result name="bp_zcb_credit_return" ref="=Projection.zcb_credit_return" />
+    <result name="bp_zcb" ref="=Projection.bp_zcb" />
+    <result name="bp_zcb_std" ref="=Projection.bp_zcb_std" />
+    <result name="bp_zcb_return" ref="=Projection.bp_zcb_return" />
+    <result name="rho" ref="=Dictionary.rho_" />
+    <result name="bond_price_5y" ref="=Projection.bond_price_5y" />
+    <result name="bond_variance_5y" ref="=Projection.bond_variance_5y" />
+    <result name="bond_price_30y" ref="=Projection.bond_price_30y" />
+    <result name="bond_variance_30y" ref="=Projection.bond_variance_30y" />
+    <result name="bond_covariance_5y_30y" ref="=Projection.bond_covariance_5y_30y" />
+    <result name="df_5yr" ref="=Projection.df_5yr" />
+    <result name="df_npa" ref="=Projection.df_npa" />
+    <result name="zcb_1y_price" ref="=Projection.zcb_1y_price" />
+    <result name="swap_rate_1y" ref="=Projection.swap_rate_1y" />
+    <result name="zcb_6m_price" ref="=Projection.zcb_6m_price" />
+    <result name="zcb_6y_price" ref="=Projection.zcb_6y_price" />
+    <result name="swap_rate_6m" ref="=Projection.swap_rate_6m" />
+    <result name="swap_rate_6y" ref="=Projection.swap_rate_6y" />
+    <result name="npa_table" ref="=Projection.npa_table" />
+    <result name="swap_rate_3m" ref="=Projection.swap_rate_3m" />
+    <result name="zcb_3m_price" ref="=Projection.zcb_3m_price" />
+    <result name="bond_price_5y_driftless" ref="=Projection.bond_price_5y_driftless" />
+    <result name="bond_price_30y_driftless" ref="=Projection.bond_price_30y_driftless" />
+    <result name="zcb_3y_price" ref="=Projection.zcb_3y_price" />
+    <result name="swap_rate_3y" ref="=Projection.swap_rate_3y" />
+    <result name="zcb_2y_hdv" ref="=Projection.zcb_2y_hdv" />
+    <result name="zcb_4y_hdv" ref="=Projection.zcb_4y_hdv" />
+    <result name="zcb_5y_hdv" ref="=Projection.zcb_5y_hdv" />
+    <result name="corporate_table_crbg" ref="=Projection.corporate_table_crbg" />
+    <result name="zcb_5y_price" ref="=Projection.zcb_5y_price" />
+    <result name="zcb_7y_price" ref="=Projection.zcb_7y_price" />
+  </results>
+  <calculations>
+    <table name="Dictionary" type="KeyValue">
+      <column-groups>
+        <g name="g1" repeat-count="12" />
+        <g name="g4" max-repeat-count="3">=BOND_PORTFOLIO_TENORS_LEN</g>
+      </column-groups>
+      <c name="swap_tenors" datatype="real" group="g1">=interest_curves.swap_rate_spot[$index,\s0]</c>
+      <c name="stochastic_duration" datatype="real" group="g1">=\sintg_exp(params.a,\sswap_tenors)</c>
+      <c name="bond_to_swap_idx" datatype="int" group="g4">=\sfind_idx(BOND_PORTFOLIO_TENORS[$index],\sswap_tenors)</c>
+      <c name="mlsb_bond_idx" datatype="int">=\sfind_idx(MLSB_BOND_T,\sswap_tenors)</c>
+      <c name="rho_" datatype="real">=rho</c>
+    </table>
+    <table name="Computation" type="Computation">
+      <column-groups>
+        <g name="g1" repeat-count="12" />
+        <g name="g2" max-repeat-count="3">=BOND_PORTFOLIO_TENORS_LEN</g>
+        <g name="g3" repeat-count="12" />
+        <g name="g4" repeat-count="12" />
+        <g name="g5" repeat-count="12" />
+      </column-groups>
+      <columns>
+        <c name="time" datatype="real" />
+        <c name="sigma" datatype="real" />
+        <c name="market_risk_free_spot" datatype="real" />
+        <c name="market_libor_spot" datatype="real" />
+        <c name="market_risk_free_df" datatype="real" />
+        <c name="market_libor_df" datatype="real" />
+        <c name="market_risk_free_forward" datatype="real" />
+        <c name="market_libor_forward" datatype="real" />
+        <c name="phi_t" datatype="real" />
+        <c name="phi_t_libor" datatype="real" />
+        <c name="exp_a_dt" datatype="real" />
+        <c name="rate_vol" datatype="real" />
+        <c name="stochastic_duration" datatype="real" />
+        <c name="market_log_zcb_t" datatype="real" />
+        <c name="market_log_zcb_libor_t" datatype="real" />
+        <c name="rate_intg_var_t" datatype="real" />
+        <c name="t_plus_tau" datatype="real" group="g1" />
+        <c name="rate_intg_var_t_plus_tau" datatype="real" group="g1" />
+        <c name="rate_intg_var_tau" datatype="real" group="g1" />
+        <c name="rate_intg_var_term" datatype="real" group="g1" />
+        <c name="market_log_zcb_t_plus_tau" datatype="real" group="g1" />
+        <c name="market_log_zcb_libor_t_plus_tau" datatype="real" group="g1" />
+        <c name="credit_spot" datatype="real" />
+        <c name="credit_spot_crbg" datatype="real" />
+        <c name="npa_spot" datatype="real" />
+        <c name="credit_df" datatype="real" />
+        <c name="credit_df_crbg" datatype="real" />
+        <c name="npa_df" datatype="real" />
+        <c name="credit_forward" datatype="real" />
+        <c name="treasury_spot" datatype="real" />
+        <c name="treasury_df" datatype="real" />
+        <c name="treasury_forward" datatype="real" />
+        <c name="credit_spot_t_plus_tau" datatype="real" group="g2" />
+        <c name="credit_dfs" datatype="real" group="g2" />
+        <c name="credit_spots" datatype="real" group="g2" />
+        <c name="credit_spot_t_plus_tau_" datatype="real" group="g3" />
+        <c name="credit_dfs_" datatype="real" group="g3" />
+        <c name="credit_spots_" datatype="real" group="g3" />
+        <c name="credit_spot_t_plus_tau_crbg" datatype="real" group="g3" />
+        <c name="credit_dfs_crbg" datatype="real" group="g3" />
+        <c name="credit_spots_crbg" datatype="real" group="g3" />
+        <c name="treasury_spot_t_plus_tau_" datatype="real" group="g4" />
+        <c name="treasury_dfs_" datatype="real" group="g4" />
+        <c name="treasury_spots_" datatype="real" group="g4" />
+        <c name="npa_spot_t_plus_tau_" datatype="real" group="g5" />
+        <c name="npa_dfs_" datatype="real" group="g5" />
+        <c name="npa_spots_" datatype="real" group="g5" />
+      </columns>
+      <row-groups>
+        <rg name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="time">=time_t[$row]</c>
+            <c name="sigma">=left_const_interp(time,\sparams.sigma_t[:,0],\sparams.sigma_t[:,1])</c>
+            <c name="market_risk_free_spot">=interp_spot(time,\sinterest_curves.swap_rate_spot[:,\s0],\sinterest_curves.swap_rate_spot[:,\s1])\s</c>
+            <c name="market_libor_spot">=interp_spot(time,\sinterest_curves.libor_spot_proxy[:,\s0],\sinterest_curves.libor_spot_proxy[:,\s1])\s</c>
+            <c name="market_risk_free_df">=exp(-time\s*\smarket_risk_free_spot)</c>
+            <c name="market_libor_df">=exp(-time\s*\smarket_libor_spot)</c>
+            <c name="market_risk_free_forward">=interp_spot(time,\sinterest_curves.swap_rate_spot[:,\s0],\sinterest_curves.swap_rate_spot[:,\s1])\s</c>
+            <c name="market_libor_forward">=interp_spot(time,\sinterest_curves.libor_spot_proxy[:,\s0],\sinterest_curves.libor_spot_proxy[:,\s1])\s</c>
+            <c name="phi_t">=\smarket_risk_free_forward\s+\s0.5\s*\s(sigma\s*\sintg_exp(params.a,\stime))\s^\s2\r\n
+-\sparams.rate_risk_premium\s*\ssigma\s*\sintg_exp(params.a,\stime)</c>
+            <c name="phi_t_libor">=\smarket_libor_forward\s+\s0.5\s*\s(sigma\s*\sintg_exp(params.a,\stime))\s^\s2\r\n
+-\sparams.rate_risk_premium\s*\ssigma\s*\sintg_exp(params.a,\stime)</c>
+            <c name="exp_a_dt">=\sexp(-params.a\s*\sdt[$row])</c>
+            <c name="rate_vol">//\sRate\svolatility\sfrom\sBrigo\s(4.6)\spg.\s144\r\n
+=\ssigma\s*\ssqrt(intg_exp(2\s*\sparams.a,\sdt[$row]))</c>
+            <c name="stochastic_duration">=intg_exp(params.a,\sdt[$row])</c>
+            <c name="market_log_zcb_t">=-time\s*\smarket_risk_free_spot</c>
+            <c name="market_log_zcb_libor_t">=-time\s*\smarket_libor_spot</c>
+            <c name="rate_intg_var_t">=\scalc_rate_intg_var(params.a,\ssigma,\stime,\sparams.rate_risk_premium)</c>
+            <c name="t_plus_tau">=\stime\s+\sinterest_curves.swap_rate_spot[$index,\s0]</c>
+            <c name="rate_intg_var_t_plus_tau">=\scalc_rate_intg_var(params.a,\ssigma,\st_plus_tau,\sparams.rate_risk_premium)</c>
+            <c name="rate_intg_var_tau">=\scalc_rate_intg_var(params.a,\ssigma,\sinterest_curves.swap_rate_spot[$index,\s0],\sparams.rate_risk_premium)</c>
+            <c name="rate_intg_var_term">=\s0.5\s*\s(rate_intg_var_tau\s-\srate_intg_var_t_plus_tau\s+\srate_intg_var_t)</c>
+            <c name="market_log_zcb_t_plus_tau">=-t_plus_tau\s*\sinterp_spot(t_plus_tau,\sinterest_curves.swap_rate_spot[:,\s0],\sinterest_curves.swap_rate_spot[:,\s1])\s</c>
+            <c name="market_log_zcb_libor_t_plus_tau">=-t_plus_tau\s*\sinterp_spot(t_plus_tau,\sinterest_curves.libor_spot_proxy[:,\s0],\sinterest_curves.libor_spot_proxy[:,\s1])\s</c>
+            <c name="credit_spot">=interp_spot(time,\sinterest_curves.credit_spread_spot[:,\s0],\sinterest_curves.credit_spread_spot[:,\s1])\s</c>
+            <c name="credit_spot_crbg">=interp_spot(time,\sinterest_curves.credit_spread_spot_crbg[:,\s0],\sinterest_curves.credit_spread_spot_crbg[:,\s1])\s</c>
+            <c name="npa_spot">=interp_spot(time,\sinterest_curves.npa_spread_spot[:,\s0],\sinterest_curves.npa_spread_spot[:,\s1])\s+\snpa_margin</c>
+            <c name="credit_df">=\sexp(-time\s*\scredit_spot)</c>
+            <c name="credit_df_crbg">=\sexp(-time\s*\scredit_spot_crbg)</c>
+            <c name="npa_df">=\sexp(-time\s*\snpa_spot)</c>
+            <c name="credit_forward">=interp_spot(time,\sinterest_curves.credit_spread_spot[:,\s0],\sinterest_curves.credit_spread_spot[:,\s1])\s</c>
+            <c name="treasury_spot">=interp_spot(time,\sinterest_curves.swap_spread_spot[:,\s0],\sinterest_curves.swap_spread_spot[:,\s1])\s</c>
+            <c name="treasury_df">=\sexp(-time\s*\streasury_spot)</c>
+            <c name="treasury_forward">=interp_spot(time,\sinterest_curves.swap_spread_spot[:,\s0],\sinterest_curves.swap_spread_spot[:,\s1])\s</c>
+            <c name="credit_spot_t_plus_tau">=interp_spot(\r\n
+\s\s\s\stime\s+\sBOND_PORTFOLIO_TENORS[$index],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot[:,\s1]\r\n
+)\s</c>
+            <c name="credit_dfs">=\sexp(-(time\s+\sBOND_PORTFOLIO_TENORS[$index])\s*\scredit_spot_t_plus_tau)\s/\scredit_df</c>
+            <c name="credit_spots">=\s-log(credit_dfs)\s/\sBOND_PORTFOLIO_TENORS[$index]</c>
+            <c name="credit_spot_t_plus_tau_">=\sinterp_spot(\r\n
+\s\s\s\stime\s+\sDictionary.swap_tenors[$index],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot[:,\s1]\r\n
+)\s</c>
+            <c name="credit_dfs_">=\sexp(-(time\s+\sDictionary.swap_tenors[$index])\s*\scredit_spot_t_plus_tau_)\s/\scredit_df</c>
+            <c name="credit_spots_">=\s-log(credit_dfs_)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="credit_spot_t_plus_tau_crbg">=\sinterp_spot(\r\n
+\s\s\s\stime\s+\sDictionary.swap_tenors[$index],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot_crbg[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot_crbg[:,\s1]\r\n
+)\s</c>
+            <c name="credit_dfs_crbg">=\sexp(-(time\s+\sDictionary.swap_tenors[$index])\s*\scredit_spot_t_plus_tau_crbg)\s/\scredit_df_crbg</c>
+            <c name="credit_spots_crbg">=\s-log(credit_dfs_crbg)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="treasury_spot_t_plus_tau_">=\sinterp_spot(\r\n
+\s\s\s\stime\s+\sDictionary.swap_tenors[$index],\s\r\n
+\s\s\s\sinterest_curves.swap_spread_spot[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.swap_spread_spot[:,\s1]\r\n
+)\s</c>
+            <c name="treasury_dfs_">=\sexp(-(time\s+\sDictionary.swap_tenors[$index])\s*\streasury_spot_t_plus_tau_)\s/\streasury_df</c>
+            <c name="treasury_spots_">=\s-log(treasury_dfs_)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="npa_spot_t_plus_tau_">=\sinterp_spot(\r\n
+\s\s\s\stime\s+\sDictionary.swap_tenors[$index],\s\r\n
+\s\s\s\sinterest_curves.npa_spread_spot[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.npa_spread_spot[:,\s1]\r\n
+)\s+\snpa_margin</c>
+            <c name="npa_dfs_">=\sexp(-(time\s+\sDictionary.swap_tenors[$index])\s*\snpa_spot_t_plus_tau_)\s/\snpa_df</c>
+            <c name="npa_spots_">=\s-log(npa_dfs_)\s/\sDictionary.swap_tenors[$index]</c>
+          </columns>
+        </rg>
+        <rg name="rg2">
+          <repeat>=n_step_proj</repeat>
+          <columns>
+            <c name="time">=time_t[$row]</c>
+            <c name="sigma">=left_const_interp(time,\sparams.sigma_t[:,0],\sparams.sigma_t[:,1])</c>
+            <c name="market_risk_free_spot">=interp_spot(time,\sinterest_curves.swap_rate_spot[:,\s0],\sinterest_curves.swap_rate_spot[:,\s1])\s</c>
+            <c name="market_libor_spot">=interp_spot(time,\sinterest_curves.libor_spot_proxy[:,\s0],\sinterest_curves.libor_spot_proxy[:,\s1])\s</c>
+            <c name="market_risk_free_df">=exp(-time\s*\smarket_risk_free_spot)</c>
+            <c name="market_libor_df">=exp(-time\s*\smarket_libor_spot)</c>
+            <c name="market_risk_free_forward">=\slog(prev(market_risk_free_df)\s/\smarket_risk_free_df)\s/\s\s(time\s-\sprev(time))</c>
+            <c name="market_libor_forward">=\slog(prev(market_libor_df)\s/\smarket_libor_df)\s/\s\s(time\s-\sprev(time))</c>
+            <c name="phi_t">=\smarket_risk_free_forward\s+\s0.5\s*\s(sigma\s*\sintg_exp(params.a,\stime))\s^\s2\r\n
+-\sparams.rate_risk_premium\s*\ssigma\s*\sintg_exp(params.a,\stime)</c>
+            <c name="phi_t_libor">=\smarket_libor_forward\s+\s0.5\s*\s(sigma\s*\sintg_exp(params.a,\stime))\s^\s2\r\n
+-\sparams.rate_risk_premium\s*\ssigma\s*\sintg_exp(params.a,\stime)</c>
+            <c name="exp_a_dt">=\sexp(-params.a\s*\sdt[$row])</c>
+            <c name="rate_vol">//\sRate\svolatility\sfrom\sBrigo\s(4.6)\spg.\s144\r\n
+=\ssigma\s*\ssqrt(intg_exp(2\s*\sparams.a,\sdt[$row]))</c>
+            <c name="stochastic_duration">=intg_exp(params.a,\sdt[$row])</c>
+            <c name="market_log_zcb_t">=-time\s*\smarket_risk_free_spot</c>
+            <c name="market_log_zcb_libor_t">=-time\s*\smarket_libor_spot</c>
+            <c name="rate_intg_var_t">=\scalc_rate_intg_var(params.a,\ssigma,\stime,\sparams.rate_risk_premium)</c>
+            <c name="t_plus_tau">=\stime\s+\sinterest_curves.swap_rate_spot[$index,\s0]</c>
+            <c name="rate_intg_var_t_plus_tau">=\scalc_rate_intg_var(params.a,\ssigma,\st_plus_tau,\sparams.rate_risk_premium)</c>
+            <c name="rate_intg_var_tau">=\scalc_rate_intg_var(params.a,\ssigma,\sinterest_curves.swap_rate_spot[$index,\s0],\sparams.rate_risk_premium)</c>
+            <c name="rate_intg_var_term">=\s0.5\s*\s(rate_intg_var_t\s-\srate_intg_var_t_plus_tau\s+\srate_intg_var_tau)</c>
+            <c name="market_log_zcb_t_plus_tau">=-t_plus_tau\s*\sinterp_spot(t_plus_tau,\sinterest_curves.swap_rate_spot[:,\s0],\sinterest_curves.swap_rate_spot[:,\s1])\s</c>
+            <c name="market_log_zcb_libor_t_plus_tau">=-t_plus_tau\s*\sinterp_spot(t_plus_tau,\sinterest_curves.libor_spot_proxy[:,\s0],\sinterest_curves.libor_spot_proxy[:,\s1])\s</c>
+            <c name="credit_spot">=interp_spot(time,\sinterest_curves.credit_spread_spot[:,\s0],\sinterest_curves.credit_spread_spot[:,\s1])\s</c>
+            <c name="credit_spot_crbg">=interp_spot(time,\sinterest_curves.credit_spread_spot_crbg[:,\s0],\sinterest_curves.credit_spread_spot_crbg[:,\s1])\s</c>
+            <c name="npa_spot">=interp_spot(time,\sinterest_curves.npa_spread_spot[:,\s0],\sinterest_curves.npa_spread_spot[:,\s1])\s+\snpa_margin</c>
+            <c name="credit_df">=\sexp(-time\s*\scredit_spot)</c>
+            <c name="credit_df_crbg">=\sexp(-time\s*\scredit_spot_crbg)</c>
+            <c name="npa_df">=\sexp(-time\s*\snpa_spot)</c>
+            <c name="credit_forward">=-log(credit_df\s/\sprev(credit_df))\s/\sdt[$row]</c>
+            <c name="treasury_spot">=interp_spot(time,\sinterest_curves.swap_spread_spot[:,\s0],\sinterest_curves.swap_spread_spot[:,\s1])\s</c>
+            <c name="treasury_df">=\sexp(-time\s*\streasury_spot)</c>
+            <c name="treasury_forward">=\s-log(treasury_df\s/\sprev(treasury_df))\s/\sdt[$row]</c>
+            <c name="credit_spot_t_plus_tau">=interp_spot(\r\n
+\s\s\s\stime\s+\sBOND_PORTFOLIO_TENORS[$index],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot[:,\s1]\r\n
+)\s</c>
+            <c name="credit_dfs">=\sexp(-(time\s+\sBOND_PORTFOLIO_TENORS[$index])\s*\scredit_spot_t_plus_tau)\s/\scredit_df</c>
+            <c name="credit_spots">=\s-log(credit_dfs)\s/\sBOND_PORTFOLIO_TENORS[$index]</c>
+            <c name="credit_spot_t_plus_tau_">=\sinterp_spot(\r\n
+\s\s\s\stime\s+\sDictionary.swap_tenors[$index],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot[:,\s1]\r\n
+)\s</c>
+            <c name="credit_dfs_">=\sexp(-(time\s+\sDictionary.swap_tenors[$index])\s*\scredit_spot_t_plus_tau_)\s/\scredit_df</c>
+            <c name="credit_spots_">=\s-log(credit_dfs_)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="credit_spot_t_plus_tau_crbg">=\sinterp_spot(\r\n
+\s\s\s\stime\s+\sDictionary.swap_tenors[$index],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot_crbg[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.credit_spread_spot_crbg[:,\s1]\r\n
+)\s</c>
+            <c name="credit_dfs_crbg">=\sexp(-(time\s+\sDictionary.swap_tenors[$index])\s*\scredit_spot_t_plus_tau_crbg)\s/\scredit_df_crbg</c>
+            <c name="credit_spots_crbg">=\s-log(credit_dfs_crbg)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="treasury_spot_t_plus_tau_">=\sinterp_spot(\r\n
+\s\s\s\stime\s+\sDictionary.swap_tenors[$index],\s\r\n
+\s\s\s\sinterest_curves.swap_spread_spot[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.swap_spread_spot[:,\s1]\r\n
+)\s</c>
+            <c name="treasury_dfs_">=\sexp(-(time\s+\sDictionary.swap_tenors[$index])\s*\streasury_spot_t_plus_tau_)\s/\streasury_df</c>
+            <c name="treasury_spots_">=\s-log(treasury_dfs_)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="npa_spot_t_plus_tau_">=\sinterp_spot(\r\n
+\s\s\s\stime\s+\sDictionary.swap_tenors[$index],\s\r\n
+\s\s\s\sinterest_curves.npa_spread_spot[:,\s0],\s\r\n
+\s\s\s\sinterest_curves.npa_spread_spot[:,\s1]\r\n
+)\s+\snpa_margin</c>
+            <c name="npa_dfs_">=\sexp(-(time\s+\sDictionary.swap_tenors[$index])\s*\snpa_spot_t_plus_tau_)\s/\snpa_df</c>
+            <c name="npa_spots_">=\s-log(npa_dfs_)\s/\sDictionary.swap_tenors[$index]</c>
+          </columns>
+        </rg>
+      </row-groups>
+    </table>
+    <table name="Projection" type="CashFlow">
+      <column-groups>
+        <g name="g1" repeat-count="12" />
+        <g name="g2" repeat-count="12" />
+        <g name="g3" repeat-count="12" />
+        <g name="g4" repeat-count="12" />
+        <g name="g5" max-repeat-count="3">=BOND_PORTFOLIO_TENORS_LEN</g>
+        <g name="g6" repeat-count="12" />
+        <g name="g7" repeat-count="12" />
+        <g name="g8" repeat-count="12" />
+      </column-groups>
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="factor" datatype="real" />
+        <c name="factor_det" datatype="real" />
+        <c name="randn" datatype="real" />
+        <c name="short_rate" datatype="real" />
+        <c name="short_rate_libor" datatype="real" />
+        <c name="short_rate_intg" datatype="real" />
+        <c name="short_rate_intg_libor" datatype="real" />
+        <c name="short_rate_intg_det" datatype="real" />
+        <c name="df" datatype="real" />
+        <c name="df_det" datatype="real" />
+        <c name="df_credit" datatype="real" />
+        <c name="df_npa" datatype="real" />
+        <c name="revised_short_rate" datatype="real" />
+        <c name="revised_short_rate_libor" datatype="real" />
+        <c name="money_market" datatype="real" />
+        <c name="zcb" datatype="real" group="g1" />
+        <c name="zcb_libor" datatype="real" group="g1" />
+        <c name="zcb_std" datatype="real" group="g1" />
+        <c name="zcb_return" datatype="real" group="g1" />
+        <c name="zcb_return_driftless" datatype="real" group="g1" />
+        <c name="libor_zcb_return" datatype="real" group="g1" />
+        <c name="zcb_index" datatype="real" group="g1" />
+        <c name="zcb_index_driftless" datatype="real" group="g1" />
+        <c name="spot_curve" datatype="real" group="g1" />
+        <c name="spot_curve_libor" datatype="real" group="g1" />
+        <c name="swap_table" datatype="real" group="g2" />
+        <c name="libor_swap_table" datatype="real" group="g7" />
+        <c name="corporate_table" datatype="real" group="g3" />
+        <c name="treasury_table" datatype="real" group="g4" />
+        <c name="npa_table" datatype="real" group="g6" />
+        <c name="corporate_table_crbg" datatype="real" group="g8" />
+        <c name="idx" datatype="int" group="g5" />
+        <c name="bp_zcb" datatype="real" group="g5" />
+        <c name="bp_zcb_std" datatype="real" group="g5" />
+        <c name="bp_zcb_return" datatype="real" group="g5" />
+        <c name="zcb_credit" datatype="real" group="g5" />
+        <c name="zcb_credit_std" datatype="real" group="g5" />
+        <c name="zcb_credit_return" datatype="real" group="g5" />
+        <c name="bond_price_5y" datatype="real" />
+        <c name="bond_price_5y_driftless" datatype="real" />
+        <c name="bond_variance_5y" datatype="real" />
+        <c name="bond_price_30y" datatype="real" />
+        <c name="bond_price_30y_driftless" datatype="real" />
+        <c name="bond_variance_30y" datatype="real" />
+        <c name="bond_covariance_5y_30y" datatype="real" />
+        <c name="df_5yr" datatype="real" />
+        <c name="zcb_1y_price" datatype="real" />
+        <c name="zcb_6m_price" datatype="real" />
+        <c name="zcb_5y_price" datatype="real" />
+        <c name="zcb_6y_price" datatype="real" />
+        <c name="zcb_7y_price" datatype="real" />
+        <c name="zcb_3m_price" datatype="real" />
+        <c name="zcb_3y_price" datatype="real" />
+        <c name="zcb_2y_hdv" datatype="real" />
+        <c name="zcb_4y_hdv" datatype="real" />
+        <c name="zcb_5y_hdv" datatype="real" />
+        <c name="swap_rate_3m" datatype="real" />
+        <c name="swap_rate_6m" datatype="real" />
+        <c name="swap_rate_1y" datatype="real" />
+        <c name="swap_rate_3y" datatype="real" />
+        <c name="swap_rate_6y" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">0</c>
+            <c name="factor">return\shw_factor_init</c>
+            <c name="factor_det">return\shw_factor_init</c>
+            <c name="randn">=iif(run_deterministic_rate\sor\srun_deterministic_equity_vol_rate,\s0,\srate_randn)</c>
+            <c name="short_rate">=iif(is_running_dac,\sComputation[step].market_risk_free_forward,\sfactor\s+\sComputation[step].phi_t)</c>
+            <c name="short_rate_libor">=iif(is_running_dac,\sComputation[step].market_libor_forward,\sfactor\s+\sComputation[step].phi_t_libor)</c>
+            <c name="short_rate_intg">=0</c>
+            <c name="short_rate_intg_libor">=0</c>
+            <c name="short_rate_intg_det">=0</c>
+            <c name="df">1</c>
+            <c name="df_det">1</c>
+            <c name="df_credit">1</c>
+            <c name="df_npa">1</c>
+            <c name="revised_short_rate">=factor\s+\sComputation[step].phi_t</c>
+            <c name="revised_short_rate_libor">=factor\s+\sComputation[step].phi_t_libor</c>
+            <c name="money_market">100</c>
+            <c name="zcb">=\sexp(\r\n
+\s\s\s\sComputation[step].market_log_zcb_t_plus_tau[$index]\s\r\n
+\s\s\s\s-\sComputation[step].market_log_zcb_t\r\n
+\s\s\s\s+\sComputation[step].rate_intg_var_term[$index]\r\n
+\s\s\s\s-\sComputation[step].stochastic_duration\s*\sfactor\r\n
+)\s\s\s</c>
+            <c name="zcb_libor">=\sexp(\r\n
+\s\s\s\sComputation[step].market_log_zcb_libor_t_plus_tau[$index]\s\r\n
+\s\s\s\s-\sComputation[step].market_log_zcb_libor_t\r\n
+\s\s\s\s+\sComputation[step].rate_intg_var_term[$index]\r\n
+\s\s\s\s-\sComputation[step].stochastic_duration\s*\sfactor\r\n
+)</c>
+            <c name="zcb_std">=\sDictionary.stochastic_duration[$index]\s*\sComputation[step].sigma</c>
+            <c name="zcb_return"></c>
+            <c name="zcb_return_driftless"></c>
+            <c name="libor_zcb_return"></c>
+            <c name="zcb_index">100</c>
+            <c name="zcb_index_driftless">100</c>
+            <c name="spot_curve">=\s-log(zcb)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="spot_curve_libor">=\s-log(zcb_libor)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="swap_table">=\sspot_curve[$index]</c>
+            <c name="libor_swap_table">=\sspot_curve_libor[$index]</c>
+            <c name="corporate_table">=\sspot_curve[$index]\s+\sComputation[step].credit_spots_[$index]</c>
+            <c name="treasury_table">=\sspot_curve[$index]\s+\sComputation[step].treasury_spots_[$index]</c>
+            <c name="npa_table">=\sspot_curve[$index]\s+\sComputation[step].npa_spots_[$index]</c>
+            <c name="corporate_table_crbg">=\sspot_curve[$index]\s+\sComputation[step].credit_spots_crbg[$index]</c>
+            <c name="idx">=Dictionary.bond_to_swap_idx[$index]</c>
+            <c name="bp_zcb">=zcb_libor[idx]</c>
+            <c name="bp_zcb_std">=\szcb_std[idx]</c>
+            <c name="bp_zcb_return"></c>
+            <c name="zcb_credit">=\sComputation[step].credit_dfs[$index]\s*\szcb[idx]</c>
+            <c name="zcb_credit_std">=\szcb_std[idx]</c>
+            <c name="zcb_credit_return"></c>
+            <c name="bond_price_5y">=\szcb_index[4]</c>
+            <c name="bond_price_5y_driftless">=\szcb_index_driftless[4]</c>
+            <c name="bond_variance_5y">=\szcb_std[4]\s^\s2</c>
+            <c name="bond_price_30y">=\szcb_index[9]</c>
+            <c name="bond_price_30y_driftless">=\szcb_index_driftless[9]</c>
+            <c name="bond_variance_30y">=\szcb_std[9]\s^\s2</c>
+            <c name="bond_covariance_5y_30y">=\sDictionary.stochastic_duration[4]\s*\sDictionary.stochastic_duration[9]\s*\sComputation[step].sigma\s^\s2</c>
+            <c name="df_5yr">=zcb[4]</c>
+            <c name="zcb_1y_price">=\szcb_formula(time_t[step],\soption_1y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_6m_price">=\szcb_formula(time_t[step],\soption_6m_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_5y_price">=\szcb_formula(time_t[step],\soption_5y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_6y_price">=\szcb_formula(time_t[step],\soption_6y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_7y_price">=\szcb_formula(time_t[step],\soption_7y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_3m_price">=\szcb_formula(time_t[step],\soption_3m_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_3y_price">=\szcb_formula(time_t[step],\soption_3y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_2y_hdv">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//For\s2yr\soption\sfor\s3yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s3\syear.\r\n
+//return\s1\swhen\sdigital\soption\smatures\sand\sbefore\snext\sstrategy\sterm\sstarts\r\n
+\r\n
+if\scompare(option_2y_ttm_hdv_3y[step]&lt;=\s1E-04,1E-08)\sthen\r\n
+\s\s\s\sreturn\s1.0\r\n
+else\r\n
+\s\s\s\sreturn\szcb_formula(time_t[step],\soption_2y_ttm_hdv_3y[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)\r\n
+endif</c>
+            <c name="zcb_4y_hdv">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//For\s4yr\soption\sfor\s6yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s6\syear.\r\n
+//return\s1\swhen\sdigital\soption\smatures\sand\sbefore\snext\sstrategy\sterm\sstarts\r\n
+\r\n
+if\scompare(option_4y_ttm_hdv_6y[step]&lt;=\s1E-04,1E-08)\sthen\r\n
+\s\s\s\sreturn\s1.0\r\n
+else\r\n
+\s\s\s\sreturn\szcb_formula(time_t[step],\soption_4y_ttm_hdv_6y[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)\r\n
+endif</c>
+            <c name="zcb_5y_hdv">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//For\s5yr\soption\sfor\s6yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s6\syear.\r\n
+//return\s1\swhen\sdigital\soption\smatures\sand\sbefore\snext\sstrategy\sterm\sstarts\r\n
+\r\n
+if\scompare(option_5y_ttm_hdv_6y[step]&lt;=\s1E-04,1E-08)\sthen\r\n
+\s\s\s\sreturn\s1.0\r\n
+else\r\n
+\s\s\s\sreturn\szcb_formula(time_t[step],\soption_5y_ttm_hdv_6y[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)\r\n
+endif</c>
+            <c name="swap_rate_3m">//linear\sinterpolate\sfrom\sthe\sswap\stable\sto\sget\sthe\sswap\srate\sfor\s3\smonth\r\n
+=\sinterp_spot(0.25,\sDictionary.swap_tenors,\sswap_table)</c>
+            <c name="swap_rate_6m">=\sswap_table[0]</c>
+            <c name="swap_rate_1y">=\sswap_table[1]</c>
+            <c name="swap_rate_3y">=\sswap_table[3]</c>
+            <c name="swap_rate_6y">=0.5*(swap_table[4]+swap_table[5])</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=\sprev(step)\s+\s1</c>
+            <c name="factor">return\sprev(factor)\s*\sComputation[step].exp_a_dt\s+\sprev(randn)\s*\sComputation[step].rate_vol</c>
+            <c name="factor_det">return\sprev(factor_det)\s*\sComputation[step].exp_a_dt</c>
+            <c name="randn">=iif(run_deterministic_rate\sor\srun_deterministic_equity_vol_rate,\s0,\srate_randn)</c>
+            <c name="short_rate">=iif(is_running_dac,\sComputation[step].market_risk_free_forward,\sfactor\s+\sComputation[step].phi_t)</c>
+            <c name="short_rate_libor">=iif(is_running_dac,\sComputation[step].market_libor_forward,\sfactor\s+\sComputation[step].phi_t_libor)</c>
+            <c name="short_rate_intg">//\sThis\sis\san\sapproximation\sthe\sintegral\sof\sthe\s(continuous)\sshort\srate\spath\r\n
+//\susing\sthe\strapezoidal\srule.\r\n
+=\sdt[step]\s*\s0.5\s*\s(short_rate\s+\sprev(short_rate))</c>
+            <c name="short_rate_intg_libor">//\sThis\sis\san\sapproximation\sthe\sintegral\sof\sthe\s(continuous)\sshort\srate\spath\r\n
+//\susing\sthe\strapezoidal\srule.\r\n
+=\sdt[step]\s*\s0.5\s*\s(short_rate_libor\s+\sprev(short_rate_libor))</c>
+            <c name="short_rate_intg_det">short_rate\s=\sfactor_det\s+\sComputation[step].phi_t\r\n
+return\sdt[step]\s*\s0.5\s*\s(short_rate\s+\sprev(short_rate))</c>
+            <c name="df">=\sprev(df)\s*\sexp(-short_rate_intg)</c>
+            <c name="df_det">=\sprev(df_det)\s*\sexp(-short_rate_intg_det)</c>
+            <c name="df_credit">if\srun_deterministic_df_only\sthen\r\n
+\s\s\s\sreturn\sdf_det\s*\sComputation[step].credit_df\r\n
+else\s\r\n
+\s\s\s\sreturn\sdf\s*\sComputation[step].credit_df\r\n
+end</c>
+            <c name="df_npa">if\srun_deterministic_df_only\sthen\r\n
+\s\s\s\sreturn\sdf_det\s*\sComputation[step].npa_df\r\n
+else\s\r\n
+\s\s\s\sreturn\sdf\s*\sComputation[step].npa_df\r\n
+end</c>
+            <c name="revised_short_rate">//\sThe\sconstant\srate\sthat\sresults\sin\sthe\ssame\sshort\srate\sintegral\sover\r\n
+//\sthis\ssimuluation\sstep.\s\sIn\sthe\scase\sof\sthe\strapezoidal\srule\sthis\sis\sjust\r\n
+//\sthe\saverage\sof\sthis\sshort\srate\sand\sthe\sprevious.\r\n
+=\sshort_rate_intg\s/\sdt[step]</c>
+            <c name="revised_short_rate_libor">//\sThe\sconstant\srate\sthat\sresults\sin\sthe\ssame\sshort\srate\sintegral\sover\r\n
+//\sthis\ssimuluation\sstep.\s\sIn\sthe\scase\sof\sthe\strapezoidal\srule\sthis\sis\sjust\r\n
+//\sthe\saverage\sof\sthis\sshort\srate\sand\sthe\sprevious.\r\n
+=\sshort_rate_intg_libor\s/\sdt[step]</c>
+            <c name="money_market">=\sprev(money_market)\s*\s(2\s-\sdf\s/\sprev(df))</c>
+            <c name="zcb">=\sexp(\r\n
+\s\s\s\sComputation[step].market_log_zcb_t_plus_tau[$index]\s\r\n
+\s\s\s\s-\sComputation[step].market_log_zcb_t\r\n
+\s\s\s\s+\sComputation[step].rate_intg_var_term[$index]\r\n
+\s\s\s\s-\sDictionary.stochastic_duration[$index]\s*\sfactor\r\n
+)</c>
+            <c name="zcb_libor">=\sexp(\r\n
+\s\s\s\sComputation[step].market_log_zcb_libor_t_plus_tau[$index]\s\r\n
+\s\s\s\s-\sComputation[step].market_log_zcb_libor_t\r\n
+\s\s\s\s+\sComputation[step].rate_intg_var_term[$index]\r\n
+\s\s\s\s-\sComputation[step].stochastic_duration\s*\sfactor\r\n
+)</c>
+            <c name="zcb_std">=\sDictionary.stochastic_duration[$index]\s*\sComputation[step].sigma</c>
+            <c name="zcb_return">=\s(revised_short_rate\s+\sparams.rate_risk_premium\s*\szcb_std)\s*\sdt[step]\s-\szcb_std\s*\sprev(randn)\s*\ssqrt(dt[step])</c>
+            <c name="zcb_return_driftless">=\s-\szcb_std\s*\sprev(randn)\s*\ssqrt(dt[step])</c>
+            <c name="libor_zcb_return">=\s(revised_short_rate_libor\s+\sparams.rate_risk_premium\s*\szcb_std)\s*\sdt[step]\s-\szcb_std\s*\sprev(randn)\s*\ssqrt(dt[step])</c>
+            <c name="zcb_index">=\sprev(zcb_index)\s*\s(1\s+\szcb_return)</c>
+            <c name="zcb_index_driftless">=\sprev(zcb_index_driftless)\s*\s(1\s+\szcb_return_driftless)</c>
+            <c name="spot_curve">=\s-log(zcb)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="spot_curve_libor">=\s-log(zcb_libor)\s/\sDictionary.swap_tenors[$index]</c>
+            <c name="swap_table">=\sspot_curve[$index]</c>
+            <c name="libor_swap_table">=\sspot_curve_libor[$index]</c>
+            <c name="corporate_table">=\sspot_curve[$index]\s+\sComputation[step].credit_spots_[$index]</c>
+            <c name="treasury_table">=\sspot_curve[$index]\s+\sComputation[step].treasury_spots_[$index]</c>
+            <c name="npa_table">=\sspot_curve[$index]\s+\sComputation[step].npa_spots_[$index]</c>
+            <c name="corporate_table_crbg">=\sspot_curve[$index]\s+\sComputation[step].credit_spots_crbg[$index]</c>
+            <c name="idx">=Dictionary.bond_to_swap_idx[$index]</c>
+            <c name="bp_zcb">=zcb_libor[idx]</c>
+            <c name="bp_zcb_std">=\szcb_std[idx]</c>
+            <c name="bp_zcb_return">=\slibor_zcb_return[idx]</c>
+            <c name="zcb_credit">=\sComputation[step].credit_dfs[$index]\s*\szcb[idx]</c>
+            <c name="zcb_credit_std">=\szcb_std[idx]</c>
+            <c name="zcb_credit_return">=\szcb_return[idx]\s+\sdt[step]\s*\sComputation[step].credit_forward</c>
+            <c name="bond_price_5y">=\szcb_index[4]</c>
+            <c name="bond_price_5y_driftless">=\szcb_index_driftless[4]</c>
+            <c name="bond_variance_5y">=\szcb_std[4]\s^\s2</c>
+            <c name="bond_price_30y">=\szcb_index[9]</c>
+            <c name="bond_price_30y_driftless">=\szcb_index_driftless[9]</c>
+            <c name="bond_variance_30y">=\szcb_std[9]\s^\s2</c>
+            <c name="bond_covariance_5y_30y">=\sDictionary.stochastic_duration[4]\s*\sDictionary.stochastic_duration[9]\s*\sComputation[step].sigma\s^\s2</c>
+            <c name="df_5yr">=zcb[4]</c>
+            <c name="zcb_1y_price">=\szcb_formula(time_t[step],\soption_1y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_6m_price">=\szcb_formula(time_t[step],\soption_6m_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_5y_price">=\szcb_formula(time_t[step],\soption_5y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_6y_price">=\szcb_formula(time_t[step],\soption_6y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_7y_price">=\szcb_formula(time_t[step],\soption_7y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_3m_price">=\szcb_formula(time_t[step],\soption_3m_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_3y_price">=\szcb_formula(time_t[step],\soption_3y_ttm[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)</c>
+            <c name="zcb_2y_hdv">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//For\s2yr\soption\sfor\s3yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s3\syear.\r\n
+//return\s1\swhen\sdigital\soption\smatures\sand\sbefore\snext\sstrategy\sterm\sstarts\r\n
+\r\n
+if\scompare(option_2y_ttm_hdv_3y[step]&lt;=\s1E-04,1E-08)\sthen\r\n
+\s\s\s\sreturn\s1.0\r\n
+else\r\n
+\s\s\s\sreturn\szcb_formula(time_t[step],\soption_2y_ttm_hdv_3y[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)\r\n
+endif</c>
+            <c name="zcb_4y_hdv">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//For\s4yr\soption\sfor\s6yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s6\syear.\r\n
+//return\s1\swhen\sdigital\soption\smatures\sand\sbefore\snext\sstrategy\sterm\sstarts\r\n
+\r\n
+if\scompare(option_4y_ttm_hdv_6y[step]&lt;=\s1E-04,1E-08)\sthen\r\n
+\s\s\s\sreturn\s1.0\r\n
+else\r\n
+\s\s\s\sreturn\szcb_formula(time_t[step],\soption_4y_ttm_hdv_6y[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)\r\n
+endif</c>
+            <c name="zcb_5y_hdv">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//For\s5yr\soption\sfor\s6yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s6\syear.\r\n
+//return\s1\swhen\sdigital\soption\smatures\sand\sbefore\snext\sstrategy\sterm\sstarts\r\n
+\r\n
+if\scompare(option_5y_ttm_hdv_6y[step]&lt;=\s1E-04,1E-08)\sthen\r\n
+\s\s\s\sreturn\s1.0\r\n
+else\r\n
+\s\s\s\sreturn\szcb_formula(time_t[step],\soption_5y_ttm_hdv_6y[step],\sinterest_curves.swap_rate_spot,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparams.a,\sComputation[step].sigma,\sparams.rate_risk_premium,\sfactor)\r\n
+endif</c>
+            <c name="swap_rate_3m">//linear\sinterpolate\sfrom\sthe\sswap\stable\sto\sget\sthe\sswap\srate\sfor\s3\smonth\r\n
+=\sinterp_spot(0.25,\sDictionary.swap_tenors,\sswap_table)</c>
+            <c name="swap_rate_6m">=\sswap_table[0]</c>
+            <c name="swap_rate_1y">=\sswap_table[1]</c>
+            <c name="swap_rate_3y">=\sswap_table[3]</c>
+            <c name="swap_rate_6y">=0.5*(swap_table[4]+swap_table[5])</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="bond_covariance_5y_30y" formattype="General" width="80" />
+      <c name="bond_price_30y" formattype="General" width="119.333333333333" />
+      <c name="bond_price_30y_driftless" formattype="General" width="80" />
+      <c name="bond_price_5y" formattype="General" width="138" />
+      <c name="bond_price_5y_driftless" formattype="General" width="80" />
+      <c name="bond_variance_30y" formattype="General" width="80" />
+      <c name="bond_variance_5y" formattype="General" width="80" />
+      <c name="bp_zcb[0]" formattype="General" width="80" />
+      <c name="bp_zcb_return[0]" formattype="General" width="80" />
+      <c name="bp_zcb_std[0]" formattype="General" width="80" />
+      <c name="corporate_table[0]" formattype="General" width="80" />
+      <c name="corporate_table_crbg[0]" formattype="General" width="80" />
+      <c name="df[0]" formattype="General" width="80" />
+      <c name="df_5yr" formattype="General" width="80" />
+      <c name="df_credit" formattype="General" width="80" />
+      <c name="df_det" formattype="General" width="80" />
+      <c name="df_npa" formattype="General" width="80" />
+      <c name="factor" formattype="General" width="98" />
+      <c name="factor_det" formattype="General" width="80" />
+      <c name="idx[0]" formattype="General" width="80" />
+      <c name="libor_swap_table[0]" formattype="General" width="118.666666666667" />
+      <c name="libor_zcb_return[0]" formattype="General" width="80" />
+      <c name="money_market" formattype="General" width="80" />
+      <c name="npa_table[0]" formattype="General" width="80" />
+      <c name="randn" formattype="General" width="80" />
+      <c name="revised_short_rate" formattype="General" width="140.666666666667" />
+      <c name="revised_short_rate_libor" formattype="General" width="158.666666666667" />
+      <c name="short_rate" formattype="General" width="80" />
+      <c name="short_rate_intg" formattype="General" width="95" />
+      <c name="short_rate_intg_det" formattype="General" width="146" />
+      <c name="short_rate_intg_libor" formattype="General" width="130" />
+      <c name="short_rate_libor" formattype="General" width="121.333333333333" />
+      <c name="spot_curve[0]" formattype="General" width="80" />
+      <c name="spot_curve_libor[0]" formattype="General" width="118" />
+      <c name="step" formattype="General" width="80" />
+      <c name="swap_rate_1y" formattype="General" width="80" />
+      <c name="swap_rate_3m" formattype="General" width="80" />
+      <c name="swap_rate_3y" formattype="General" width="80" />
+      <c name="swap_rate_6m" formattype="General" width="80" />
+      <c name="swap_rate_6y" formattype="General" width="80" />
+      <c name="swap_table[0]" formattype="General" width="80" />
+      <c name="treasury_table[0]" formattype="General" width="80" />
+      <c name="zcb[0]" formattype="General" width="80" />
+      <c name="zcb_1y_price" formattype="General" width="116" />
+      <c name="zcb_2y_hdv" formattype="General" width="80" />
+      <c name="zcb_3m_price" formattype="General" width="80" />
+      <c name="zcb_3y_price" formattype="General" width="80" />
+      <c name="zcb_4y_hdv" formattype="General" width="80" />
+      <c name="zcb_5y_hdv" formattype="General" width="80" />
+      <c name="zcb_5y_price" formattype="General" width="80" />
+      <c name="zcb_6m_price" formattype="General" width="122.666666666667" />
+      <c name="zcb_6y_price" formattype="General" width="104.666666666667" />
+      <c name="zcb_7y_price" formattype="General" width="80" />
+      <c name="zcb_credit[0]" formattype="General" width="80" />
+      <c name="zcb_credit_return[0]" formattype="General" width="80" />
+      <c name="zcb_credit_std[0]" formattype="General" width="80" />
+      <c name="zcb_index[0]" formattype="General" width="80" />
+      <c name="zcb_index_driftless[0]" formattype="General" width="80" />
+      <c name="zcb_libor[0]" formattype="General" width="80" />
+      <c name="zcb_return[0]" formattype="General" width="80" />
+      <c name="zcb_return_driftless[0]" formattype="General" width="132.666666666667" />
+      <c name="zcb_std[0]" formattype="General" width="80" />
+    </view>
+    <view name="Computation:Computation">
+      <c name="credit_df" formattype="General" width="80" />
+      <c name="credit_dfs_crbg[0]" formattype="General" width="80" />
+      <c name="credit_dfs_[10]" formattype="General" width="80" />
+      <c name="credit_dfs_[10]" formattype="General" width="80" />
+      <c name="credit_df_crbg" formattype="General" width="80" />
+      <c name="credit_forward" formattype="General" width="80" />
+      <c name="credit_spot" formattype="General" width="80" />
+      <c name="credit_spots[0]" formattype="General" width="80" />
+      <c name="credit_spots_crbg[0]" formattype="General" width="80" />
+      <c name="credit_spots_[0]" formattype="General" width="80" />
+      <c name="credit_spot_crbg" formattype="General" width="80" />
+      <c name="credit_spot_t_plus_tau[0]" formattype="General" width="80" />
+      <c name="credit_spot_t_plus_tau_crbg[0]" formattype="General" width="80" />
+      <c name="credit_spot_t_plus_tau_[0]" formattype="General" width="80" />
+      <c name="exp_a_dt" formattype="General" width="80" />
+      <c name="market_libor_df" formattype="General" width="103.333333333333" />
+      <c name="market_libor_forward" formattype="General" width="148" />
+      <c name="market_libor_spot" formattype="General" width="135.333333333333" />
+      <c name="market_log_zcb_libor_t" formattype="General" width="80" />
+      <c name="market_log_zcb_libor_t_plus_tau[0]" formattype="General" width="80" />
+      <c name="market_log_zcb_t" formattype="General" width="80" />
+      <c name="market_log_zcb_t_plus_tau[0]" formattype="General" width="80" />
+      <c name="market_risk_free_df" formattype="General" width="80" />
+      <c name="market_risk_free_forward" formattype="General" width="80" />
+      <c name="market_risk_free_spot" formattype="General" width="140" />
+      <c name="npa_df" formattype="General" width="80" />
+      <c name="npa_dfs_[0]" formattype="General" width="80" />
+      <c name="npa_spot" formattype="General" width="80" />
+      <c name="npa_spots_[0]" formattype="General" width="80" />
+      <c name="npa_spot_t_plus_tau_[0]" formattype="General" width="80" />
+      <c name="phi_t" formattype="General" width="80" />
+      <c name="phi_t_libor" formattype="General" width="80" />
+      <c name="rate_intg_var_t" formattype="General" width="80" />
+      <c name="rate_intg_var_tau[0]" formattype="General" width="80" />
+      <c name="rate_intg_var_term[0]" formattype="General" width="80" />
+      <c name="rate_intg_var_t_plus_tau[0]" formattype="General" width="80" />
+      <c name="rate_vol" formattype="General" width="80" />
+      <c name="sigma" formattype="General" width="80" />
+      <c name="stochastic_duration" formattype="General" width="144" />
+      <c name="time" formattype="General" width="80" />
+      <c name="treasury_df" formattype="General" width="80" />
+      <c name="treasury_dfs_[0]" formattype="General" width="80" />
+      <c name="treasury_forward" formattype="General" width="80" />
+      <c name="treasury_spot" formattype="General" width="80" />
+      <c name="treasury_spots_[0]" formattype="General" width="80" />
+      <c name="treasury_spot_t_plus_tau_[0]" formattype="General" width="80" />
+      <c name="t_plus_tau[0]" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

@@ -1,0 +1,2829 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pathwise-model-root model-type="MonteCarlo" model-id="35d544fc-efbc-42c6-8000-4a823967de27" name="IA_ESG_MODEL_v662_add_RILA" version="v1_0_3_674" format-version="20" description="">
+  <options>
+    <real-type>Single</real-type>
+    <string-type>String</string-type>
+    <split-results>False</split-results>
+    <verbose-shocks-mode>Legacy</verbose-shocks-mode>
+    <calculation-result-mode>Legacy</calculation-result-mode>
+    <single-precision-optimization>Performance</single-precision-optimization>
+  </options>
+  <datasources>
+    <datasource name="params" file="data/params.npz">
+      <dataset name="run" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('seed',\s'&lt;i4'),\s('npaths',\s'&lt;i4'),\s('shocksos',\s'|b1'),\s('use_antithetic_variates',\s'|b1'),\s('',\s'|V2'),\s('use_extended_outer_loop',\s'&lt;i4'),\s('run_deterministic_rate',\s'|b1'),\s('run_deterministic_df_only',\s'|b1'),\s('is_running_dac',\s'|b1'),\s('use_sofr',\s'|b1'),\s('run_deterministic_equity_vol_rate',\s'|b1'),\s('apply_inner_loop_vol',\s'|b1'),\s('',\s'|V2')],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
+      <dataset name="vol" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('x5_global_floor',\s'&lt;f8'),\s('x5_1y_otm_spread',\s'&lt;f8'),\s('x5_1y_part_rate',\s'&lt;f8'),\s('pimco_gem_corr',\s'&lt;f8'),\s('mseh_corr',\s'&lt;f8'),\s('aqr_ab_1y_otm_spread',\s'&lt;f8'),\s('structured_nav_put_strike',\s'&lt;f8'),\s('structured_nav_put_strike_20',\s'&lt;f8'),\s('structured_nav_risk_premia',\s'&lt;f8'),\s('structured_nav_track_error_vol',\s'&lt;f8'),\s('structured_nav_track_error_spx_corr',\s'&lt;f8'),\s('structured_nav_track_error_rate_corr',\s'&lt;f8'),\s('structured_nav_track_error_spx_vol_corr',\s'&lt;f8'),\s('afis_growth_spx_beta',\s'&lt;f8'),\s('afis_income_growth_spx_beta',\s'&lt;f8'),\s('afis_growth_spx_te',\s'&lt;f8'),\s('afis_income_growth_spx_te',\s'&lt;f8'),\s('afis_nav_put_strike_5',\s'&lt;f8'),\s('afis_nav_put_strike_20',\s'&lt;f8'),\s('alpha_otm_vol_adj',\s'&lt;f8'),\s('beta_otm_vol_adj',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
+      <dataset name="bond_portfolios" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('target_duration',\s'&lt;f8'),\s('target_convexity',\s'&lt;f8'),\s('use_credit_spread',\s'|b1'),\s('',\s'|V7')],\s'fortran_order':\sFalse,\s'shape':\s(3,),\s}" />
+      <dataset name="drift_and_volatility" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('index',\s'|S10'),\s('drift_atm_par_rate',\s'&lt;f8',\s(6,)),\s('drift_otm_par_rate',\s'&lt;f8',\s(6,)),\s('drift_spread',\s'&lt;f8',\s(6,)),\s('volatility_atm_par_rate',\s'&lt;f8',\s(6,)),\s('volatility_otm_par_rate',\s'&lt;f8',\s(6,)),\s('volatility_spread',\s'&lt;f8',\s(6,))],\s'fortran_order':\sFalse,\s'shape':\s(2,),\s}" />
+      <dataset name="gaap_margin" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('npa_spread',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
+    </datasource>
+    <datasource name="products" file="data/products.npz">
+      <dataset name="option" type="Inforce" size-type="DynamicSize" dtype="{'descr':\s[('t_0',\s'&lt;f8'),\s('shock',\s'&lt;i4'),\s('step',\s'&lt;i4'),\s('valuation_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('spot_spx',\s'&lt;f8'),\s('spot_sptr',\s'&lt;f8'),\s('spot_mlsb',\s'&lt;f8'),\s('spot_pimco',\s'&lt;f8'),\s('spot_mseh',\s'&lt;f8'),\s('spot_ab',\s'&lt;f8'),\s('spot_mxea',\s'&lt;f8'),\s('spot_rty',\s'&lt;f8'),\s('spot_pimco_gem',\s'&lt;f8'),\s('spot_spx_rc',\s'&lt;f8'),\s('spot_lm',\s'&lt;f8'),\s('spot_aqr',\s'&lt;f8'),\s('spot_nasdaq',\s'&lt;f8'),\s('spot_pimbap',\s'&lt;f8'),\s('spot_ab_global_allocator',\s'&lt;f8'),\s('spot_dfa',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(100,),\s}" />
+      <dataset name="cap_and_strike" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('ap2p_cap',\s'&lt;f8',\s(6,)),\s('mp2p_cap',\s'&lt;f8',\s(6,)),\s('strike',\s'&lt;f8',\s(8,)),\s('participation_rate',\s'&lt;f8',\s(6,)),\s('participation_rate_cliquet',\s'&lt;f8',\s(6,)),\s('spread_cliquet',\s'&lt;f8',\s(6,)),\s('x5_spread',\s'&lt;f8',\s(6,)),\s('participation_rate_aqr_ab',\s'&lt;f8',\s(6,)),\s('ig_strike',\s'&lt;f8',\s(16,)),\s('binary_call_strike_epsilon',\s'&lt;f8'),\s('put_strike',\s'&lt;f8',\s(5,)),\s('extended_strike_1y',\s'&lt;f8',\s(12,)),\s('extended_strike_3y',\s'&lt;f8',\s(10,)),\s('extended_strike_6y',\s'&lt;f8',\s(12,)),\s('sptr_strike_put_1y',\s'&lt;f8',\s(11,)),\s('sptr_strike_call_1y',\s'&lt;f8',\s(11,)),\s('binary_strike',\s'&lt;f8',\s(3,)),\s('binary_strike_spx_6y',\s'&lt;f8',\s(5,)),\s('barrier_level_3y',\s'&lt;f8',\s(3,)),\s('barrier_level_6y',\s'&lt;f8',\s(3,)),\s('secure_strike_6y',\s'&lt;f8',\s(10,)),\s('secure_rate_cap',\s'&lt;f8',\s(8,)),\s('gmab_cap',\s'&lt;f8',\s(5,))],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
+      <dataset name="time_step_array" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('outer_loop',\s'&lt;i4',\s(1852L,)),\s('outer_loop_50_years',\s'&lt;i4',\s(3070L,)),\s('outer_loop_80_years',\s'&lt;i4',\s(4895L,)),\s('inner_loop',\s'&lt;i4',\s(122L,))],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
+    </datasource>
+    <datasource name="shocks" file="data/shocks.npz">
+      <dataset name="shocks" type="Shocks" size-type="DynamicSize" dtype="{'descr':\s[('state',\s[('add',\s'&lt;f8'),\s('mul',\s'&lt;f8')])],\s'fortran_order':\sFalse,\s'shape':\s(3,),\s}" />
+    </datasource>
+    <datasource name="data" file="data/data.npz">
+      <dataset name="shocksdata" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('spot',\s'&lt;f8',\s(500,)),\s('spot_sptr',\s'&lt;f8',\s(500,)),\s('spot_mlsb',\s'&lt;f8',\s(500,)),\s('spot_pimco',\s'&lt;f8',\s(500,)),\s('spot_mseh',\s'&lt;f8',\s(500,)),\s('spot_mxea',\s'&lt;f8',\s(500,)),\s('spot_rty',\s'&lt;f8',\s(500,)),\s('spot_ab',\s'&lt;f8',\s(500,)),\s('spot_pimco_gem',\s'&lt;f8',\s(500,)),\s('spot_spx_rc',\s'&lt;f8',\s(500,)),\s('spot_lm',\s'&lt;f8',\s(500,)),\s('spot_aqr',\s'&lt;f8',\s(500,)),\s('spot_pimbap',\s'&lt;f8',\s(500,)),\s('spot_ab_global_allocator',\s'&lt;f8',\s(500,)),\s('spot_dfa',\s'&lt;f8',\s(500,)),\s('equity_diffusion_variance_unclipped',\s'&lt;f8',\s(500,)),\s('equity_diffusion_variance_unclipped_mxea',\s'&lt;f8',\s(500,)),\s('equity_diffusion_variance_unclipped_rty',\s'&lt;f8',\s(500,)),\s('equity_diffusion_variance_unclipped_nasdaq',\s'&lt;f8',\s(500,)),\s('hw_factor',\s'&lt;f8',\s(500,)),\s('df_5yr',\s'&lt;f8',\s(500,)),\s('spot_nasdaq',\s'&lt;f8',\s(500,))],\s'fortran_order':\sFalse,\s'shape':\s(2,),\s}" />
+      <dataset name="shocksdata_econ" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('spot',\s'&lt;f8',\s(1000,)),\s('spot_sptr',\s'&lt;f8',\s(1000,)),\s('spot_mlsb',\s'&lt;f8',\s(1000,)),\s('spot_pimco',\s'&lt;f8',\s(1000,)),\s('spot_mseh',\s'&lt;f8',\s(1000,)),\s('spot_mxea',\s'&lt;f8',\s(1000,)),\s('spot_rty',\s'&lt;f8',\s(1000,)),\s('spot_ab',\s'&lt;f8',\s(1000,)),\s('spot_pimco_gem',\s'&lt;f8',\s(1000,)),\s('spot_spx_rc',\s'&lt;f8',\s(1000,)),\s('spot_lm',\s'&lt;f8',\s(1000,)),\s('spot_aqr',\s'&lt;f8',\s(1000,)),\s('spot_pimbap',\s'&lt;f8',\s(1000,)),\s('spot_ab_global_allocator',\s'&lt;f8',\s(1000,)),\s('spot_dfa',\s'&lt;f8',\s(1000,)),\s('equity_diffusion_variance_unclipped',\s'&lt;f8',\s(1000,)),\s('equity_diffusion_variance_unclipped_mxea',\s'&lt;f8',\s(1000,)),\s('equity_diffusion_variance_unclipped_rty',\s'&lt;f8',\s(1000,)),\s('equity_diffusion_variance_unclipped_nasdaq',\s'&lt;f8',\s(1000,)),\s('hw_factor',\s'&lt;f8',\s(1000,)),\s('df_5yr',\s'&lt;f8',\s(1000,)),\s('spot_nasdaq',\s'&lt;f8',\s(1000,))],\s'fortran_order':\sFalse,\s'shape':\s(2,),\s}" />
+      <dataset name="shocksdata_esg_gen" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('spot',\s'&lt;f8',\s(250,)),\s('spot_sptr',\s'&lt;f8',\s(250,)),\s('spot_mlsb',\s'&lt;f8',\s(250,)),\s('spot_pimco',\s'&lt;f8',\s(250,)),\s('spot_mseh',\s'&lt;f8',\s(250,)),\s('spot_mxea',\s'&lt;f8',\s(250,)),\s('spot_rty',\s'&lt;f8',\s(250,)),\s('spot_ab',\s'&lt;f8',\s(250,)),\s('spot_pimco_gem',\s'&lt;f8',\s(250,)),\s('spot_spx_rc',\s'&lt;f8',\s(250,)),\s('spot_lm',\s'&lt;f8',\s(250,)),\s('spot_aqr',\s'&lt;f8',\s(250,)),\s('spot_pimbap',\s'&lt;f8',\s(250,)),\s('spot_ab_global_allocator',\s'&lt;f8',\s(250,)),\s('spot_dfa',\s'&lt;f8',\s(250,)),\s('equity_diffusion_variance_unclipped',\s'&lt;f8',\s(250,)),\s('equity_diffusion_variance_unclipped_mxea',\s'&lt;f8',\s(250,)),\s('equity_diffusion_variance_unclipped_rty',\s'&lt;f8',\s(250,)),\s('equity_diffusion_variance_unclipped_nasdaq',\s'&lt;f8',\s(250,)),\s('hw_factor',\s'&lt;f8',\s(250,)),\s('df_5yr',\s'&lt;f8',\s(250,)),\s('spot_nasdaq',\s'&lt;f8',\s(250,))],\s'fortran_order':\sFalse,\s'shape':\s(2,),\s}" />
+    </datasource>
+    <datasource name="calibrations" file="data/calibrations.npz">
+      <dataset name="inverse_gamma" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('v_0',\s'&lt;f8',\s(4,)),\s('gamma',\s'&lt;f8',\s(4,)),\s('vol_inf_bs_tenor',\s'&lt;f8',\s(12,1,)),\s('vol_inf_bs',\s'&lt;f8',\s(12,4,)),\s('reversion_tenor',\s'&lt;f8',\s(12,1,)),\s('reversion',\s'&lt;f8',\s(12,4,)),\s('vol_inf_tenor',\s'&lt;f8',\s(12,1,)),\s('vol_inf',\s'&lt;f8',\s(12,4,)),\s('vol_of_vol_tenor',\s'&lt;f8',\s(12,1,)),\s('vol_of_vol',\s'&lt;f8',\s(12,4,)),\s('equity_risk_premium_tenor',\s'&lt;f8',\s(12,1,)),\s('equity_risk_premium',\s'&lt;f8',\s(12,4,)),\s('div_tenor',\s'&lt;f8',\s(31,1,)),\s('div',\s'&lt;f8',\s(31,4,)),\s('funding_spread_tenor',\s'&lt;f8',\s(31,1,)),\s('funding_spread',\s'&lt;f8',\s(31,4,))],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
+      <dataset name="hull_white" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('a',\s'&lt;f8'),\s('sigma_t',\s'&lt;f8',\s(12,2,)),\s('rate_risk_premium',\s'&lt;f8'),\s('correlation',\s'&lt;f8',\s(5,5,)),\s('correlation_new',\s'&lt;f8',\s(9,9,))],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
+      <dataset name="interest_curves" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('swap_rate_spot',\s'&lt;f8',\s(12,2,)),\s('swap_spread_spot',\s'&lt;f8',\s(12,2,)),\s('credit_spread_spot',\s'&lt;f8',\s(12,2,)),\s('npa_spread_spot',\s'&lt;f8',\s(12,2,)),\s('libor_spot_proxy',\s'&lt;f8',\s(12,2,)),\s('libor_sofr_spread',\s'&lt;f8'),\s('credit_spread_spot_crbg',\s'&lt;f8',\s(12,2,))],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
+      <dataset name="hybrid_index" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('index_name',\s'|S20'),\s('algorithm_type',\s'&lt;i4'),\s('equity_betas',\s'&lt;f8',\s(3,)),\s('bond_betas',\s'&lt;f8',\s(3,)),\s('equity_sigma',\s'&lt;f8'),\s('bond_sigma',\s'&lt;f8'),\s('index_fee',\s'&lt;f8'),\s('equity_fee',\s'&lt;f8'),\s('bond_fee',\s'&lt;f8'),\s('equity_has_dividend',\s'|b1'),\s('fixed_bond_constraint',\s'|b1'),\s('is_excess_return',\s'|b1'),\s('',\s'|V5'),\s(('-999\smeans\sno\ssharp\sratio\srules.','equity_sharp_ratio'),\s'&lt;f8'),\s(('-999\smeans\sno\ssharp\sratio\srules','bond_sharp_ratio'),\s'&lt;f8'),\s('target_vol',\s'&lt;f8'),\s('lower_target_vol',\s'&lt;f8'),\s('upper_target_vol',\s'&lt;f8'),\s('scale_factor',\s'&lt;f8'),\s('scale_factor_bid',\s'&lt;f8'),\s('equity_weight_min',\s'&lt;f8'),\s('equity_weight_max',\s'&lt;f8'),\s('bond_weight_min',\s'&lt;f8'),\s('bond_weight_max',\s'&lt;f8'),\s('leverage_min',\s'&lt;f8'),\s('leverage_max',\s'&lt;f8'),\s('dealer_spread',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(16,),\s}" />
+    </datasource>
+  </datasources>
+  <UserUDFs>
+    <udf name="is_nan">bool\sis_nan(real\sarg)\r\n
+\s\s\s\s$result\s=\sFalse\r\n
+\s\s\s\sif\sarg\s!=\sarg\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sTrue\r\n
+\s\s\s\send\r\n
+end\r\n
+</udf>
+    <udf name="spline">real\sspline(real\st,\sreal[N]\sx,\sreal[N]\sy)\r\n
+\s\s\s\s//$result\s=\sinterp1(t,x,y)\r\n
+\s\s\s\sint\si\r\n
+\s\s\s\sint\sk\r\n
+\s\s\s\sreal\sslope\r\n
+\s\s\s\sreal\sinterp\r\n
+\s\s\s\sreal\sa\r\n
+\s\s\s\sreal\sb\r\n
+\s\s\s\sreal\sc\r\n
+\s\s\s\sreal\sd\r\n
+\s\s\s\sreal[2]\sf1\r\n
+\s\s\s\sreal[2]\sf2\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\s(t\s&lt;\sx[0]\sor\st\s&gt;\sx[N-1])\sthen\r\n
+\s\s\s\s\s\s\s\sk\s=\siif(t&lt;x[0],1,N-1)\r\n
+\s\s\s\s\s\s\s\sslope=(y[k]-y[k-1])/(x[k]-x[k-1])\r\n
+\s\s\s\s\s\s\s\sinterp=y[k]-slope*x[k]\r\n
+\s\s\s\s\s\s\s\s$result\s=interp+slope*t\r\n
+\s\s\s\s\s\s\s\sreturn\s\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sfor\sj=1\sto\sN-1\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\s(t\s&lt;=\sx[j])\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sk\s=\sj\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sbreak\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\sendif\r\n
+\r\n
+\s\s\s\s//\sfirst\sderivative\r\n
+\s\s\s\sfor\sj=0\sto\s1\r\n
+\s\s\s\s\s\s\s\si=k-1+j\r\n
+\s\s\s\s\s\s\s\sif\s(i==0\sor\si==N-1)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sf1[j]=10**30\r\n
+\s\s\s\s\s\s\s\selif\s((y[i+1]-y[i]==0)\sor\s(y[i]-y[i-1]==0))\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sf1[j]=0\r\n
+\s\s\s\s\s\s\s\selif\s(((x[i+1]-x[i])/(y[i+1]-y[i])+(x[i]-x[i-1])/(y[i]-y[i-1]))==0)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sf1[j]=0\r\n
+\s\s\s\s\s\s\s\selif\s((y[i+1]-y[i])*(y[i]-y[i-1])&lt;0)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sf1[j]=0\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sf1[j]=2.0/((x[i+1]-x[i])/(y[i+1]-y[i])+(x[i]-x[i-1])/(y[i]-y[i-1]))\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\send\r\n
+\r\n
+\s\s\s\sif\s(k==1)\sthen\r\n
+\s\s\s\s\s\s\s\sf1[0]=(3.0/2.0)*(y[k]-y[k-1])/(x[k]-x[k-1])-f1[1]/2.0\r\n
+\s\s\s\sendif\r\n
+\s\s\s\sif\s(k==N-1)\sthen\r\n
+\s\s\s\s\s\s\s\sf1[1]=(3.0/2.0)*(y[k]-y[k-1])/(x[k]-x[k-1])-f1[0]/2.0\r\n
+\s\s\s\sendif\r\n
+\r\n
+\s\s\s\s//\ssecond\sderivative\r\n
+\s\s\s\sf2[0]=-2*(f1[1]+2*f1[0])/(x[k]-x[k-1])+6*(y[k]-y[k-1])/(x[k]-x[k-1])**2\r\n
+\s\s\s\sf2[1]=2*(2*f1[1]+f1[0])/(x[k]-x[k-1])-6*(y[k]-y[k-1])/(x[k]-x[k-1])**2\r\n
+\s\s\s\s\r\n
+\s\s\s\s//\sspline\scoefficients\r\n
+\s\s\s\sd=1.0/6.0*(f2[1]-f2[0])/(x[k]-x[k-1])\r\n
+\s\s\s\sc=0.5*(x[k]*f2[0]-x[k-1]*f2[1])/(x[k]-x[k-1])\r\n
+\s\s\s\sb=(y[k]-y[k-1]-c*(x[k]**2-x[k-1]**2)-d*(x[k]**3-x[k-1]**3))/(x[k]-x[k-1])\r\n
+\s\s\s\sa=y[k-1]-b*x[k-1]-c*x[k-1]**2-d*x[k-1]**3\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result=a+b*t+c*t**2+d*t**3\r\n
+end</udf>
+    <udf name="len_int">int\slen_int(int[N]\sarg)\r\n
+\s\s\s\s$result\s=\sN\r\n
+end</udf>
+    <udf name="compute_dt">real\scompute_dt(date_t\scurr_date,\sdate_t\sprev_date)\r\n
+\s\s\s\s$result\s=\s1\s/\s12.0\r\n
+end</udf>
+    <udf name="compute_index_forward">real\scompute_index_forward(real\sindex_drift,\sreal\sindex_vol,\sreal\stime,\sreal\scorrelation,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\srate_sigma,\sreal\srate_a)\r\n
+\s\s\s\s$result\s=\sexp(index_drift\s*\stime\s-\s(correlation\s*\sindex_vol\s*\srate_sigma)/(rate_a^2)*(rate_a\s*\stime\s-\s(1-exp(-rate_a*time))))\r\n
+end</udf>
+    <udf name="compute_call_price">real\scompute_call_price(real\sdf,\sreal\sforward,\sreal\sstrike,\sreal\sindex_vol,\sreal\stime)\r\n
+\s\s\s\sreal\sd1\r\n
+\s\s\s\sreal\sd2\r\n
+\s\s\s\sd1\s=\s(log(forward/strike)\s+\s0.5*(index_vol^2)*time)/(index_vol\s*\ssqrt(5))\r\n
+\s\s\s\sd2\s=\s(log(forward/strike)\s-\s0.5*(index_vol^2)*time)/(index_vol\s*\ssqrt(5))\r\n
+\s\s\s\s$result\s=\sdf\s\s*(forward\s*\snormal(d1)\s-\sstrike\s*\snormal(d2))\r\n
+end</udf>
+    <udf name="arctan">real\sarctan(real\sarg)\r\n
+end</udf>
+    <udf name="normal">real\snormal(real\sx)\r\n
+\s\s\s\s$result\s=\s0.5\s*\s(1\s+\serf(x/sqrt(2)))\r\n
+end</udf>
+    <udf name="time_dependent_parameter">real\stime_dependent_parameter(real[N,M]\stenor,\sreal[N,L]\svalue,\sreal\stime_t,\sint\sindex,\sint\slinear_interp_flag)\r\n
+\s\s\s\s//\sfunction\sreturn\sthe\stime\sdependent\smodel\sparameter\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sinitial_time\s=\stenor[0,0]\r\n
+\s\s\s\sreal\send_time\s=\stenor[N-1,0]\r\n
+\s\s\s\sreal\stenor_first\r\n
+\s\s\s\sreal\stenor_second\r\n
+\s\s\s\sreal\svalue_first\r\n
+\s\s\s\sreal\svalue_second\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(time_t\s&lt;=\sinitial_time,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\svalue[0,index]\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\selif\scompare(time_t\s&gt;=\send_time,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\svalue[N-1,index]\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sfor\si\s=\s0\sto\sN-2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(time_t\s&gt;=\stenor[i,0],\s1e-6)\sand\scompare(time_t\s&lt;\stenor[i+1,0],\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\stenor_first\s=\stenor[i,0]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\stenor_second\s=\stenor[i+1,0]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svalue_first\s=\svalue[i,index]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svalue_second\s=\svalue[i+1,index]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sif\slinear_interp_flag\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\svalue_first\s+\s(value_second\s-\svalue_first)\s/\s(tenor_second\s-\stenor_first)\s*\s(time_t\s-\stenor_first)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\svalue_first\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\r\n
+\r\n
+end</udf>
+    <udf name="inverse_gamma_option_price">real\sinverse_gamma_option_price(real\sS0,\sreal\sStrike,\sreal\sr,\sreal\sT,\sreal\sk,\sreal\stheta_AA,\sreal\slambda,\sreal\sxi,\sreal\srho,\sreal\sv_0_AA,\sreal\sq)\r\n
+\r\n
+\s\s\s\s\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sv_0\s=\sv_0_AA\s*\sxi\r\n
+\s\s\s\sreal\stheta\s=\stheta_AA\s*\sxi\r\n
+\r\n
+\s\s\s\sreal\sx0\s=\slog(S0)\r\n
+\r\n
+\s\s\s\s/*\sDefine\sOmega(a,T)\s=\sintegral\sfrom\s0\sto\sT\sexp(at)*v_{0,t}^2\sdt\r\n
+\s\s\s\s\sDefine\sh(k,T)\s=\sintegral\sfrom\s0\sto\sT\st*exp(kt)*v_{0,t}^2\sdt\s\s\s*/\r\n
+\r\n
+\s\s\s\sreal\sOmega_0\s=\s(v_0\s-\stheta)^2/(-2*k)*(exp(-2*k*T)-1)\s+\s2*theta*(v_0\s-\stheta)/(-k)*(exp(-k*T)-1)\s+\stheta^2*T\r\n
+\s\s\s\sreal\sOmega_k\s=\s(v_0\s-\stheta)^2/(-k)*(exp(-k*T)\s-\s1)\s+\s2*theta*(v_0\s-\stheta)*T\s+\stheta^2/(k)*(exp(k*T)-1)\r\n
+\s\s\s\sreal\sOmega_2k\s=\s(v_0\s-\stheta)^2*T\s+\s2*theta*(v_0\s-\stheta)/k*(exp(k*T)-1)\s+\stheta^2/(2*k)*(exp(2*k*T)\s-\s1)\r\n
+\s\s\s\sreal\sOmega_neg_k\s=\s(v_0\s-\stheta)^2/(-3*k)*(exp(-3*k*T)-1)\s+\stheta*(v_0\s-\stheta)/(-k)*(exp(-2*k*T)\s-\s1)\s+\stheta^2/(-k)*(exp(-k*T)\s-1)\r\n
+\s\s\s\sreal\sOmega_neg_2k\s=\s(v_0\s-\stheta)^2/(-4*k)*(exp(-4*k*T)-1)\s+\s2*theta*(v_0\s-\stheta)/(-3*k)*(exp(-3*k*T)\s-\s1)\s+\stheta^2/(-2*k)*(exp(-2*k*T)-1)\r\n
+\r\n
+\s\s\s\sreal\sh_k\s=\s(v_0\s-\stheta)^2/(-k)*(exp(-k*T)*T\s+\sexp(-k*T)/k\s-\s1/k)\s+\stheta*(v_0\s-\stheta)*T^2\s+\stheta^2/k*(exp(k*T)*T\s-\sexp(k*T)/k\s+\s1/k)\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sphi\s=\sOmega_0\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sa_0\s=\slambda^2/(-2*k)*(exp(-2*k*T)*Omega_2k\s-\sOmega_0)\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sa_1\s=\s2*rho*lambda*(v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_k\s-\sOmega_neg_k)\s+\s2*rho*lambda*theta/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)\r\n
+\r\n
+\s\s\s\sreal\sX_1\s=\s(2*rho*lambda)^2*(v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*((v_0\s-\stheta)/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)\s+\stheta*(T*Omega_k\s-\sh_k))\s-\s((v_0\s-\stheta)/(-3*k)*(exp(-3*k*T)*Omega_k\s-\sOmega_neg_2k)\s+\stheta/(-2*k)*(exp(-2*k*T)*Omega_k\s-\sOmega_neg_k)))\s+\s(2*rho*lambda)^2*theta/(-k)*(exp(-k*T)*((v_0\s-\stheta)/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)\s+\stheta*(T*Omega_k\s-\sh_k))\s-\s((v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_k\s-\sOmega_neg_k)\s+\stheta/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)))\r\n
+\s\s\s\sreal\sX_2\s=\s2*(rho*lambda)^2/(-2*k)*(exp(-2*k*T)*((v_0\s-\stheta)^2/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)\s+\s2*theta*(v_0\s-\stheta)*(T*Omega_k\s-\sh_k)\s+\stheta^2/k*(exp(k*T)*Omega_k\s-\sOmega_2k))\s-\s((v_0\s-\stheta)^2/(-3*k)*(exp(-3*k*T)*Omega_k\s-\sOmega_neg_2k)\s+\s2*theta*(v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_k\s-\sOmega_neg_k)\s+\stheta^2/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)))\r\n
+\r\n
+\s\s\s\sreal\sa_2\s=\sX_1\s+\sX_2\s\r\n
+\r\n
+\s\s\s\sreal\sb_0\s=\s4*lambda^2*(v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*((v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_2k\s-\sOmega_0)\s+\stheta/(-k)*(exp(-k*T)*Omega_2k\s-\sOmega_k))\s-\s((v_0\s-\stheta)/(-4*k)*(exp(-4*k*T)*Omega_2k\s-\sOmega_neg_2k)\s+\stheta/(-3*k)*(exp(-3*k*T)*Omega_2k\s-\sOmega_neg_k)))\s+\s4*lambda^2*theta/(-k)*(exp(-k*T)*((v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_2k\s-\sOmega_0)\s+\stheta/(-k)*(exp(-k*T)*Omega_2k\s-\sOmega_k))\s-\s((v_0\s-\stheta)/(-3*k)*(exp(-3*k*T)*Omega_2k\s-\sOmega_neg_k)\s+\stheta/(-2*k)*(exp(-2*k*T)*Omega_2k\s-\sOmega_0)))\r\n
+\r\n
+\s\s\s\sreal\sb_2\s=\sa_1^2/2\r\n
+\r\n
+\s\s\s\s/*\sDerivatives\sPart\s*/\r\n
+\r\n
+\s\s\s\sreal\sx\s=\sx0\r\n
+\s\s\s\sreal\sy\s=\sphi\r\n
+\s\s\s\sreal\sS\s=\sexp(x)\r\n
+\r\n
+\s\s\s\sreal\sC\s=\slog(S/Strike)\s+\s(r-q)*T\r\n
+\s\s\s\sreal\sd1\s=\sC/sqrt(y)\s+\ssqrt(y)/2\r\n
+\s\s\s\sreal\sd2\s=\sd1\s-\ssqrt(y)\r\n
+\s\s\s\sreal\ssigma\s=\ssqrt(y)/sqrt(T)\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sN_d1\s=\s(1+erf(d1/sqrt(2)))/2\r\n
+\s\s\s\sreal\sN_d2\s=\s(1+erf(d2/sqrt(2)))/2\r\n
+\s\s\s\sreal\sN_neg_d1\s=\s(1+erf(-d1/sqrt(2)))/2\s\s\s\s\r\n
+\s\s\s\sreal\sN_neg_d2\s=\s(1+erf(-d2/sqrt(2)))/2\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sN_p1_d1\s=\sexp(-d1^2/2)/sqrt(2*pi)\r\n
+\s\s\s\sreal\sN_p2_d1\s=\sN_p1_d1*(-d1)\r\n
+\s\s\s\sreal\sN_p3_d1\s=\sN_p1_d1*(d1^2\s-\s1)\r\n
+\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sP_ss\s=\sN_p1_d1*exp(-q*T)/(S*sigma*sqrt(T))\r\n
+\r\n
+\s\s\s\sreal\sP_sigma\s=\sS*exp(-q*T)*N_p1_d1*sqrt(T)\r\n
+\r\n
+\s\s\s\sreal\sP_sy\s=\sN_p1_d1*exp(-q*T)*(-C*y^(-1.5)/2\s+\s0.25*y^(-0.5))\r\n
+\s\s\s\sreal\sP_ssy\s=\sN_p2_d1*exp(-q*T)*(-C*y^(-2)/(2*S)\s+\s0.25*y^(-1)/S)\s+\sN_p1_d1*exp(-q*T)*(-(0.5)*y^(-1.5)/S)\r\n
+\s\s\s\sreal\sP_syy\s=\sN_p2_d1*exp(-q*T)*(-C*0.5*y^(-1.5)\s+\s0.25*y^(-0.5))^2\s+\sN_p1_d1*exp(-q*T)*(3*C*0.25*y^(-2.5)\s-\s0.125*y^(-1.5))\r\n
+\s\s\s\sreal\sP_ssyy\s=\sN_p3_d1*exp(-q*T)*(-C*0.5*y^(-1.5)+0.25*y^(-0.5))*(-C*0.5*y^(-2)/S\s+\s0.25*y^(-1)/S)\s+\sN_p2_d1*exp(-q*T)*(C*y^(-3)/S\s-\s0.25*y^(-2)/S)\s+\sN_p2_d1*exp(-q*T)*(-C*y^(-1.5)*0.5\s+\s0.25*y^(-0.5))*(-0.5*y^(-1.5)/S)\s+\sN_p1_d1*exp(-q*T)*(0.75*y^(-2.5)/S)\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sP\s=\sStrike*exp(-r*T)*N_neg_d2\s-\sS*exp(-q*T)*N_neg_d1\r\n
+\s\s\s\sreal\sP_y\s=\sS*exp(-q*T)*N_p1_d1*0.5/sqrt(y)\r\n
+\s\s\s\sreal\sP_xy\s=\sP_sy*exp(x)\r\n
+\s\s\s\sreal\sP_xxy\s=\sP_ssy*exp(2*x)\s+\sP_sy*exp(x)\r\n
+\s\s\s\sreal\sP_yy\s=\sS*exp(-q*T)*N_p2_d1*(-C*0.25*y^(-2)\s+\s0.125*y^(-1))\s+\sS*exp(-q*T)*N_p1_d1*(-0.25*y^(-1.5))\r\n
+\s\s\s\sreal\sP_xxyy\s=\sP_ssyy*exp(2*x)\s+\sP_syy*exp(x)\r\n
+\r\n
+\r\n
+\s\s\s\s$result\s=\sP\s+\sa_0*P_y\s+\sa_1*P_xy\s+\sa_2*P_xxy\s+\sb_0*P_yy\s+\sb_2*P_xxyy\s\r\n
+\r\n
+\r\n
+\r\n
+\r\n
+end</udf>
+    <udf name="compute_cut_off_strike">int\scompute_cut_off_strike(real[N]\sOption_Prices,\sint\sN_Values)\r\n
+\s\s\s\sint\smax_index\s=\sN_Values-2\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\smax_index\r\n
+\s\s\s\s\s\s\s\sif\scompare(Option_Prices[i]\s&lt;\sOption_Prices[i+1],\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\si\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\s\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\s\s\s\s$result\s=\smax_index\s+\s1\r\n
+end\r\n
+</udf>
+    <udf name="compute_black_scholes">real\scompute_black_scholes(real\sS,\sreal\sK,\sreal\sr,\sreal\sT,\sreal\svol,\sreal\sq)\r\n
+\r\n
+\s\r\n
+\s\s\s\sreal\sd1\s=\s1/(vol*sqrt(T))*(log(S/K)\s+\s(r\s-\sq\s+\s0.5*vol^2)*T)\r\n
+\s\s\s\sreal\sd2\s=\sd1\s-\svol*sqrt(T)\r\n
+\s\s\s\sreal\sF\s=\sS*exp((r-q)*T)\r\n
+\s\s\s\sreal\sN_d1\s=\s(1+erf(d1/sqrt(2)))/2\r\n
+\s\s\s\sreal\sN_d2\s=\s(1+erf(d2/sqrt(2)))/2\r\n
+\s\s\s\sreal\sCall_BS\s=\sexp(-r*T)*F*N_d1\s-\sK*N_d2\r\n
+\s\s\s\s$result\s=\sCall_BS/S\r\n
+\s\s\s\s\r\n
+\s\s\s\s\r\n
+end</udf>
+    <udf name="get_interpolation_index">//\sAssume\svector\sis\snon-negativem,\ssorted\sup\sto\sindex\s\sj\sand\spadded\swith\s0s\sfrom\s\r\n
+//\sj\sto\sthe\send\sof\svector\r\n
+int\sget_interpolation_index(real\sval,\sreal[N]\sv,\sint\smax_index)\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(val\s&gt;=\sv[max_index],\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\smax_index\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s1\sto\smax_index\r\n
+\s\s\s\s\s\s\s\sif\scompare(val\s&lt;\sv[i],\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\si\s-\s1\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\s\s\s\s$result\s=\smax_index\r\n
+end</udf>
+  </UserUDFs>
+  <CompLibs>
+    <Category name="Equity">
+      <ImportCompLib ref="libraries\InverseGamma\InverseGamma.complib.xml" refID="R4">
+        <param name="time">=TimeStepLogic.t</param>
+        <param name="time_dt">=TimeStepLogic.dt</param>
+        <param name="randn_equity">=RandomNormal.equity</param>
+        <param name="randn_vol">=RandomNormal.v</param>
+        <param name="rates">=InterestRate.forward_rate</param>
+        <param name="spot">=Variables.option_spot</param>
+        <param name="spot_sptr">=Variables.option_spot_sptr</param>
+        <param name="run_shocksos">=run.shocksos</param>
+        <param name="n_step_proj">=Variables.projection_steps</param>
+        <param name="spot_mxea">=Variables.option_spot_mxea</param>
+        <param name="spot_rty">=Variables.option_spot_rty</param>
+        <param name="inv_gamma_params">=inverse_gamma[option.shock]</param>
+        <param name="rho">=CorrelationMatrix[0,4]</param>
+        <param name="otm_strike">=cap_and_strike.strike</param>
+        <param name="df_1yr">=Cashflow.df_1y</param>
+        <param name="cliquet_cap">=cap_and_strike.mp2p_cap</param>
+        <param name="swap_rate_1y">=InterestRate.swap_rate_1y</param>
+        <param name="structrued_nav_put_strike_10">=vol.structured_nav_put_strike</param>
+        <param name="is_anniversary_now">=TimeStepLogic.is_anniversary</param>
+        <param name="option_1y_ttm">=TimeStepLogic.option_1y_ttm</param>
+        <param name="zcb_1y_price">=InterestRate.zcb_1y_price</param>
+        <param name="ig_strike">=cap_and_strike.ig_strike</param>
+        <param name="randn_track_error">=RandomNormal.sa_tracking</param>
+        <param name="structured_nav_risk_premia">=vol.structured_nav_risk_premia</param>
+        <param name="structured_nav_track_error_vol">=vol.structured_nav_track_error_vol</param>
+        <param name="is_6monthversary">=TimeStepLogic.is_6monthversary\s</param>
+        <param name="is_6th_anniversary">=TimeStepLogic.is_6th_anniversary</param>
+        <param name="zcb_6m_price">=InterestRate.zcb_6m_price</param>
+        <param name="zcb_6y_price">=InterestRate.zcb_6y_price</param>
+        <param name="option_6m_ttm">=TimeStepLogic.option_6m_ttm</param>
+        <param name="option_6y_ttm">=TimeStepLogic.option_6y_ttm\s\s</param>
+        <param name="swap_rate_6m">=InterestRate.swap_rate_6m</param>
+        <param name="swap_rate_6y">=InterestRate.swap_rate_6y</param>
+        <param name="structrued_nav_put_strike_20">=vol.structured_nav_put_strike_20</param>
+        <param name="randn_nasdaq">=RandomNormal.nasdaq</param>
+        <param name="randn_nasdaq_vol">=RandomNormal.nasdaq_vol\s\s\s\s</param>
+        <param name="randn_mxea">=RandomNormal.mxea</param>
+        <param name="randn_mxea_vol">=RandomNormal.mxea_vol</param>
+        <param name="randn_r2k">=RandomNormal.r2k</param>
+        <param name="randn_r2k_vol">=RandomNormal.r2k_vol</param>
+        <param name="rho_nasdaq_vol">=CorrelationMatrix[1,5]</param>
+        <param name="rho_r2k_vol">=CorrelationMatrix[2,6]</param>
+        <param name="rho_mxea_vol">=CorrelationMatrix[3,7]</param>
+        <param name="spot_nasdaq">=Variables.option_spot_nasdaq</param>
+        <param name="epsilon_strike">=cap_and_strike.binary_call_strike_epsilon</param>
+        <param name="use_sofr">=run.use_sofr</param>
+        <param name="afis_growth_spx_beta">=vol.afis_growth_spx_beta</param>
+        <param name="is_3monthversary">=TimeStepLogic.is_3monthversary</param>
+        <param name="option_3m_ttm">=TimeStepLogic.option_3m_ttm</param>
+        <param name="swap_rate_3m">=InterestRate.swap_rate_3m</param>
+        <param name="afis_put_strike_5">=vol.afis_nav_put_strike_5</param>
+        <param name="afis_put_strike_20">=vol.afis_nav_put_strike_20</param>
+        <param name="afis_income_growth_spx_beta">=vol.afis_income_growth_spx_beta</param>
+        <param name="afis_growth_spx_te">=vol.afis_growth_spx_te</param>
+        <param name="afis_income_growth_spx_te">=vol.afis_income_growth_spx_te</param>
+        <param name="randn_afis">=RandomNormal.randn_afis</param>
+        <param name="option_t_0">=option.t_0</param>
+        <param name="rho_idx_vol_inner">=CorrelationMatrix[0,4]</param>
+        <param name="extended_strike_1y">=cap_and_strike.extended_strike_1y</param>
+        <param name="put_strike">=cap_and_strike.put_strike</param>
+        <param name="extended_strike_6y">=cap_and_strike.extended_strike_6y</param>
+        <param name="strike_call_1y_sptr">=cap_and_strike.sptr_strike_call_1y</param>
+        <param name="strike_put_1y_sptr">=cap_and_strike.sptr_strike_put_1y</param>
+        <param name="is_3rd_anniversary">=TimeStepLogic.is_3rd_anniversary</param>
+        <param name="extended_strike_3y">=cap_and_strike.extended_strike_3y</param>
+        <param name="zcb_3y_price">=InterestRate.zcb_3y_price</param>
+        <param name="option_3y_ttm">=TimeStepLogic.option_3y_ttm</param>
+        <param name="swap_rate_3y">=InterestRate.swap_rate_3y</param>
+        <param name="spx_spot_1y">=cashflow.spx_spot_1y</param>
+        <param name="binary_strike">=cap_and_strike.binary_strike</param>
+        <param name="binary_strike_spx_6y">=cap_and_strike.binary_strike_spx_6y</param>
+        <param name="barrier_level_3y">=cap_and_strike.barrier_level_3y</param>
+        <param name="barrier_level_6y">=cap_and_strike.barrier_level_6y</param>
+        <param name="secure_strike_6y">=cap_and_strike.secure_strike_6y</param>
+        <param name="equity_diffusion_variance_unclipped_init">=Variables.equity_diffusion_variance_unclipped_init</param>
+        <param name="equity_diffusion_variance_unclipped_init_mxea">=Variables.equity_diffusion_variance_unclipped_init_mxea</param>
+        <param name="equity_diffusion_variance_unclipped_init_rty">=Variables.equity_diffusion_variance_unclipped_init_rty</param>
+        <param name="equity_diffusion_variance_unclipped_init_nasdaq">=Variables.equity_diffusion_variance_unclipped_init_nasdaq</param>
+        <param name="option_2y_ttm_hdv_3y">=TimeStepLogic.option_2y_ttm_hdv_3y</param>
+        <param name="option_4y_ttm_hdv_6y">=TimeStepLogic.option_4y_ttm_hdv_6y</param>
+        <param name="option_5y_ttm_hdv_6y">=TimeStepLogic.option_5y_ttm_hdv_6y</param>
+        <param name="nth_yr_hdv_3yr">=TimeStepLogic.nth_yr_hdv_3yr</param>
+        <param name="nth_yr_hdv_6yr">=TimeStepLogic.nth_yr_hdv_6yr</param>
+        <param name="zcb_2y_hdv">=InterestRate.zcb_2y_hdv</param>
+        <param name="zcb_4y_hdv">=InterestRate.zcb_4y_hdv</param>
+        <param name="zcb_5y_hdv">=InterestRate.zcb_5y_hdv</param>
+        <param name="run_deterministic_equity_vol_rate">=run.run_deterministic_equity_vol_rate</param>
+        <param name="apply_inner_loop_vol">=run.apply_inner_loop_vol</param>
+        <param name="is_5th_anniversary">=TimeStepLogic.is_5th_anniversary</param>
+        <param name="is_7th_anniversary">=TimeStepLogic.is_7th_anniversary</param>
+        <param name="secure_rate_cap">=cap_and_strike.secure_rate_cap</param>
+        <param name="gmab_cap">=cap_and_strike.gmab_cap</param>
+        <param name="alpha">=vol.alpha_otm_vol_adj</param>
+        <param name="beta">=vol.beta_otm_vol_adj</param>
+        <param name="zcb_5y_price">=InterestRate.zcb_5y_price</param>
+        <param name="zcb_7y_price">=InterestRate.zcb_7y_price</param>
+        <param name="option_5y_ttm">=TimeStepLogic.option_5y_ttm</param>
+        <param name="option_7y_ttm">=TimeStepLogic.option_7y_ttm</param>
+        <convert-result name="diffusion_variance" ref="=Projection.equity_variance" />
+        <convert-result name="spx" ref="=Projection.spx" />
+        <convert-result name="diffusion_variance_unclipped" ref="=Projection.equity_variance" />
+        <convert-result name="sptr" ref="=Projection.equity_tr" />
+        <convert-result name="mxea" ref="=Projection.mxea" />
+        <convert-result name="rty" ref="=Projection.rty" />
+        <convert-result name="diffusion_variance_unclipped_mxea" ref="=Projection.equity_variance_mxea" />
+        <convert-result name="diffusion_variance_unclipped_rty" ref="=Projection.equity_variance_rty" />
+        <convert-result name="spx_cap_buffer_portfolio_value" ref="=Projection.spx_cap_buffer_portfolio_value" />
+        <convert-result name="spx_par_rate_portfolio_value" ref="=Projection.spx_par_rate_portfolio_value" />
+        <convert-result name="spx_spread_buffer_portfolio_value" ref="=Projection.spx_spread_buffer_portfolio_value" />
+        <convert-result name="spx_par_rate_floor_portfolio_value" ref="=Projection.spx_par_rate_floor_portfolio_value" />
+        <convert-result name="is_anniversary" ref="=Projection.is_anniversary" />
+        <convert-result name="spx_cap_buffer_portfolio_value_track_error" ref="=Projection.spx_cap_buffer_portfolio_value_track_error" />
+        <convert-result name="spx_spread_buffer_portfolio_value_track_error" ref="=Projection.spx_spread_buffer_portfolio_value_track_error" />
+        <convert-result name="spx_par_rate_portfolio_value_track_error" ref="=Projection.spx_par_rate_portfolio_value_track_error" />
+        <convert-result name="spx_par_rate_floor_portfolio_value_track_error" ref="=Projection.spx_par_rate_floor_portfolio_value_track_error" />
+        <convert-result name="spx_buffer_par_port_val_6m" ref="=Projection.spx_buffer_part_port_val_6m" />
+        <convert-result name="spx_downside_50_par_port_val_6m" ref="=Projection.spx_50_downside_part_port_val_6m" />
+        <convert-result name="spx_buffer_par_port_val_6y" ref="=Projection.spx_buffer_part_port_val_6y" />
+        <convert-result name="spx_downside_50_part_port_val_6y" ref="=Projection.spx_50_downside_part_port_val_6y" />
+        <convert-result name="spx_floor_spread_port_val" ref="=Projection.spx_floor_spread_port_val" />
+        <convert-result name="stacker_port_val_mxea" ref="=Projection.stacker_port_val_mxea" />
+        <convert-result name="stacker_port_val_rty" ref="=Projection.stacker_port_val_rty" />
+        <convert-result name="stacker_port_val_nasdaq" ref="=Projection.stacker_port_val_nasdaq" />
+        <convert-result name="nasdaq" ref="=Projection.nasdaq" />
+        <convert-result name="diffusion_variance_unclipped_nasdaq" ref="=Projection.equity_variance_nasdaq" />
+        <convert-result name="spx_buffer_par_port_val_6m_te" ref="=Projection.spx_buffer_par_port_val_6m_te" />
+        <convert-result name="spx_buffer_par_port_val_6y_te" ref="=Projection.spx_buffer_part_port_val_6y_te" />
+        <convert-result name="spx_50_downside_par_port_val_6m_te" ref="=Projection.spx_50_downside_par_port_val_6m_te" />
+        <convert-result name="spx_50_downside_par_port_val_6y_te" ref="=Projection.spx_50_downside_part_port_val_6y_te" />
+        <convert-result name="spx_floor_spread_port_val_te" ref="=Projection.spx_floor_spread_port_val_te" />
+        <convert-result name="stacker_port_val_mxea_te" ref="=Projection.stacker_port_val_mxea_te" />
+        <convert-result name="stacker_port_val_rty_te" ref="=Projection.stacker_port_val_rty_te" />
+        <convert-result name="stacker_port_val_nasdaq_te" ref="=Projection.stacker_port_val_nasdaq_te" />
+        <convert-result name="spx_atm_call_6m" ref="=Projection.spx_atm_call_6m" />
+        <convert-result name="spx_call_K_epsilon_6m" ref="=Projection.spx_call_K_epsilon_6m" />
+        <convert-result name="spx_buffer_digital_6m" ref="=Projection.spx_buffer_digital_6m" />
+        <convert-result name="spx_buffer_digital_payoff" ref="=Projection.spx_buffer_digital_payoff" />
+        <convert-result name="spx_call_spread_budget_6m" ref="=Projection.spx_call_spread_budget_6m" />
+        <convert-result name="spx_call_spread_par_rate" ref="=Projection.spx_call_spread_par_rate" />
+        <convert-result name="spx_buffer_digital_6m_te" ref="=Projection.spx_buffer_digital_6m_te" />
+        <convert-result name="spx_atm_put_6m" ref="=Projection.spx_atm_put_6m" />
+        <convert-result name="S_otm_put_6m_spx" ref="=Projection.S_otm_put_6m_spx" />
+        <convert-result name="SPX_6monthversary" ref="=Projection.SPX_6monthversary" />
+        <convert-result name="spx_funding_spread" ref="=Projection.spx_funding_spread" />
+        <convert-result name="afis_income_growth_portfolio_val" ref="=Projection.afis_income_growth_portfolio_val" />
+        <convert-result name="afis_growth_portfolio_val" ref="=Projection.afis_growth_portfolio_val" />
+        <convert-result name="vol_average" ref="=Projection.vol_average" />
+        <convert-result name="adj_spx_otm_calls_6y_ig" ref="=inverse_gamma_option.adj_spx_otm_calls_6y_ig" />
+        <convert-result name="adj_spx_otm_calls_1y_ig" ref="=inverse_gamma_option.adj_spx_otm_calls_1y_ig" />
+        <convert-result name="spx_otm_puts_1y_ig" ref="=inverse_gamma_option.spx_otm_puts_1y_ig" />
+        <convert-result name="spx_otm_puts_6y_ig" ref="=inverse_gamma_option.spx_otm_puts_6y_ig" />
+        <convert-result name="adj_sptr_otm_calls_1y_ig" ref="=inverse_gamma_option.adj_sptr_otm_calls_1y_ig" />
+        <convert-result name="sptr_otm_puts_1y_ig" ref="=inverse_gamma_option.sptr_otm_puts_1y_ig" />
+        <result-map model="diffusion_variance" lib="diffusion_variance" />
+        <result-map model="spx" lib="spx" />
+        <result-map model="diffusion_variance_unclipped" lib="diffusion_variance_unclipped" />
+        <result-map model="sptr" lib="sptr" />
+        <result-map model="mxea" lib="mxea" />
+        <result-map model="rty" lib="rty" />
+        <result-map model="diffusion_variance_unclipped_mxea" lib="diffusion_variance_unclipped_mxea" />
+        <result-map model="diffusion_variance_unclipped_rty" lib="diffusion_variance_unclipped_rty" />
+        <result-map model="is_anniversary" lib="is_anniversary" />
+        <result-map model="nasdaq" lib="nasdaq" />
+        <result-map model="diffusion_variance_unclipped_nasdaq" lib="diffusion_variance_unclipped_nasdaq" />
+        <result-map model="SPX_6monthversary" lib="SPX_6monthversary" />
+        <result-map model="spx_funding_spread" lib="spx_funding_spread" />
+        <result-map model="sptr_driftless" lib="sptr_driftless" />
+        <result-map model="S_6th_anniversary" lib="S_6th_anniversary" />
+        <result-map model="S_anniversary" lib="S_anniversary" />
+        <result-map model="ig_kappa" lib="ig_kappa" />
+        <result-map model="ig_theta" lib="ig_theta" />
+        <result-map model="ig_lambda" lib="ig_lambda" />
+        <result-map model="ig_xi" lib="ig_xi" />
+        <result-map model="ig_q" lib="ig_q" />
+        <result-map model="ig_vol" lib="ig_vol" />
+        <result-map model="ig_rho" lib="ig_rho" />
+        <result-map model="ig_funding_spread" lib="ig_funding_spread" />
+        <result-map model="spx_puts_6y_seasoned" lib="spx_puts_6y_seasoned" />
+        <result-map model="spx_puts_1y_seasoned" lib="spx_puts_1y_seasoned" />
+        <result-map model="adj_spx_calls_6y_seasoned" lib="adj_spx_calls_6y_seasoned" />
+        <result-map model="adj_spx_calls_1y_seasoned" lib="adj_spx_calls_1y_seasoned" />
+        <result-map model="sptr_puts_1y_seasoned" lib="sptr_puts_1y_seasoned" />
+        <result-map model="adj_sptr_calls_1y_seasoned" lib="adj_sptr_calls_1y_seasoned" />
+        <result-map model="spx_trigger_calls_1y_seasoned" lib="spx_trigger_calls_1y_seasoned" />
+        <result-map model="spx_trigger_calls_6y_seasoned" lib="spx_trigger_calls_6y_seasoned" />
+        <result-map model="nasdaq_puts_1y_seasoned" lib="nasdaq_puts_1y_seasoned" />
+        <result-map model="adj_nasdaq_calls_1y_seasoned" lib="adj_nasdaq_calls_1y_seasoned" />
+        <result-map model="nasdaq_trigger_calls_1y_seasoned" lib="nasdaq_trigger_calls_1y_seasoned" />
+        <result-map model="spx_up_out_atm_calls_3y_seasoned" lib="spx_up_out_atm_calls_3y_seasoned" />
+        <result-map model="spx_up_out_atm_calls_6y_seasoned" lib="spx_up_out_atm_calls_6y_seasoned" />
+        <result-map model="spx_up_out_5pct_otm_puts_3y_seasoned" lib="spx_up_out_5pct_otm_puts_3y_seasoned" />
+        <result-map model="spx_up_out_10pct_otm_puts_3y_seasoned" lib="spx_up_out_10pct_otm_puts_3y_seasoned" />
+        <result-map model="spx_up_out_15pct_otm_puts_3y_seasoned" lib="spx_up_out_15pct_otm_puts_3y_seasoned" />
+        <result-map model="spx_up_out_10pct_otm_puts_6y_seasoned" lib="spx_up_out_10pct_otm_puts_6y_seasoned" />
+        <result-map model="spx_up_out_15pct_otm_puts_6y_seasoned" lib="spx_up_out_15pct_otm_puts_6y_seasoned" />
+        <result-map model="spx_up_out_20pct_otm_puts_6y_seasoned" lib="spx_up_out_20pct_otm_puts_6y_seasoned" />
+        <result-map model="spx_up_out_5pct_otm_puts_6y_seasoned" lib="spx_up_out_5pct_otm_puts_6y_seasoned" />
+        <result-map model="spx_10pct_buffer_secure_cap_cliquet_6y_seasoned" lib="spx_10pct_buffer_secure_cap_cliquet_6y_seasoned" />
+        <result-map model="spx_15pct_buffer_secure_cap_cliquet_6y_seasoned" lib="spx_15pct_buffer_secure_cap_cliquet_6y_seasoned" />
+        <result-map model="spx_step_digital_hdv_3y_seasoned" lib="spx_step_digital_hdv_3y_seasoned" />
+        <result-map model="spx_step_digital_hdv_6y_seasoned" lib="spx_step_digital_hdv_6y_seasoned" />
+        <result-map model="adj_mxea_calls_6y_seasoned" lib="adj_mxea_calls_6y_seasoned" />
+        <result-map model="adj_rty_calls_6y_seasoned" lib="adj_rty_calls_6y_seasoned" />
+        <result-map model="adj_ndx_calls_6y_seasoned" lib="adj_ndx_calls_6y_seasoned" />
+        <result-map model="adj_spx_calls_3y_seasoned" lib="adj_spx_calls_3y_seasoned" />
+        <result-map model="adj_ndx_calls_3y_seasoned" lib="adj_ndx_calls_3y_seasoned" />
+        <result-map model="spx_puts_3y_seasoned" lib="spx_puts_3y_seasoned" />
+        <result-map model="ndx_puts_3y_seasoned" lib="ndx_puts_3y_seasoned" />
+        <result-map model="mxea_puts_6y_seasoned" lib="mxea_puts_6y_seasoned" />
+        <result-map model="rty_puts_6y_seasoned" lib="rty_puts_6y_seasoned" />
+        <result-map model="ndx_puts_6y_seasoned" lib="ndx_puts_6y_seasoned" />
+        <result-map model="secure_rate_gmab_5y_spread_1pct" lib="secure_rate_gmab_5y_spread_1pct" />
+        <result-map model="secure_rate_gmab_5y_spread_2pct" lib="secure_rate_gmab_5y_spread_2pct" />
+        <result-map model="secure_rate_gmab_5y_spread_3pct" lib="secure_rate_gmab_5y_spread_3pct" />
+        <result-map model="secure_rate_cliquet_5y" lib="secure_rate_cliquet_5y" />
+        <result-map model="gmab_5y_spread_1pct" lib="gmab_5y_spread_1pct" />
+        <result-map model="gmab_5y_spread_2pct" lib="gmab_5y_spread_2pct" />
+        <result-map model="gmab_5y_spread_3pct" lib="gmab_5y_spread_3pct" />
+        <result-map model="secure_rate_gmab_7y_spread_1pct" lib="secure_rate_gmab_7y_spread_1pct" />
+        <result-map model="secure_rate_gmab_7y_spread_2pct" lib="secure_rate_gmab_7y_spread_2pct" />
+        <result-map model="secure_rate_gmab_7y_spread_3pct" lib="secure_rate_gmab_7y_spread_3pct" />
+        <result-map model="secure_rate_cliquet_7y" lib="secure_rate_cliquet_7y" />
+        <result-map model="gmab_7y_spread_1pct" lib="gmab_7y_spread_1pct" />
+        <result-map model="gmab_7y_spread_2pct" lib="gmab_7y_spread_2pct" />
+        <result-map model="gmab_7y_spread_3pct" lib="gmab_7y_spread_3pct" />
+        <result-map model="vol_bs_1y" lib="vol_bs_1y" />
+        <result-map model="vol_bs_5y" lib="vol_bs_5y" />
+        <result-map model="p_curr" lib="p_curr" />
+        <result-map model="p_next" lib="p_next" />
+        <projection lib="Projection" main="Cashflow" />
+      </ImportCompLib>
+      <ImportCompLib ref="libraries\InverseGamma\InverseGamma_noaoa.complib.xml" refID="R2">
+        <param name="time">=TimeStepLogic.t</param>
+        <param name="time_dt">=TimeStepLogic.dt</param>
+        <param name="randn_equity">=RandomNormal.equity</param>
+        <param name="randn_vol">=RandomNormal.v</param>
+        <param name="inv_gamma_params">=inverse_gamma[option.shock]</param>
+        <param name="rates">=InterestRate.forward_rate</param>
+        <param name="spot">=Variables.option_spot</param>
+        <param name="spot_sptr">=Variables.option_spot_sptr</param>
+        <param name="run_shocksos">=run.shocksos</param>
+        <param name="equity_diffusion_variance_unclipped_init">=Variables.equity_diffusion_variance_unclipped_init</param>
+        <param name="equity_diffusion_variance_unclipped_init_mxea">=Variables.equity_diffusion_variance_unclipped_init_mxea</param>
+        <param name="equity_diffusion_variance_unclipped_init_rty">=Variables.equity_diffusion_variance_unclipped_init_rty</param>
+        <param name="equity_diffusion_variance_unclipped_init_nasdaq">=Variables.equity_diffusion_variance_unclipped_init_nasdaq</param>
+        <param name="n_step_proj">=Variables.projection_steps</param>
+        <param name="spot_mxea">=Variables.option_spot_mxea</param>
+        <param name="spot_rty">=Variables.option_spot_rty</param>
+        <param name="rho">=CorrelationMatrix[0,4]</param>
+        <param name="otm_strike">=cap_and_strike.strike</param>
+        <param name="df_1yr">=Cashflow.df_1y</param>
+        <param name="cliquet_cap">=cap_and_strike.mp2p_cap</param>
+        <param name="swap_rate_1y">=InterestRate.swap_rate_1y</param>
+        <param name="structrued_nav_put_strike_10">=vol.structured_nav_put_strike</param>
+        <param name="is_anniversary_now">=TimeStepLogic.is_anniversary</param>
+        <param name="option_1y_ttm">=TimeStepLogic.option_1y_ttm</param>
+        <param name="zcb_1y_price">=InterestRate.zcb_1y_price</param>
+        <param name="ig_strike">=cap_and_strike.ig_strike</param>
+        <param name="randn_track_error">=RandomNormal.sa_tracking</param>
+        <param name="structured_nav_risk_premia">=vol.structured_nav_risk_premia</param>
+        <param name="structured_nav_track_error_vol">=vol.structured_nav_track_error_vol</param>
+        <param name="is_6monthversary">=TimeStepLogic.is_6monthversary\s</param>
+        <param name="is_6th_anniversary">=TimeStepLogic.is_6th_anniversary</param>
+        <param name="zcb_6m_price">=InterestRate.zcb_6m_price</param>
+        <param name="zcb_6y_price">=InterestRate.zcb_6y_price</param>
+        <param name="option_6m_ttm">=TimeStepLogic.option_6m_ttm</param>
+        <param name="option_6y_ttm">=TimeStepLogic.option_6y_ttm\s\s</param>
+        <param name="swap_rate_6m">=InterestRate.swap_rate_6m</param>
+        <param name="swap_rate_6y">=InterestRate.swap_rate_6y</param>
+        <param name="structrued_nav_put_strike_20">=vol.structured_nav_put_strike_20</param>
+        <param name="randn_nasdaq">=RandomNormal.nasdaq</param>
+        <param name="randn_nasdaq_vol">=RandomNormal.nasdaq_vol\s\s\s\s</param>
+        <param name="randn_mxea">=RandomNormal.mxea</param>
+        <param name="randn_mxea_vol">=RandomNormal.mxea_vol</param>
+        <param name="randn_r2k">=RandomNormal.r2k</param>
+        <param name="randn_r2k_vol">=RandomNormal.r2k_vol</param>
+        <param name="rho_nasdaq_vol">=CorrelationMatrix[1,5]</param>
+        <param name="rho_r2k_vol">=CorrelationMatrix[2,6]</param>
+        <param name="rho_mxea_vol">=CorrelationMatrix[3,7]</param>
+        <param name="spot_nasdaq">=Variables.option_spot_nasdaq</param>
+        <param name="epsilon_strike">=cap_and_strike.binary_call_strike_epsilon</param>
+        <param name="use_sofr">=run.use_sofr</param>
+        <param name="option_t_0">=option.t_0</param>
+        <param name="rho_idx_vol_inner">=CorrelationMatrix[0,4]</param>
+        <param name="binary_strike">=cap_and_strike.binary_strike</param>
+        <param name="apply_inner_loop_vol">=run.apply_inner_loop_vol</param>
+        <convert-result name="diffusion_variance" ref="=Projection.equity_variance" />
+        <convert-result name="spx" ref="=Projection.spx" />
+        <convert-result name="diffusion_variance_unclipped" ref="=Projection.equity_variance" />
+        <convert-result name="sptr" ref="=Projection.equity_tr" />
+        <convert-result name="mxea" ref="=Projection.mxea" />
+        <convert-result name="rty" ref="=Projection.rty" />
+        <convert-result name="diffusion_variance_unclipped_mxea" ref="=Projection.equity_variance_mxea" />
+        <convert-result name="diffusion_variance_unclipped_rty" ref="=Projection.equity_variance_rty" />
+        <convert-result name="spx_cap_buffer_portfolio_value" ref="=Projection.spx_cap_buffer_portfolio_value" />
+        <convert-result name="spx_par_rate_portfolio_value" ref="=Projection.spx_par_rate_portfolio_value" />
+        <convert-result name="spx_spread_buffer_portfolio_value" ref="=Projection.spx_spread_buffer_portfolio_value" />
+        <convert-result name="spx_par_rate_floor_portfolio_value" ref="=Projection.spx_par_rate_floor_portfolio_value" />
+        <convert-result name="is_anniversary" ref="=Projection.is_anniversary" />
+        <convert-result name="spx_cap_buffer_portfolio_value_track_error" ref="=Projection.spx_cap_buffer_portfolio_value_track_error" />
+        <convert-result name="spx_spread_buffer_portfolio_value_track_error" ref="=Projection.spx_spread_buffer_portfolio_value_track_error" />
+        <convert-result name="spx_par_rate_portfolio_value_track_error" ref="=Projection.spx_par_rate_portfolio_value_track_error" />
+        <convert-result name="spx_par_rate_floor_portfolio_value_track_error" ref="=Projection.spx_par_rate_floor_portfolio_value_track_error" />
+        <convert-result name="spx_buffer_par_port_val_6m" ref="=Projection.spx_buffer_part_port_val_6m" />
+        <convert-result name="spx_downside_50_par_port_val_6m" ref="=Projection.spx_50_downside_part_port_val_6m" />
+        <convert-result name="spx_buffer_par_port_val_6y" ref="=Projection.spx_buffer_part_port_val_6y" />
+        <convert-result name="spx_downside_50_part_port_val_6y" ref="=Projection.spx_50_downside_part_port_val_6y" />
+        <convert-result name="spx_floor_spread_port_val" ref="=Projection.spx_floor_spread_port_val" />
+        <convert-result name="stacker_port_val_mxea" ref="=Projection.stacker_port_val_mxea" />
+        <convert-result name="stacker_port_val_rty" ref="=Projection.stacker_port_val_rty" />
+        <convert-result name="stacker_port_val_nasdaq" ref="=Projection.stacker_port_val_nasdaq" />
+        <convert-result name="nasdaq" ref="=Projection.nasdaq" />
+        <convert-result name="diffusion_variance_unclipped_nasdaq" ref="=Projection.equity_variance_nasdaq" />
+        <convert-result name="spx_buffer_par_port_val_6m_te" ref="=Projection.spx_buffer_par_port_val_6m_te" />
+        <convert-result name="spx_buffer_par_port_val_6y_te" ref="=Projection.spx_buffer_part_port_val_6y_te" />
+        <convert-result name="spx_50_downside_par_port_val_6m_te" ref="=Projection.spx_50_downside_par_port_val_6m_te" />
+        <convert-result name="spx_50_downside_par_port_val_6y_te" ref="=Projection.spx_50_downside_part_port_val_6y_te" />
+        <convert-result name="spx_floor_spread_port_val_te" ref="=Projection.spx_floor_spread_port_val_te" />
+        <convert-result name="stacker_port_val_mxea_te" ref="=Projection.stacker_port_val_mxea_te" />
+        <convert-result name="stacker_port_val_rty_te" ref="=Projection.stacker_port_val_rty_te" />
+        <convert-result name="stacker_port_val_nasdaq_te" ref="=Projection.stacker_port_val_nasdaq_te" />
+        <convert-result name="spx_atm_call_6m" ref="=Projection.spx_atm_call_6m" />
+        <convert-result name="spx_call_K_epsilon_6m" ref="=Projection.spx_call_K_epsilon_6m" />
+        <convert-result name="spx_buffer_digital_6m" ref="=Projection.spx_buffer_digital_6m" />
+        <convert-result name="spx_buffer_digital_payoff" ref="=Projection.spx_buffer_digital_payoff" />
+        <convert-result name="spx_call_spread_budget_6m" ref="=Projection.spx_call_spread_budget_6m" />
+        <convert-result name="spx_call_spread_par_rate" ref="=Projection.spx_call_spread_par_rate" />
+        <convert-result name="spx_buffer_digital_6m_te" ref="=Projection.spx_buffer_digital_6m_te" />
+        <convert-result name="spx_atm_put_6m" ref="=Projection.spx_atm_put_6m" />
+        <convert-result name="S_otm_put_6m_spx" ref="=Projection.S_otm_put_6m_spx" />
+        <convert-result name="SPX_6monthversary" ref="=Projection.SPX_6monthversary" />
+        <convert-result name="spx_funding_spread" ref="=Projection.spx_funding_spread" />
+        <convert-result name="afis_growth_portfolio_val" ref="=Projection.afis_growth_portfolio_val" />
+        <convert-result name="afis_income_growth_portfolio_val" ref="=Projection.afis_income_growth_portfolio_val" />
+        <convert-result name="vol_average" ref="=Projection.vol_average" />
+        <convert-result name="spx_otm_puts_6y_ig" ref="=inverse_gamma_option.spx_otm_puts_6y_ig" />
+        <convert-result name="spx_otm_puts_1y_ig" ref="=inverse_gamma_option.spx_otm_puts_1y_ig" />
+        <convert-result name="adj_spx_otm_calls_6y_ig" ref="=inverse_gamma_option.adj_spx_otm_calls_6y_ig" />
+        <convert-result name="adj_spx_otm_calls_1y_ig" ref="=inverse_gamma_option.adj_spx_otm_calls_1y_ig" />
+        <convert-result name="sptr_otm_puts_1y_ig" ref="=inverse_gamma_option.sptr_otm_puts_1y_ig" />
+        <convert-result name="adj_sptr_otm_calls_1y_ig" ref="=inverse_gamma_option.adj_sptr_otm_calls_1y_ig" />
+        <result-map model="diffusion_variance" lib="diffusion_variance" />
+        <result-map model="spx" lib="spx" />
+        <result-map model="diffusion_variance_unclipped" lib="diffusion_variance_unclipped" />
+        <result-map model="sptr" lib="sptr" />
+        <result-map model="mxea" lib="mxea" />
+        <result-map model="rty" lib="rty" />
+        <result-map model="diffusion_variance_unclipped_mxea" lib="diffusion_variance_unclipped_mxea" />
+        <result-map model="diffusion_variance_unclipped_rty" lib="diffusion_variance_unclipped_rty" />
+        <result-map model="is_anniversary" lib="is_anniversary" />
+        <result-map model="nasdaq" lib="nasdaq" />
+        <result-map model="diffusion_variance_unclipped_nasdaq" lib="diffusion_variance_unclipped_nasdaq" />
+        <result-map model="SPX_6monthversary" lib="SPX_6monthversary" />
+        <result-map model="spx_funding_spread" lib="spx_funding_spread" />
+        <result-map model="vol_average" lib="vol_average" />
+        <result-map model="sptr_driftless" lib="sptr_driftless" />
+        <result-map model="S_anniversary" lib="S_anniversary" />
+        <result-map model="S_6th_anniversary" lib="S_6th_anniversary" />
+        <result-map model="ig_theta" lib="ig_theta" />
+        <result-map model="ig_kappa" lib="ig_kappa" />
+        <result-map model="ig_lambda" lib="ig_lambda" />
+        <result-map model="ig_xi" lib="ig_xi" />
+        <result-map model="ig_q" lib="ig_q" />
+        <result-map model="ig_vol" lib="ig_vol" />
+        <result-map model="ig_rho" lib="ig_rho" />
+        <result-map model="ig_funding_spread" lib="ig_funding_spread" />
+        <result-map model="spx_trigger_calls_6y_seasoned" lib="spx_trigger_calls_6y_seasoned" />
+        <result-map model="spx_puts_3y_seasoned" lib="spx_puts_3y_seasoned" />
+        <result-map model="spx_puts_1y_seasoned" lib="spx_puts_1y_seasoned" />
+        <result-map model="adj_spx_calls_3y_seasoned" lib="adj_spx_calls_3y_seasoned" />
+        <result-map model="adj_spx_calls_1y_seasoned" lib="adj_spx_calls_1y_seasoned" />
+        <result-map model="sptr_puts_1y_seasoned" lib="sptr_puts_1y_seasoned" />
+        <result-map model="adj_sptr_calls_1y_seasoned" lib="adj_sptr_calls_1y_seasoned" />
+        <result-map model="spx_trigger_calls_1y_seasoned" lib="spx_trigger_calls_1y_seasoned" />
+        <result-map model="nasdaq_puts_1y_seasoned" lib="nasdaq_puts_1y_seasoned" />
+        <result-map model="adj_nasdaq_calls_1y_seasoned" lib="adj_nasdaq_calls_1y_seasoned" />
+        <result-map model="nasdaq_trigger_calls_1y_seasoned" lib="nasdaq_trigger_calls_1y_seasoned" />
+        <result-map model="spx_up_out_atm_calls_3y_seasoned" lib="spx_up_out_atm_calls_3y_seasoned" />
+        <result-map model="spx_up_out_atm_calls_6y_seasoned" lib="spx_up_out_atm_calls_6y_seasoned" />
+        <result-map model="spx_up_out_5pct_otm_puts_3y_seasoned" lib="spx_up_out_5pct_otm_puts_3y_seasoned" />
+        <result-map model="spx_up_out_10pct_otm_puts_3y_seasoned" lib="spx_up_out_10pct_otm_puts_3y_seasoned" />
+        <result-map model="spx_up_out_15pct_otm_puts_3y_seasoned" lib="spx_up_out_15pct_otm_puts_3y_seasoned" />
+        <result-map model="spx_up_out_10pct_otm_puts_6y_seasoned" lib="spx_up_out_10pct_otm_puts_6y_seasoned" />
+        <result-map model="spx_up_out_15pct_otm_puts_6y_seasoned" lib="spx_up_out_15pct_otm_puts_6y_seasoned" />
+        <result-map model="spx_up_out_20pct_otm_puts_6y_seasoned" lib="spx_up_out_20pct_otm_puts_6y_seasoned" />
+        <result-map model="spx_15pct_buffer_secure_cap_cliquet_6y_seasoned" lib="spx_15pct_buffer_secure_cap_cliquet_6y_seasoned" />
+        <result-map model="spx_10pct_buffer_secure_cap_cliquet_6y_seasoned" lib="spx_10pct_buffer_secure_cap_cliquet_6y_seasoned" />
+        <result-map model="spx_up_out_5pct_otm_puts_6y_seasoned" lib="spx_up_out_5pct_otm_puts_6y_seasoned" />
+        <result-map model="spx_step_digital_hdv_6y_seasoned" lib="spx_step_digital_hdv_6y_seasoned" />
+        <result-map model="spx_step_digital_hdv_3y_seasoned" lib="spx_step_digital_hdv_3y_seasoned" />
+        <result-map model="adj_ndx_calls_3y_seasoned" lib="adj_ndx_calls_3y_seasoned" />
+        <result-map model="adj_spx_calls_6y_seasoned" lib="adj_spx_calls_6y_seasoned" />
+        <result-map model="adj_mxea_calls_6y_seasoned" lib="adj_mxea_calls_6y_seasoned" />
+        <result-map model="adj_rty_calls_6y_seasoned" lib="adj_rty_calls_6y_seasoned" />
+        <result-map model="adj_ndx_calls_6y_seasoned" lib="adj_ndx_calls_6y_seasoned" />
+        <result-map model="ndx_puts_3y_seasoned" lib="ndx_puts_3y_seasoned" />
+        <result-map model="spx_puts_6y_seasoned" lib="spx_puts_6y_seasoned" />
+        <result-map model="mxea_puts_6y_seasoned" lib="mxea_puts_6y_seasoned" />
+        <result-map model="rty_puts_6y_seasoned" lib="rty_puts_6y_seasoned" />
+        <result-map model="ndx_puts_6y_seasoned" lib="ndx_puts_6y_seasoned" />
+        <result-map model="secure_rate_gmab_5y_spread_1pct" lib="secure_rate_gmab_5y_spread_1pct" />
+        <result-map model="secure_rate_gmab_5y_spread_2pct" lib="secure_rate_gmab_5y_spread_2pct" />
+        <result-map model="secure_rate_gmab_5y_spread_3pct" lib="secure_rate_gmab_5y_spread_3pct" />
+        <result-map model="secure_rate_cliquet_5y" lib="secure_rate_cliquet_5y" />
+        <result-map model="gmab_5y_spread_1pct" lib="gmab_5y_spread_1pct" />
+        <result-map model="gmab_5y_spread_2pct" lib="gmab_5y_spread_2pct" />
+        <result-map model="gmab_5y_spread_3pct" lib="gmab_5y_spread_3pct" />
+        <result-map model="secure_rate_gmab_7y_spread_1pct" lib="secure_rate_gmab_7y_spread_1pct" />
+        <result-map model="secure_rate_gmab_7y_spread_2pct" lib="secure_rate_gmab_7y_spread_2pct" />
+        <result-map model="secure_rate_gmab_7y_spread_3pct" lib="secure_rate_gmab_7y_spread_3pct" />
+        <result-map model="secure_rate_cliquet_7y" lib="secure_rate_cliquet_7y" />
+        <result-map model="gmab_7y_spread_1pct" lib="gmab_7y_spread_1pct" />
+        <result-map model="gmab_7y_spread_2pct" lib="gmab_7y_spread_2pct" />
+        <result-map model="gmab_7y_spread_3pct" lib="gmab_7y_spread_3pct" />
+        <projection lib="Projection" main="Cashflow" />
+      </ImportCompLib>
+    </Category>
+    <Category name="InterestRate">
+      <ImportCompLib ref="libraries\HullWhite\HullWhite.complib.xml" refID="R6">
+        <param name="rate_randn">=RandomNormal.rate</param>
+        <param name="dt">=TimeStepLogic.dt</param>
+        <param name="n_step_proj">=Variables.projection_steps</param>
+        <param name="time_t">=TimeStepLogic.t</param>
+        <param name="interest_curves">=interest_curves[option.shock]</param>
+        <param name="hw_factor_init">=Variables.hw_factor_init</param>
+        <param name="params">=hull_white[option.shock]</param>
+        <param name="BOND_PORTFOLIO_TENORS">=Constants.BOND_PORTFOLIO_TENORS</param>
+        <param name="BOND_PORTFOLIO_TENORS_LEN">=Constants.BOND_PORTFOLIO_TENORS_LEN</param>
+        <param name="MLSB_BOND_T">=Constants.MLSB_BOND_T</param>
+        <param name="rho">=CorrelationMatrix[0,8]</param>
+        <param name="npa_margin">=gaap_margin.npa_spread</param>
+        <param name="run_deterministic_rate">=run.run_deterministic_rate</param>
+        <param name="run_deterministic_df_only">=run.run_deterministic_df_only</param>
+        <param name="is_running_dac">=run.is_running_dac</param>
+        <param name="option_1y_ttm">=TimeStepLogic.option_1y_ttm</param>
+        <param name="is_anniversary">=TimeStepLogic.is_anniversary</param>
+        <param name="option_6m_ttm">=TimeStepLogic.option_6m_ttm</param>
+        <param name="is_6monthversary">=TimeStepLogic.is_6monthversary</param>
+        <param name="option_6y_ttm">=TimeStepLogic.option_6y_ttm</param>
+        <param name="is_6th_anniversary">=TimeStepLogic.is_6th_anniversary</param>
+        <param name="option_3m_ttm">=TimeStepLogic.option_3m_ttm</param>
+        <param name="option_3y_ttm">=TimeStepLogic.option_3y_ttm</param>
+        <param name="option_2y_ttm_hdv_3y">=TimeSteplogic.option_2y_ttm_hdv_3y</param>
+        <param name="option_4y_ttm_hdv_6y">=TimeStepLogic.option_4y_ttm_hdv_6y</param>
+        <param name="option_5y_ttm_hdv_6y">=Timesteplogic.option_5y_ttm_hdv_6y</param>
+        <param name="run_deterministic_equity_vol_rate">=run.run_deterministic_equity_vol_rate</param>
+        <param name="option_5y_ttm">=TimeStepLogic.option_5y_ttm</param>
+        <param name="option_7y_ttm">=TimeStepLogic.option_7y_ttm</param>
+        <convert-result name="forward_rate" ref="=Projection.revised_short_rate" />
+        <convert-result name="zcb_return" ref="=Projection.zcb_return" />
+        <convert-result name="swap_tenors" ref="=Dictionary.swap_tenors" />
+        <convert-result name="money_market" ref="=Projection.money_market" />
+        <convert-result name="df" ref="=Projection.df" />
+        <convert-result name="swap_curve_df" ref="=Projection.zcb" />
+        <convert-result name="zcb_std" ref="=Projection.zcb_std" />
+        <convert-result name="df_credit" ref="=Projection.df_credit" />
+        <convert-result name="factor" ref="=Projection.factor" />
+        <convert-result name="swap_curve_spot" ref="=Projection.spot_curve" />
+        <convert-result name="libor_curve_spot" ref="=Projection.spot_curve_libor" />
+        <convert-result name="swap_table" ref="=Projection.swap_table" />
+        <convert-result name="libor_swap_table" ref="=Projection.libor_swap_table" />
+        <convert-result name="treasury_yields" ref="=Projection.treasury_table" />
+        <convert-result name="corporate_table" ref="=Projection.corporate_table" />
+        <convert-result name="bp_zcb_credit" ref="=Projection.zcb_credit" />
+        <convert-result name="bp_zcb_credit_std" ref="=Projection.zcb_credit_std" />
+        <convert-result name="bp_zcb_credit_return" ref="=Projection.zcb_credit_return" />
+        <convert-result name="bp_zcb" ref="=Projection.bp_zcb" />
+        <convert-result name="bp_zcb_std" ref="=Projection.bp_zcb_std" />
+        <convert-result name="bp_zcb_return" ref="=Projection.bp_zcb_return" />
+        <convert-result name="rho" ref="=Dictionary.rho_" />
+        <convert-result name="bond_price_5y" ref="=Projection.bond_price_5y" />
+        <convert-result name="bond_variance_5y" ref="=Projection.bond_variance_5y" />
+        <convert-result name="bond_price_30y" ref="=Projection.bond_price_30y" />
+        <convert-result name="bond_variance_30y" ref="=Projection.bond_variance_30y" />
+        <convert-result name="bond_covariance_5y_30y" ref="=Projection.bond_covariance_5y_30y" />
+        <convert-result name="df_5yr" ref="=Projection.df_5yr" />
+        <convert-result name="df_npa" ref="=Projection.df_npa" />
+        <convert-result name="zcb_1y_price" ref="=Projection.zcb_1y_price" />
+        <convert-result name="swap_rate_1y" ref="=Projection.swap_rate_1y" />
+        <convert-result name="zcb_6m_price" ref="=Projection.zcb_6m_price" />
+        <convert-result name="zcb_6y_price" ref="=Projection.zcb_6y_price" />
+        <convert-result name="swap_rate_6m" ref="=Projection.swap_rate_6m" />
+        <convert-result name="swap_rate_6y" ref="=Projection.swap_rate_6y" />
+        <convert-result name="npa_table" ref="=Projection.npa_table" />
+        <convert-result name="swap_rate_3m" ref="=Projection.swap_rate_3m" />
+        <convert-result name="zcb_3m_price" ref="=Projection.zcb_3m_price" />
+        <result-map model="forward_rate" lib="forward_rate" />
+        <result-map model="zcb_return" lib="zcb_return" />
+        <result-map model="swap_tenors" lib="swap_tenors" />
+        <result-map model="money_market" lib="money_market" />
+        <result-map model="df" lib="df" />
+        <result-map model="swap_curve_df" lib="swap_curve_df" />
+        <result-map model="zcb_std" lib="zcb_std" />
+        <result-map model="df_credit" lib="df_credit" />
+        <result-map model="factor" lib="factor" />
+        <result-map model="swap_curve_spot" lib="swap_curve_spot" />
+        <result-map model="libor_curve_spot" lib="libor_curve_spot" />
+        <result-map model="swap_table" lib="swap_table" />
+        <result-map model="libor_swap_table" lib="libor_swap_table" />
+        <result-map model="treasury_yields" lib="treasury_yields" />
+        <result-map model="corporate_table" lib="corporate_table" />
+        <result-map model="bp_zcb_credit" lib="bp_zcb_credit" />
+        <result-map model="bp_zcb_credit_std" lib="bp_zcb_credit_std" />
+        <result-map model="bp_zcb_credit_return" lib="bp_zcb_credit_return" />
+        <result-map model="bp_zcb" lib="bp_zcb" />
+        <result-map model="bp_zcb_std" lib="bp_zcb_std" />
+        <result-map model="bp_zcb_return" lib="bp_zcb_return" />
+        <result-map model="rho" lib="rho" />
+        <result-map model="bond_price_5y" lib="bond_price_5y" />
+        <result-map model="bond_variance_5y" lib="bond_variance_5y" />
+        <result-map model="bond_price_30y" lib="bond_price_30y" />
+        <result-map model="bond_variance_30y" lib="bond_variance_30y" />
+        <result-map model="bond_covariance_5y_30y" lib="bond_covariance_5y_30y" />
+        <result-map model="df_5yr" lib="df_5yr" />
+        <result-map model="df_npa" lib="df_npa" />
+        <result-map model="zcb_1y_price" lib="zcb_1y_price" />
+        <result-map model="swap_rate_1y" lib="swap_rate_1y" />
+        <result-map model="zcb_6m_price" lib="zcb_6m_price" />
+        <result-map model="zcb_6y_price" lib="zcb_6y_price" />
+        <result-map model="swap_rate_6m" lib="swap_rate_6m" />
+        <result-map model="swap_rate_6y" lib="swap_rate_6y" />
+        <result-map model="npa_table" lib="npa_table" />
+        <result-map model="swap_rate_3m" lib="swap_rate_3m" />
+        <result-map model="zcb_3m_price" lib="zcb_3m_price" />
+        <result-map model="bond_price_5y_driftless" lib="bond_price_5y_driftless" />
+        <result-map model="bond_price_30y_driftless" lib="bond_price_30y_driftless" />
+        <result-map model="swap_rate_3y" lib="swap_rate_3y" />
+        <result-map model="zcb_3y_price" lib="zcb_3y_price" />
+        <result-map model="zcb_2y_hdv" lib="zcb_2y_hdv" />
+        <result-map model="zcb_4y_hdv" lib="zcb_4y_hdv" />
+        <result-map model="zcb_5y_hdv" lib="zcb_5y_hdv" />
+        <result-map model="corporate_table_crbg" lib="corporate_table_crbg" />
+        <result-map model="zcb_5y_price" lib="zcb_5y_price" />
+        <result-map model="zcb_7y_price" lib="zcb_7y_price" />
+        <projection lib="Projection" main="Cashflow" />
+      </ImportCompLib>
+    </Category>
+    <Category name="Bond">
+      <ImportCompLib ref="libraries\ThreeBondPortfolio\ThreeBondPortfolio.complib.xml" refID="R5">
+        <param name="N_BOND">=3</param>
+        <param name="ZCB_TENORS">=Constants.BOND_PORTFOLIO_TENORS</param>
+        <param name="zcb_swap">=InterestRate.bp_zcb</param>
+        <param name="zcb_std_swap">=InterestRate.bp_zcb_std</param>
+        <param name="zcb_return_swap">=InterestRate.bp_zcb_return</param>
+        <param name="bond_portfolios">=bond_portfolios</param>
+        <param name="zcb_credit">=InterestRate.bp_zcb_credit</param>
+        <param name="zcb_credit_std">=InterestRate.bp_zcb_credit_std</param>
+        <param name="zcb_credit_return">=InterestRate.bp_zcb_credit_return</param>
+        <param name="N_PORTFOLIO">=3</param>
+        <convert-result name="bond_price_ga" ref="=Projection.bond_price_ga" />
+        <convert-result name="bond_yield_ga" ref="=Projection.bond_yield_ga" />
+        <convert-result name="bond_price_mva" ref="=Projection.bond_price_mva" />
+        <convert-result name="bond_yield_mva" ref="=Projection.bond_yield_mva" />
+        <convert-result name="bond_price_agg" ref="=Projection.bond_price_agg" />
+        <convert-result name="bond_variance_agg" ref="=Projection.bond_variance_agg" />
+        <convert-result name="bond_price_mlsb" ref="=Projection.bond_price_mlsb" />
+        <convert-result name="bond_variance_mlsb" ref="=Projection.bond_variance_mlsb" />
+        <result-map model="bond_price_ga" lib="bond_price_ga" />
+        <result-map model="bond_yield_ga" lib="bond_yield_ga" />
+        <result-map model="bond_price_mva" lib="bond_price_mva" />
+        <result-map model="bond_yield_mva" lib="bond_yield_mva" />
+        <result-map model="bond_price_agg" lib="bond_price_agg" />
+        <result-map model="bond_variance_agg" lib="bond_variance_agg" />
+        <result-map model="bond_price_mlsb" lib="bond_price_mlsb" />
+        <result-map model="bond_variance_mlsb" lib="bond_variance_mlsb" />
+        <projection lib="Projection" main="Cashflow" />
+      </ImportCompLib>
+    </Category>
+    <Category name="RandomNormal">
+      <ImportCompLib ref="libraries\RandomNormal\RandonNormal.complib.xml" refID="R12">
+        <param name="N_HYBRID_INDEX">=Constants.N_HYBRID_INDEX</param>
+        <param name="structured_nav_track_error_spx_corr">=vol.structured_nav_track_error_spx_corr</param>
+        <param name="structured_nav_track_error_rate_corr">=vol.structured_nav_track_error_rate_corr</param>
+        <param name="structured_nav_track_error_spx_vol_corr">=vol.structured_nav_track_error_spx_vol_corr</param>
+        <param name="run_deterministic_equity_vol_rate">=run.run_deterministic_equity_vol_rate</param>
+        <convert-result name="v" ref="=projection.variance" />
+        <convert-result name="rate" ref="=projection.rate" />
+        <convert-result name="equity" ref="=projection.equity" />
+        <convert-result name="hybrid_index_equity_basis" ref="=projection.hybrid_index_equity_basis" />
+        <convert-result name="hybrid_index_bond_basis" ref="=projection.hybrid_index_bond_basis" />
+        <convert-result name="sa_tracking" ref="=Projection.sa_track_error" />
+        <convert-result name="nasdaq" ref="=Projection.equity_nasdaq" />
+        <convert-result name="nasdaq_vol" ref="=Projection.nasdaq_vol" />
+        <convert-result name="mxea" ref="=Projection.equity_mxea" />
+        <convert-result name="mxea_vol" ref="=Projection.mxea_vol" />
+        <convert-result name="r2k" ref="=Projection.equity_r2k" />
+        <convert-result name="r2k_vol" ref="=Projection.r2_vol" />
+        <convert-result name="randn_afis" ref="=Projection.afis_fund_spx_te_randn" />
+        <result-map model="v" lib="v" />
+        <result-map model="rate" lib="rate" />
+        <result-map model="equity" lib="equity" />
+        <result-map model="hybrid_index_equity_basis" lib="hybrid_index_equity_basis" />
+        <result-map model="hybrid_index_bond_basis" lib="hybrid_index_bond_basis" />
+        <result-map model="sa_tracking" lib="sa_tracking" />
+        <result-map model="nasdaq" lib="nasdaq" />
+        <result-map model="nasdaq_vol" lib="nasdaq_vol" />
+        <result-map model="mxea" lib="mxea" />
+        <result-map model="mxea_vol" lib="mxea_vol" />
+        <result-map model="r2k" lib="r2k" />
+        <result-map model="r2k_vol" lib="r2k_vol" />
+        <result-map model="randn_afis" lib="randn_afis" />
+        <result-map model="hybrid_target_vol" lib="hybrid_target_vol" />
+        <projection lib="Projection" main="Cashflow" />
+      </ImportCompLib>
+      <ImportCompLib ref="libraries\RandomNormal\RandomNormal_noaoa.complib.xml" refID="R1">
+        <param name="N_HYBRID_INDEX">=Constants.N_HYBRID_INDEX</param>
+        <convert-result name="v" ref="=projection.variance" />
+        <convert-result name="rate" ref="=projection.rate" />
+        <convert-result name="equity" ref="=projection.equity" />
+        <convert-result name="hybrid_index_equity_basis" ref="=projection.hybrid_index_equity_basis" />
+        <convert-result name="hybrid_index_bond_basis" ref="=projection.hybrid_index_bond_basis" />
+        <convert-result name="nasdaq" ref="=Projection.equity_nasdaq" />
+        <convert-result name="nasdaq_vol" ref="=Projection.nasdaq_vol" />
+        <convert-result name="mxea" ref="=Projection.equity_mxea" />
+        <convert-result name="mxea_vol" ref="=Projection.mxea_vol" />
+        <convert-result name="r2k" ref="=Projection.equity_r2k" />
+        <convert-result name="r2k_vol" ref="=Projection.r2_vol" />
+        <convert-result name="sa_tracking" ref="=Projection.sa_track_error" />
+        <result-map model="v" lib="v" />
+        <result-map model="rate" lib="rate" />
+        <result-map model="equity" lib="equity" />
+        <result-map model="hybrid_index_equity_basis" lib="hybrid_index_equity_basis" />
+        <result-map model="hybrid_index_bond_basis" lib="hybrid_index_bond_basis" />
+        <result-map model="nasdaq" lib="nasdaq" />
+        <result-map model="nasdaq_vol" lib="nasdaq_vol" />
+        <result-map model="mxea" lib="mxea" />
+        <result-map model="mxea_vol" lib="mxea_vol" />
+        <result-map model="r2k" lib="r2k" />
+        <result-map model="r2k_vol" lib="r2k_vol" />
+        <result-map model="sa_tracking" lib="sa_tracking" />
+        <result-map model="hybrid_taget_vol" lib="hybrid_taget_vol" />
+        <projection lib="Projection" main="Cashflow" />
+      </ImportCompLib>
+    </Category>
+    <Category name="HybridIndex">
+      <ImportCompLib ref="libraries\HybridIndex\HybridIndex.complib.xml" refID="R3">
+        <param name="money_market">=InterestRate.money_market</param>
+        <param name="spx">=Equity.spx</param>
+        <param name="spx_variance">=Equity.diffusion_variance</param>
+        <param name="rho">=InterestRate.rho</param>
+        <param name="spot_mseh">=Variables.option_spot_mseh</param>
+        <param name="sptr">=Equity.sptr</param>
+        <param name="spot_mlsb">=Variables.option_spot_mlsb</param>
+        <param name="spot_pimco">=Variables.option_spot_pimco</param>
+        <param name="spot_ab">=Variables.option_spot_ab</param>
+        <param name="params">
+          <text>=hybrid_index</text>
+          <map input="index_fee" param="index_fee" />
+          <map input="scale_factor_bid" param="scale_factor_bid" />
+        </param>
+        <param name="equity_basis">=RandomNormal.hybrid_index_equity_basis</param>
+        <param name="bond_price_5y">=InterestRate.bond_price_5y</param>
+        <param name="bond_variance_5y">=InterestRate.bond_variance_5y</param>
+        <param name="bond_price_30y">=InterestRate.bond_price_30y</param>
+        <param name="bond_variance_30y">=InterestRate.bond_variance_30y</param>
+        <param name="bond_covariance_5y_30y">=InterestRate.bond_covariance_5y_30y</param>
+        <param name="bond_basis">=RandomNormal.hybrid_index_bond_basis</param>
+        <param name="N_HYBRID_INDEX">=Constants.N_HYBRID_INDEX</param>
+        <param name="spot_pimco_gem">=Variables.option_spot_pimco_gem</param>
+        <param name="spot_spx_rc">=Variables.option_spot_spx_rc</param>
+        <param name="dt">=TimeStepLogic.dt</param>
+        <param name="spot_lm">=Variables.option_spot_lm</param>
+        <param name="spot_aqr">=Variables.option_spot_aqr</param>
+        <param name="spot_pimbap">=Variables.option_spot_pimbap</param>
+        <param name="spot_ab_global_allocator">=Variables.option_spot_ab_global_allocator</param>
+        <param name="spot_dfa">=Variables.option_spot_dfa</param>
+        <param name="use_sofr">=run.use_sofr</param>
+        <param name="spx_funding_spread">=Equity.spx_funding_spread</param>
+        <param name="interest_curves">=interest_curves[option.shock]</param>
+        <param name="run_deterministic_equity_vol_rate">=run.run_deterministic_equity_vol_rate</param>
+        <param name="target_vol_normal">=RandomNormal.hybrid_target_vol</param>
+        <param name="option_1y_ttm">=TimeStepLogic.option_1y_ttm</param>
+        <param name="option_5y_ttm">=TimeStepLogic.option_5y_ttm</param>
+        <param name="zcb_1y_price">=InterestRate.zcb_1y_price</param>
+        <param name="zcb_5y_price">=InterestRate.zcb_5y_price</param>
+        <param name="is_anniversary_now">=TimeStepLogic.is_anniversary</param>
+        <param name="secure_rate_cap">=cap_and_strike.secure_rate_cap</param>
+        <param name="gmab_cap">=cap_and_strike.gmab_cap</param>
+        <param name="is_5th_anniversary">=TimeStepLogic.is_5th_anniversary</param>
+        <convert-result name="mlsb_index" ref="=Projection.mlsb_index" />
+        <convert-result name="pimco_gem" ref="=Projection.pimco_gem_index" />
+        <convert-result name="spx_rc" ref="=Projection.spx_rc_index" />
+        <convert-result name="pimco_index" ref="=Projection.pimco_index" />
+        <convert-result name="mseh_index" ref="=Projection.mseh_index" />
+        <convert-result name="ab_index" ref="=Projection.ab_index" />
+        <convert-result name="lm_index" ref="=Projection.lm_index" />
+        <convert-result name="dap" ref="=Projection.dap_index" />
+        <convert-result name="aqr_index" ref="=Projection.aqr_index" />
+        <convert-result name="pimbap_index" ref="=Projection.pimbap_index" />
+        <convert-result name="ab_global_allocator_index" ref="=Projection.ab_global_allocator_index" />
+        <convert-result name="dfa_index" ref="=Projection.dfa_index" />
+        <result-map model="mlsb_index" lib="mlsb_index" />
+        <result-map model="pimco_gem" lib="pimco_gem" />
+        <result-map model="spx_rc" lib="spx_rc" />
+        <result-map model="pimco_index" lib="pimco_index" />
+        <result-map model="mseh_index" lib="mseh_index" />
+        <result-map model="ab_index" lib="ab_index" />
+        <result-map model="lm_index" lib="lm_index" />
+        <result-map model="dap" lib="dap" />
+        <result-map model="aqr_index" lib="aqr_index" />
+        <result-map model="pimbap_index" lib="pimbap_index" />
+        <result-map model="ab_global_allocator_index" lib="ab_global_allocator_index" />
+        <result-map model="dfa_index" lib="dfa_index" />
+        <result-map model="invesco_new_index" lib="invesco_new_index" />
+        <result-map model="mlsb_index_bid" lib="mlsb_index_bid" />
+        <result-map model="pimco_index_bid" lib="pimco_index_bid" />
+        <result-map model="jpm_mom_index" lib="jpm_mom_index" />
+        <result-map model="jpm_qua_index" lib="jpm_qua_index" />
+        <result-map model="jpm_asc_index" lib="jpm_asc_index" />
+        <result-map model="jpm_mom_secure_rate_value" lib="jpm_mom_secure_rate_value" />
+        <result-map model="jpm_qua_secure_rate_value" lib="jpm_qua_secure_rate_value" />
+        <result-map model="jpm_asc_secure_rate_value" lib="jpm_asc_secure_rate_value" />
+        <result-map model="jpm_mom_gmab_value_1pct" lib="jpm_mom_gmab_value_1pct" />
+        <result-map model="jpm_mom_gmab_value_2pct" lib="jpm_mom_gmab_value_2pct" />
+        <result-map model="jpm_mom_gmab_value_3pct" lib="jpm_mom_gmab_value_3pct" />
+        <result-map model="jpm_qua_gmab_value_1pct" lib="jpm_qua_gmab_value_1pct" />
+        <result-map model="jpm_qua_gmab_value_2pct" lib="jpm_qua_gmab_value_2pct" />
+        <result-map model="jpm_qua_gmab_value_3pct" lib="jpm_qua_gmab_value_3pct" />
+        <result-map model="jpm_asc_gmab_value_1pct" lib="jpm_asc_gmab_value_1pct" />
+        <result-map model="jpm_asc_gmab_value_2pct" lib="jpm_asc_gmab_value_2pct" />
+        <result-map model="jpm_asc_gmab_value_3pct" lib="jpm_asc_gmab_value_3pct" />
+        <result-map model="jpm_mom_secure_rate_gmab_value_1pct" lib="jpm_mom_secure_rate_gmab_value_1pct" />
+        <result-map model="jpm_mom_secure_rate_gmab_value_2pct" lib="jpm_mom_secure_rate_gmab_value_2pct" />
+        <result-map model="jpm_mom_secure_rate_gmab_value_3pct" lib="jpm_mom_secure_rate_gmab_value_3pct" />
+        <result-map model="jpm_qua_secure_rate_gmab_value_1pct" lib="jpm_qua_secure_rate_gmab_value_1pct" />
+        <result-map model="jpm_qua_secure_rate_gmab_value_2pct" lib="jpm_qua_secure_rate_gmab_value_2pct" />
+        <result-map model="jpm_qua_secure_rate_gmab_value_3pct" lib="jpm_qua_secure_rate_gmab_value_3pct" />
+        <result-map model="jpm_asc_secure_rate_gmab_value_1pct" lib="jpm_asc_secure_rate_gmab_value_1pct" />
+        <result-map model="jpm_asc_secure_rate_gmab_value_2pct" lib="jpm_asc_secure_rate_gmab_value_2pct" />
+        <result-map model="jpm_asc_secure_rate_gmab_value_3pct" lib="jpm_asc_secure_rate_gmab_value_3pct" />
+        <projection lib="Projection" main="Cashflow" />
+      </ImportCompLib>
+    </Category>
+    <Combinations CurrentCombination="InverseGamma">
+      <Combination name="InverseGamma" combination-model-type="MonteCarlo" map="Equity=R4,InterestRate=R6,Bond=R5,RandomNormal=R12,HybridIndex=R3" key-map="Equity=0,InterestRate=1,Bond=2,MlsbIndex=3,RandomNormal=4,Correlations=5,PimcoIndex=6,root=7,MsehIndex=8,AbIndex=9,HybridIndex=10" generate-to-cpp="True">
+        <CombinationRNGConfig UniformGenerator="Mtgp32New" SeedSize="X64">
+          <UniformParams>
+            <param name="seed">=\srun.seed</param>
+            <param name="skip_rows">=\s0</param>
+          </UniformParams>
+          <RNGCorrelation type="Linear">
+            <param name="CorrelationMatrix">=\sCorrelationMatrix</param>
+          </RNGCorrelation>
+        </CombinationRNGConfig>
+        <options>
+          <error-checking check-nans="ResultsOnly" check-infs="Disabled" />
+          <compilation-options />
+        </options>
+        <results>
+          <result name="fmvs" />
+          <result name="sos" />
+        </results>
+      </Combination>
+      <Combination name="InverseGamma_noaoa" combination-model-type="MonteCarlo" map="Equity=R2,InterestRate=R6,Bond=R5,RandomNormal=R1,HybridIndex=R3" key-map="Equity=0,InterestRate=1,Bond=2,RandomNormal=3,HybridIndex=4,root=5" generate-to-cpp="False">
+        <CombinationRNGConfig UniformGenerator="Mtgp32New" SeedSize="X64">
+          <UniformParams>
+            <param name="seed">=\srun.seed</param>
+            <param name="skip_rows">=\s0</param>
+          </UniformParams>
+          <RNGCorrelation type="Linear">
+            <param name="CorrelationMatrix">=\sCorrelationMatrix_NoAOA</param>
+          </RNGCorrelation>
+        </CombinationRNGConfig>
+        <options>
+          <error-checking check-nans="ResultsOnly" check-infs="Disabled" />
+          <compilation-options />
+        </options>
+        <results>
+          <result name="fmvs" />
+          <result name="sos" />
+        </results>
+      </Combination>
+    </Combinations>
+  </CompLibs>
+  <RNGConfig name="RNGConfig">
+    <num-paths>=run.npaths</num-paths>
+    <antithetic-variates enabled="True">=\srun.use_antithetic_variates</antithetic-variates>
+  </RNGConfig>
+  <calculations>
+    <table name="Constants" type="KeyValue">
+      <column-groups>
+        <g name="g1">=Constants.BOND_PORTFOLIO_TENORS_LEN</g>
+      </column-groups>
+      <c name="N_CORR" datatype="int">//\sThe\ssize\sof\sthe\smain\scorrelation\smatrix.\r\n
+58</c>
+      <c name="N_CORR_NOAOA" datatype="int">41</c>
+      <c name="BOND_PORTFOLIO_TENORS_LEN" datatype="int">3</c>
+      <c name="N_HYBRID_INDEX" datatype="int">//\sThe\snumber\sof\shybrid\sindex.\r\n
+//\s0.\sMLSB,\s1.\sPIMCO,\s2.\sMSEH,\s3.\sPIMCO_GEM,\s4.\sAB,\s5.\sAQR,\s6.\sLM,\s7.\sSPX_RC,\s8.\sdap,\s9.\sPIMBAP,\s10.\sAB\sGlobal\sAllcoator,\s11.\sDFA\s\s12.INVESCO\sNEW\s13.\sJPM\sADT\sMOM,\s14.\sJPM\sADT\sQUA\s15.\sJPM\sASC\r\n
+16</c>
+      <c name="MLSB_BOND_T" datatype="real">7</c>
+      <c name="BOND_PORTFOLIO_TENORS" datatype="real" group="g1">if\s$index\s==\s0\sthen\r\n
+\s\s\s\sreturn\s0.5\r\n
+elif\s$index\s==\s1\sthen\r\n
+\s\s\s\sreturn\sMLSB_BOND_T\r\n
+else\r\n
+\s\s\s\sreturn\s20\r\n
+end</c>
+    </table>
+    <table name="CorrelationMatrix" type="Table2D">
+      <rows>=Constants.N_CORR</rows>
+      <cols>=Constants.N_CORR</cols>
+      <value datatype="Real">n_equity_rate\s=\s9\r\n
+n_jpm_adaptive_index\s=\s2\r\n
+\r\n
+if\s$row\s&lt;=\sn_equity_rate\s-\s1\s\sand\s$col\s&lt;=\sn_equity_rate\s-\s1\sthen\r\n
+\s\s\s\sreturn\shull_white[option.shock].correlation_new[$row,\s$col]\r\n
+\s\s\s\s//return\srun.corr_matrix[$row,$col]\r\n
+elif\s$row\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\s+\sn_jpm_adaptive_index\sand\s$col\s=\s0\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_spx_corr\r\n
+elif\s$row\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\s+\sn_jpm_adaptive_index\sand\s$col\s=\s4\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_spx_vol_corr\r\n
+elif\s$row\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\s+\sn_jpm_adaptive_index\sand\s$col\s=\s8\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_rate_corr\r\n
+elif\s$col\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\s+\sn_jpm_adaptive_index\sand\s$row\s=\s0\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_spx_corr\r\n
+elif\s$col\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\s+\sn_jpm_adaptive_index\sand\s$row\s=\s4\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_spx_vol_corr\r\n
+elif\s$col\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\s+\sn_jpm_adaptive_index\sand\s$row=\s8\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_rate_corr\s\s\s\s\r\n
+elif\s$col\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\s+\sn_jpm_adaptive_index\sand\s$row&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\s+\sn_jpm_adaptive_index\sand\s$row\s!=\s$col\sthen\r\n
+\s\s\s\sreturn\s0.95\r\n
+else\r\n
+\s\s\s\sreturn\siif($row\s==\s$col,\s1,\s0)\r\n
+end</value>
+    </table>
+    <table name="CorrelationMatrix_NoAOA" type="Table2D">
+      <rows>=Constants.N_CORR_NOAOA</rows>
+      <cols>=Constants.N_CORR_NOAOA</cols>
+      <value datatype="Real">n_equity_rate\s=\s9\r\n
+if\s$row\s&lt;=\sn_equity_rate\s-\s1\s\sand\s$col\s&lt;=\sn_equity_rate\s-\s1\sthen\r\n
+\s\s\s\sreturn\shull_white[option.shock].correlation_new[$row,\s$col]\r\n
+\s\s\s\s//return\srun.corr_matrix[$row,$col]\r\n
+elif\s$row\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\sand\s$col\s=\s0\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_spx_corr\r\n
+elif\s$row\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\sand\s$col\s=\s4\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_spx_vol_corr\r\n
+elif\s$row\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\sand\s$col\s=\s8\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_rate_corr\r\n
+elif\s$col\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\sand\s$row\s=\s0\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_spx_corr\r\n
+elif\s$col\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\sand\s$row\s=\s4\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_spx_vol_corr\r\n
+elif\s$col\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\sand\s$row=\s8\sthen\r\n
+\s\s\s\sreturn\svol.structured_nav_track_error_rate_corr\s\s\s\s\r\n
+elif\s$col\s&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\sand\s$row&gt;=\sn_equity_rate+2*Constants.N_HYBRID_INDEX\sand\s$row\s!=\s$col\sthen\r\n
+\s\s\s\sreturn\s0.95\r\n
+else\r\n
+\s\s\s\sreturn\siif($row\s==\s$col,\s1,\s0)\r\n
+end</value>
+    </table>
+    <table name="Variables" type="KeyValue">
+      <c name="eps" datatype="real">/*\sSmall\snumber.*/\r\n
+\r\n
+1E-3</c>
+      <c name="projection_steps" datatype="int">=\siif(\r\n
+\s\s\s\srun.shocksos,\s\r\n
+\s\s\s\slen_int(time_step_array.inner_loop),\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop==2,\r\n
+\s\s\s\slen_int(time_step_array.outer_loop_80_years),\r\n
+\s\s\s\siif(run.use_extended_outer_loop==1,\s\r\n
+\s\s\s\slen_int(time_step_array.outer_loop_50_years),\s\r\n
+\s\s\s\slen_int(time_step_array.outer_loop)\r\n
+\s\s\s\s)\r\n
+))</c>
+      <c name="one_year_step" datatype="int">//\sThe\snumber\sof\sthe\stime\sstep\sclosest\sto\sone\syear.\r\n
+=\s61</c>
+      <c name="two_year_step" datatype="int">//\sThe\snumber\sof\sthe\stime\sstep\sclosest\sto\stwo\syear.\r\n
+=\s122</c>
+      <c name="option_spot" datatype="real">//\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_spx)</c>
+      <c name="option_spot_sptr" datatype="real">//\sSPTR\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_sptr[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_sptr[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_sptr[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_sptr\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_mlsb" datatype="real">//\sMLSB\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_mlsb[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_mlsb[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_mlsb[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_mlsb\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_pimco" datatype="real">=\siif(run.shocksos=True,\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_pimco[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_pimco[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_pimco[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\s\s\soption.spot_pimco\r\n
+\s\s\s\s\s\s)</c>
+      <c name="option_spot_mseh" datatype="real">//\sMSEH\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_mseh[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_mseh[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_mseh[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_mseh\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_ab" datatype="real">//\sAB\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_ab[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_ab[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_ab[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_ab\r\n
+\s\s\s\s)\r\n
+</c>
+      <c name="option_spot_mxea" datatype="real">=\siif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_mxea[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_mxea[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_mxea[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_mxea\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_rty" datatype="real">=\siif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_rty[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_rty[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_rty[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_rty\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_pimco_gem" datatype="real">//\sPIMCO\sGEM\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_pimco_gem[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_pimco_gem[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_pimco_gem[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_pimco_gem\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_spx_rc" datatype="real">//\sSPX\sRC\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_spx_rc[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_spx_rc[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_spx_rc[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_spx_rc\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_lm" datatype="real">//\sLegg\sMason\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_lm[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_lm[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_lm[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_lm\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_aqr" datatype="real">//\sAQR\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_aqr[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_aqr[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_aqr[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_aqr\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_pimbap" datatype="real">//\sPIMBAP\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_pimbap[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_pimbap[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_pimbap[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_pimbap\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_ab_global_allocator" datatype="real">//\sAB\sGlobal\sAllocator\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_ab_global_allocator[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_ab_global_allocator[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_ab_global_allocator[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_ab_global_allocator\r\n
+\s\s\s\s)</c>
+      <c name="option_spot_dfa" datatype="real">//\sDFA\sSpot\sprice.\sAdd\sshock\son\sthe\sspot\sprice\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_dfa[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_dfa[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_dfa[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_dfa\r\n
+\s\s\s\s)</c>
+      <c name="option_strike" datatype="real">//\sOption\sstrike.\sAdd\sstrike\sshock\sif\sthe\sprice\sis\sto\sbe\sshocked.\r\n
+//=iif(run.shocksos=True,\sshocksdata[option.step].strike[int(shocks.state.add)],\soption.strike)\r\n
+100</c>
+      <c name="hw_factor_init" datatype="real">=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].hw_factor[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].hw_factor[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].hw_factor[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\s\s0\r\n
+\s\s\s\s\s)</c>
+      <c name="option_spot_nasdaq" datatype="real">=\siif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].spot_nasdaq[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].spot_nasdaq[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].spot_nasdaq[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\soption.spot_nasdaq\r\n
+\s\s\s\s)</c>
+      <c name="equity_diffusion_variance_unclipped_init" datatype="real">=\siif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].equity_diffusion_variance_unclipped[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].equity_diffusion_variance_unclipped[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].equity_diffusion_variance_unclipped[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\s0\r\n
+\s\s\s\s)</c>
+      <c name="equity_diffusion_variance_unclipped_init_mxea" datatype="real">=\siif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].equity_diffusion_variance_unclipped_mxea[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].equity_diffusion_variance_unclipped_mxea[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].equity_diffusion_variance_unclipped_mxea[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\s0\r\n
+\s\s\s\s)</c>
+      <c name="equity_diffusion_variance_unclipped_init_rty" datatype="real">=\siif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].equity_diffusion_variance_unclipped_rty[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].equity_diffusion_variance_unclipped_rty[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].equity_diffusion_variance_unclipped_rty[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\s0\r\n
+\s\s\s\s)</c>
+      <c name="equity_diffusion_variance_unclipped_init_nasdaq" datatype="real">=\siif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].equity_diffusion_variance_unclipped_nasdaq[int(shocks.state.add)],\s\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].equity_diffusion_variance_unclipped_nasdaq[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].equity_diffusion_variance_unclipped_nasdaq[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\s0\r\n
+\s\s\s\s)</c>
+    </table>
+    <table name="TimeStepLogic" type="Computation">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="days" datatype="int" />
+        <c name="projection_date" datatype="date_t" />
+        <c name="projection_date_next" datatype="date_t" />
+        <c name="dt" datatype="real" />
+        <c name="t" datatype="real" />
+        <c name="fixing_date_next" datatype="date_t" />
+        <c name="fixing_step" datatype="bool" />
+        <c name="n_fixing" datatype="int" />
+        <c name="rebal_step" datatype="bool" />
+        <c name="annexus_5y_fixing_date_next" datatype="date_t" />
+        <c name="annexus_5y_fixing_step" datatype="bool" />
+        <c name="annexus_5y_n_fixing" datatype="int" />
+        <c name="next_anniversary_date" datatype="date_t" />
+        <c name="is_anniversary" datatype="bool" />
+        <c name="option_1y_ttm" datatype="real" />
+        <c name="next_monthversary" datatype="date_t" />
+        <c name="is_monthversary" datatype="bool" />
+        <c name="next_3monthversary" datatype="date_t" />
+        <c name="is_3monthversary" datatype="bool" />
+        <c name="option_3m_ttm" datatype="real" />
+        <c name="next_6monthversary" datatype="date_t" />
+        <c name="is_6monthversary" datatype="bool" />
+        <c name="option_6m_ttm" datatype="real" />
+        <c name="next_5th_anniversary" datatype="date_t" />
+        <c name="is_5th_anniversary" datatype="bool" />
+        <c name="option_5y_ttm" datatype="real" />
+        <c name="option_7y_ttm" datatype="real" />
+        <c name="next_7th_anniversary" datatype="date_t" />
+        <c name="is_7th_anniversary" datatype="bool" />
+        <c name="next_6th_anniversary" datatype="date_t" />
+        <c name="is_6th_anniversary" datatype="bool" />
+        <c name="option_6y_ttm" datatype="real" />
+        <c name="next_3rd_anniversary" datatype="date_t" />
+        <c name="is_3rd_anniversary" datatype="bool" />
+        <c name="option_3y_ttm" datatype="real" />
+        <c name="option_2y_ttm_hdv_3y" datatype="real" />
+        <c name="option_4y_ttm_hdv_6y" datatype="real" />
+        <c name="option_5y_ttm_hdv_6y" datatype="real" />
+        <c name="nth_yr_hdv_3yr" datatype="int" />
+        <c name="nth_yr_hdv_6yr" datatype="int" />
+      </columns>
+      <row-groups>
+        <rg name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">//\sTemporal\sdiscretization\sstep\sindex.\r\n
+0</c>
+            <c name="days">0</c>
+            <c name="projection_date">//\st\sin\sdate.\r\n
+=option.valuation_date</c>
+            <c name="projection_date_next">step\s=\smin(step,\sVariables.projection_steps)\r\n
+days_next\s=\siif(\r\n
+\s\s\s\srun.shocksos,\r\n
+\s\s\s\stime_step_array.inner_loop[step],\r\n
+\s\s\s\siif(run.use_extended_outer_loop==2,\r\n
+\s\s\s\stime_step_array.outer_loop_80_years[step],\r\n
+\s\s\s\siif(run.use_extended_outer_loop==1,\r\n
+\s\s\s\stime_step_array.outer_loop_50_years[step],\r\n
+\s\s\s\stime_step_array.outer_loop[step])\r\n
+))\r\n
+return\sdate_add_days(option.valuation_date,\sdays_next)</c>
+            <c name="dt">//\sTemporal\sdiscretization\sstep\ssize.\r\n
+0</c>
+            <c name="t">//\sTemporal\sdiscretization\sstep\stime.\r\n
+=option.t_0</c>
+            <c name="fixing_date_next">=option.valuation_date</c>
+            <c name="fixing_step">//\sWhether\sthe\sdate\sis\sthe\slast\samongst\sall\sthe\sdates\sof\sthe\ssame\smonth.\r\n
+=True</c>
+            <c name="n_fixing">0</c>
+            <c name="rebal_step">//\sJudge\swhether\sthe\smonth\sis\sthe\sbeginning\sof\sa\shalf\syear.\s\r\n
+=iif(projection_date.month==7\sor\sprojection_date.month=1,\sTrue,\sFalse)</c>
+            <c name="annexus_5y_fixing_date_next">=option.valuation_date</c>
+            <c name="annexus_5y_fixing_step">//\sWhether\sthe\sdate\sis\sthe\slast\samongst\sall\sthe\sdates\sof\sthe\ssame\smonth.\r\n
+=True</c>
+            <c name="annexus_5y_n_fixing">0</c>
+            <c name="next_anniversary_date">=\soption.valuation_date</c>
+            <c name="is_anniversary">=\sTrue</c>
+            <c name="option_1y_ttm">=\s1</c>
+            <c name="next_monthversary">=\soption.valuation_date</c>
+            <c name="is_monthversary">=\sTrue</c>
+            <c name="next_3monthversary">=\soption.valuation_date</c>
+            <c name="is_3monthversary">=\sTrue</c>
+            <c name="option_3m_ttm">0.25</c>
+            <c name="next_6monthversary">=\soption.valuation_date</c>
+            <c name="is_6monthversary">=\sTrue</c>
+            <c name="option_6m_ttm">=0.5</c>
+            <c name="next_5th_anniversary">=\soption.valuation_date</c>
+            <c name="is_5th_anniversary">=True</c>
+            <c name="option_5y_ttm">5</c>
+            <c name="option_7y_ttm">7</c>
+            <c name="next_7th_anniversary">=\soption.valuation_date</c>
+            <c name="is_7th_anniversary">=True</c>
+            <c name="next_6th_anniversary">=\soption.valuation_date</c>
+            <c name="is_6th_anniversary">=True</c>
+            <c name="option_6y_ttm">=6</c>
+            <c name="next_3rd_anniversary">=\soption.valuation_date</c>
+            <c name="is_3rd_anniversary">=True</c>
+            <c name="option_3y_ttm">=\s3</c>
+            <c name="option_2y_ttm_hdv_3y">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//Return\stime\sto\sexprity\sof\s2yr\soption\sfor\s3yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s3\syear.\r\n
+=\s2</c>
+            <c name="option_4y_ttm_hdv_6y">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//Return\stime\sto\sexprity\sof\s4yr\soption\sfor\s6yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s6\syear.\r\n
+=4</c>
+            <c name="option_5y_ttm_hdv_6y">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//Return\stime\sto\sexprity\sof\s5yr\soption\sfor\s6yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s6\syear.\r\n
+=5</c>
+            <c name="nth_yr_hdv_3yr">1</c>
+            <c name="nth_yr_hdv_6yr">1</c>
+          </columns>
+        </rg>
+        <rg name="rg2">
+          <repeat>=Variables.projection_steps</repeat>
+          <columns>
+            <c name="step">//\sTemporal\sdiscretization\sstep\sindex.\r\n
+=prev(step)+1</c>
+            <c name="days">=iif(\r\n
+\s\s\s\srun.shocksos,\r\n
+\s\s\s\stime_step_array.inner_loop[step\s-\s1],\r\n
+\s\s\s\siif(run.use_extended_outer_loop==2,\r\n
+\s\s\s\stime_step_array.outer_loop_80_years[step\s-\s1],\r\n
+\s\s\s\siif(run.use_extended_outer_loop==1,\s\r\n
+\s\s\s\stime_step_array.outer_loop_50_years[step\s-\s1],\s\r\n
+\s\s\s\stime_step_array.outer_loop[step\s-\s1]\r\n
+\s\s\s\s)\r\n
+))</c>
+            <c name="projection_date">=\sdate_add_days(option.valuation_date,\sdays)</c>
+            <c name="projection_date_next">step\s=\smin(step,\sVariables.projection_steps\s-\s1)\r\n
+days_next\s=\siif(\r\n
+\s\s\s\srun.shocksos,\r\n
+\s\s\s\stime_step_array.inner_loop[step],\r\n
+\s\s\s\siif(run.use_extended_outer_loop==2,\r\n
+\s\s\s\stime_step_array.outer_loop_80_years[step],\r\n
+\s\s\s\siif(run.use_extended_outer_loop==1,\s\r\n
+\s\s\s\stime_step_array.outer_loop_50_years[step],\s\r\n
+\s\s\s\stime_step_array.outer_loop[step])\r\n
+))\r\n
+return\sdate_add_days(option.valuation_date,\sdays_next)</c>
+            <c name="dt">//\sTemporal\sdiscretization\sstep\ssize.\r\n
+=\sday_count_int(prev(projection_date),\sprojection_date)\s/\s365.25</c>
+            <c name="t">=prev(t)\s+\sdt</c>
+            <c name="fixing_date_next">=iif(prev(fixing_step),\sdate_add_months(option.valuation_date,\sn_fixing),\sprev(fixing_date_next))</c>
+            <c name="fixing_step">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\sfixing_date_next)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\sfixing_date_next)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+//\sWe\snow\sknow\sthe\sfixing\sdate\sfalls\sbetween\sthe\scurrent\sand\snext\sprojection\sdate.\r\n
+//\sIf\sthe\scurrent\sdate\sis\scloser\swe\schoose\sit\sto\sbe\sthe\sfixing.\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\sfixing_date_next))\s&lt;=\sint(day_count_int(fixing_date_next,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="n_fixing">=iif(prev(fixing_step),\sprev(n_fixing)\s+\s1,\sprev(n_fixing))</c>
+            <c name="rebal_step">//\sJudge\swhether\sthe\smonth\sis\sthe\sbeginning\sof\sa\shalf\syear.\r\n
+=iif((projection_date.month==7\sand\sprev(projection_date.month)==6)\sor\s\r\n
+\s\s\s\s\s(projection_date.month==1\sand\sprev(projection_date.month)==12),\sTrue,\sFalse)</c>
+            <c name="annexus_5y_fixing_date_next">year\s=\soption.valuation_date.year\s+\sannexus_5y_n_fixing\r\n
+month\s=\soption.valuation_date.month\r\n
+day\s=\soption.valuation_date.day\r\n
+\r\n
+return\siif(prev(annexus_5y_fixing_step),\sdate(year,\smonth,\sday),\sprev(annexus_5y_fixing_date_next))</c>
+            <c name="annexus_5y_fixing_step">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\sannexus_5y_fixing_date_next)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\sannexus_5y_fixing_date_next)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+//\sWe\snow\sknow\sthe\sfixing\sdate\sfalls\sbetween\sthe\scurrent\sand\snext\sprojection\sdate.\r\n
+//\sIf\sthe\scurrent\sdate\sis\scloser\swe\schoose\sit\sto\sbe\sthe\sfixing.\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\sannexus_5y_fixing_date_next))\r\n
+\s\s\s\s&lt;=\sint(day_count_int(annexus_5y_fixing_date_next,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="annexus_5y_n_fixing">=iif(prev(annexus_5y_fixing_step),\sprev(annexus_5y_n_fixing)\s+\s1,\sprev(annexus_5y_n_fixing))</c>
+            <c name="next_anniversary_date">year\s=\sprev(projection_date).year\s+\s1\r\n
+month\s=\soption.valuation_date.month\r\n
+day\s=\soption.valuation_date.day\r\n
+\r\n
+return\siif(prev(is_anniversary),\sdate(year,\smonth,\sday),\sprev(next_anniversary_date))</c>
+            <c name="is_anniversary">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\snext_anniversary_date)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\snext_anniversary_date)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+//\sWe\snow\sknow\sthe\sfixing\sdate\sfalls\sbetween\sthe\scurrent\sand\snext\sprojection\sdate.\r\n
+//\sIf\sthe\scurrent\sdate\sis\scloser\swe\schoose\sit\sto\sbe\sthe\sfixing.\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\snext_anniversary_date))\r\n
+\s\s\s\s&lt;=\sint(day_count_int(next_anniversary_date,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="option_1y_ttm">=\siif(is_anniversary,\s1,\smax(1E-4,\sprev(option_1y_ttm)\s-\sdt))</c>
+            <c name="next_monthversary">if\sprev(is_monthversary)\sthen\s\r\n
+\s\s\s\snext_date\s=\sdate_add_months(prev(next_monthversary),1)\r\n
+\s\s\s\sif\snext_date.day\s!=\snext_anniversary_date.day\sthen\r\n
+\s\s\s\s\s\s\s\snext_date.day\s=\snext_anniversary_date.day\r\n
+\s\s\s\send\r\n
+\s\s\s\sreturn\snext_date\r\n
+else\r\n
+\s\s\s\sreturn\sprev(next_monthversary)\r\n
+end</c>
+            <c name="is_monthversary">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\snext_monthversary)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\snext_monthversary)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\snext_monthversary))\r\n
+\s\s\s\s&lt;=\sint(day_count_int(next_monthversary,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="next_3monthversary">return\siif(prev(is_3monthversary),\sdate_add_months(prev(next_3monthversary),3),prev(next_3monthversary))</c>
+            <c name="is_3monthversary">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\snext_3monthversary)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\snext_3monthversary)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\snext_3monthversary))\r\n
+\s\s\s\s&lt;=\sint(day_count_int(next_3monthversary,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="option_3m_ttm">=\siif(is_3monthversary,\s0.25,\smax(1E-4,\sprev(option_3m_ttm)\s-\sdt))</c>
+            <c name="next_6monthversary">return\siif(prev(is_6monthversary),\sdate_add_months(prev(next_6monthversary),6),prev(next_6monthversary))</c>
+            <c name="is_6monthversary">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\snext_6monthversary)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\snext_6monthversary)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\snext_6monthversary))\r\n
+\s\s\s\s&lt;=\sint(day_count_int(next_6monthversary,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="option_6m_ttm">=\siif(is_6monthversary,\s0.5,\smax(1E-4,\sprev(option_6m_ttm)\s-\sdt))</c>
+            <c name="next_5th_anniversary">return\siif(prev(is_5th_anniversary),\sdate_add_months(prev(next_5th_anniversary),5*12),prev(next_5th_anniversary))</c>
+            <c name="is_5th_anniversary">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\snext_5th_anniversary)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\snext_5th_anniversary)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\snext_5th_anniversary))\r\n
+\s\s\s\s&lt;=\sint(day_count_int(next_5th_anniversary,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="option_5y_ttm">=\siif(is_5th_anniversary,\s5,\smax(1E-4,prev(option_5y_ttm)\s-\sdt))</c>
+            <c name="option_7y_ttm">=\siif(is_7th_anniversary,\s7,\smax(1E-4,prev(option_7y_ttm)\s-\sdt))</c>
+            <c name="next_7th_anniversary">return\siif(prev(is_7th_anniversary),\sdate_add_months(prev(next_7th_anniversary),7*12),prev(next_7th_anniversary))</c>
+            <c name="is_7th_anniversary">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\snext_7th_anniversary)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\snext_7th_anniversary)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\snext_7th_anniversary))\r\n
+\s\s\s\s&lt;=\sint(day_count_int(next_7th_anniversary,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="next_6th_anniversary">return\siif(prev(is_6th_anniversary),\sdate_add_months(prev(next_6th_anniversary),6*12),prev(next_6th_anniversary))</c>
+            <c name="is_6th_anniversary">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\snext_6th_anniversary)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\snext_6th_anniversary)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\snext_6th_anniversary))\r\n
+\s\s\s\s&lt;=\sint(day_count_int(next_6th_anniversary,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="option_6y_ttm">=\siif(is_6th_anniversary,\s6,\smax(1E-4,prev(option_6y_ttm)\s-\sdt))</c>
+            <c name="next_3rd_anniversary">return\siif(prev(is_3rd_anniversary),\sdate_add_months(prev(next_3rd_anniversary),3*12),prev(next_3rd_anniversary))</c>
+            <c name="is_3rd_anniversary">//\sIf\swe\sfall\son\sthe\sexact\sdate\s(or\shave\sfallen\spast)\swe\sare\sa\sfixing\sdate.\r\n
+if\scompare_dates(projection_date,\snext_3rd_anniversary)\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\sIf\sthe\sfixing\sdate\sfalls\safter\sthe\snext\sprojection\snext\swe\sare\snot\sa\sfixing\sdate.\r\n
+elif\scompare_dates(projection_date_next,\snext_3rd_anniversary)\s==\s-1\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sint(day_count_int(projection_date,\snext_3rd_anniversary))\r\n
+\s\s\s\s&lt;=\sint(day_count_int(next_3rd_anniversary,\sprojection_date_next)),\r\n
+\s\s\s\sTrue,\r\n
+\s\s\s\sFalse\r\n
+)</c>
+            <c name="option_3y_ttm">=\siif(is_3rd_anniversary,\s3,\smax(1E-4,prev(option_3y_ttm)\s-\sdt))</c>
+            <c name="option_2y_ttm_hdv_3y">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//Return\stime\sto\sexprity\sof\s2yr\soption\sfor\s3yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s3\syear.\r\n
+=\siif(is_3rd_anniversary,\s2,\smax(1E-4,\sprev(option_2y_ttm_hdv_3y)\s-\sdt))</c>
+            <c name="option_4y_ttm_hdv_6y">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//Return\stime\sto\sexprity\sof\s4yr\soption\sfor\s6yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s6\syear.\r\n
+=\siif(is_6th_anniversary,\s4,\smax(1E-4,\sprev(option_4y_ttm_hdv_6y)\s-\sdt))</c>
+            <c name="option_5y_ttm_hdv_6y">//This\sis\sfor\sRILA\sHDV\samerican\sdigital\soption.\s\r\n
+//Return\stime\sto\sexprity\sof\s5yr\soption\sfor\s6yr\sHDV\sstrategy.\sReset\sat\sthe\sbegining\sof\severy\s6\syear.\r\n
+=\siif(is_6th_anniversary,\s5,\smax(1E-4,\sprev(option_5y_ttm_hdv_6y)\s-\sdt))</c>
+            <c name="nth_yr_hdv_3yr">=\siif(is_3rd_anniversary,\s1,\siif(is_anniversary,\sprev(nth_yr_hdv_3yr)\s+\s1,\s\sprev(nth_yr_hdv_3yr)))</c>
+            <c name="nth_yr_hdv_6yr">=\siif(is_6th_anniversary,\s1,\siif(is_anniversary,\sprev(nth_yr_hdv_6yr)\s+\s1,\sprev(nth_yr_hdv_6yr)))</c>
+          </columns>
+        </rg>
+      </row-groups>
+    </table>
+    <table name="Cashflow" type="CashFlow">
+      <column-groups>
+        <g name="g1" repeat-count="6" />
+        <g name="g3" repeat-count="6" />
+      </column-groups>
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="t" datatype="real" />
+        <c name="dt" datatype="real" />
+        <c name="projection_date" datatype="date_t" />
+        <c name="is_anniversary" datatype="bool" />
+        <c name="is_monthversary" datatype="bool" />
+        <c name="spx_spot" datatype="real" />
+        <c name="spx_spot_1y" datatype="real" />
+        <c name="spx_spot_2y" datatype="real" />
+        <c name="mxea_spot" datatype="real" />
+        <c name="mxea_spot_1y" datatype="real" />
+        <c name="mxea_spot_2y" datatype="real" />
+        <c name="rty_spot" datatype="real" />
+        <c name="rty_spot_1y" datatype="real" />
+        <c name="rty_spot_2y" datatype="real" />
+        <c name="nasdaq_spot" datatype="real" />
+        <c name="nasdaq_spot_1y" datatype="real" />
+        <c name="nasdaq_spot_2y" datatype="real" />
+        <c name="df" datatype="real" />
+        <c name="df_1y" datatype="real" />
+        <c name="df_2y" datatype="real" />
+        <c name="df_credit" datatype="real" />
+        <c name="df_npa" datatype="real" />
+        <c name="fixing_step" datatype="bool" />
+        <c name="fixing_level" datatype="real" />
+        <c name="cliquet_sum" datatype="real" group="g1" />
+        <c name="cliquet_sum_1y" datatype="real" group="g3" />
+        <c name="fixing_sum" datatype="real" />
+        <c name="n_fixing" datatype="int" />
+        <c name="fixing_average" datatype="real" />
+        <c name="fixing_average_1y" datatype="real" />
+        <c name="mlsb_spot" datatype="real" />
+        <c name="mlsb_spot_1y" datatype="real" />
+        <c name="mlsb_spot_2y" datatype="real" />
+        <c name="pimco_spot" datatype="real" />
+        <c name="pimco_spot_1y" datatype="real" />
+        <c name="pimco_spot_2y" datatype="real" />
+        <c name="mseh_spot" datatype="real" />
+        <c name="mseh_spot_1y" datatype="real" />
+        <c name="mseh_spot_2y" datatype="real" />
+        <c name="mseh_fixing_level" datatype="real" />
+        <c name="pimbap_spot" datatype="real" />
+        <c name="pimbap_spot_1y" datatype="real" />
+        <c name="pimbap_spot_2y" datatype="real" />
+        <c name="ab_global_allocator_spot" datatype="real" />
+        <c name="ab_global_allocator_spot_1y" datatype="real" />
+        <c name="ab_global_allocator_spot_2y" datatype="real" />
+        <c name="ab_spot" datatype="real" />
+        <c name="ab_spot_1y" datatype="real" />
+        <c name="ab_spot_2y" datatype="real" />
+        <c name="pimco_gem_spot" datatype="real" />
+        <c name="pimco_gem_spot_1y" datatype="real" />
+        <c name="pimco_gem_fixing_level" datatype="real" />
+        <c name="spx_rc_spot" datatype="real" />
+        <c name="spx_rc_spot_1y" datatype="real" />
+        <c name="lm_spot" datatype="real" />
+        <c name="lm_spot_1y" datatype="real" />
+        <c name="lm_spot_2y" datatype="real" />
+        <c name="aqr_spot" datatype="real" />
+        <c name="aqr_spot_1y" datatype="real" />
+        <c name="aqr_spot_2y" datatype="real" />
+        <c name="dfa_spot" datatype="real" />
+        <c name="dfa_spot_1y" datatype="real" />
+        <c name="dfa_spot_2y" datatype="real" />
+        <c name="mlsb_spot_bid" datatype="real" />
+        <c name="mlsb_spot_bid_1y" datatype="real" />
+        <c name="mlsb_spot_bid_2y" datatype="real" />
+        <c name="pimco_spot_bid" datatype="real" />
+        <c name="pimco_spot_bid_1y" datatype="real" />
+        <c name="pimco_spot_bid_2y" datatype="real" />
+        <c name="option_1y_ttm" datatype="real" />
+        <c name="option_6y_ttm" datatype="real" />
+        <c name="invesco_new_spot" datatype="real" />
+        <c name="invesco_new_spot_1y" datatype="real" />
+        <c name="invesco_new_spot_2y" datatype="real" />
+        <c name="jpm_mom_spot" datatype="real" />
+        <c name="jpm_mom_spot_1y" datatype="real" />
+        <c name="jpm_qua_spot" datatype="real" />
+        <c name="jpm_qua_spot_1y" datatype="real" />
+        <c name="jpm_asc_spot" datatype="real" />
+        <c name="jpm_asc_spot_1y" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg0">
+          <repeat>1</repeat>
+          <columns>
+            <c name="step">//\sTemporal\sdiscretization\sstep\sindex.\r\n
+0</c>
+            <c name="t">//\sTemporal\sdiscretization\sstep\stime.\r\n
+=TimeStepLogic[step].t</c>
+            <c name="dt">//\sTemporal\sdiscretization\sstep\ssize.\r\n
+=TimeStepLogic[step].dt</c>
+            <c name="projection_date">//\st\sin\sdate.\r\n
+=TimeStepLogic[step].projection_date</c>
+            <c name="is_anniversary">//\sis_anniversary\sin\sdate.\r\n
+=TimeStepLogic[step].is_anniversary</c>
+            <c name="is_monthversary">//\sis_monthversary\sin\sdate.\r\n
+=TimeStepLogic[step].is_monthversary</c>
+            <c name="spx_spot">//Bates\smodel\sspot\sequity\sprice.\r\n
+=Equity.spx</c>
+            <c name="spx_spot_1y">//Bates\smodel\sspot\sequity\sprice\struncated\sat\sone\syear.\r\n
+=\sspx_spot</c>
+            <c name="spx_spot_2y">//Bates\smodel\sspot\sequity\sprice\struncated\sat\sone\syear.\r\n
+=\sspx_spot</c>
+            <c name="mxea_spot">=\sEquity.mxea</c>
+            <c name="mxea_spot_1y">=\smxea_spot</c>
+            <c name="mxea_spot_2y">=\smxea_spot</c>
+            <c name="rty_spot">=\sEquity.rty</c>
+            <c name="rty_spot_1y">=\srty_spot</c>
+            <c name="rty_spot_2y">=\srty_spot</c>
+            <c name="nasdaq_spot">=Equity.nasdaq\r\n
+</c>
+            <c name="nasdaq_spot_1y">=nasdaq_spot</c>
+            <c name="nasdaq_spot_2y">=nasdaq_spot\r\n
+</c>
+            <c name="df">//\sRiskless\sdiscount\sfactor.\r\n
+=InterestRate.df</c>
+            <c name="df_1y">//\sRiskless\sdiscount\sfactor\struncated\sat\sone\syear.\r\n
+=\sdf</c>
+            <c name="df_2y">//\sRiskless\sdiscount\sfactor\struncated\sat\sone\syear.\r\n
+=\sdf</c>
+            <c name="df_credit">//\sRisky\sdiscount\sfactor.\r\n
+=InterestRate.df_credit</c>
+            <c name="df_npa">=InterestRate.df_npa</c>
+            <c name="fixing_step">//\sWhether\sthe\sdate\sis\sthe\slast\samongst\sall\sthe\sdates\sof\sthe\ssame\smonth.\r\n
+=TimeStepLogic[step].fixing_step\s</c>
+            <c name="fixing_level">//\sFixing\sstock\sprice\sfor\sCliquet\svaluation.\r\n
+//\sFor\sthe\sfirst\sfixing\swe\sreference\sthe\sstrike\sinstead\sof\sthe\sspot.\s\r\n
+//\sThis\sis\sto\sensure\sthat\sthe\sgreek\scalcuation\ssimulates\sthe\sbump\sin\sequity\r\n
+//\sa\smoment\safter\sthe\soption\sstrike\swas\sdetermined.\r\n
+=Variables.option_strike</c>
+            <c name="cliquet_sum">//\sInitial\ssum\sfor\sthe\scliquet\spricing.\r\n
+0</c>
+            <c name="cliquet_sum_1y">//\sInitial\ssum\sfor\sthe\scliquet\spricing\struncated\sat\sone\syear.\r\n
+=\scliquet_sum[$index]</c>
+            <c name="fixing_sum">//\sSum\sof\sthe\sfixing\sprices\saccumulated\sonly\sat\smonth\send.\r\n
+//\sThe\sfirst\smonth\sis\snot\sincluded\sin\sthe\saveraging.\r\n
+0</c>
+            <c name="n_fixing">//\sNumber\sof\smonth\sends\sincluding\sthis\sone\spassed.\sSame\sas\stime_step_logic.eoms_passed.\r\n
+=1</c>
+            <c name="fixing_average">//\sAverage\sfixing\sfor\svaluing\sAsian\scalls.\r\n
+=iif(n_fixing==0,\s0,\sfixing_sum/n_fixing)</c>
+            <c name="fixing_average_1y">//\sAverage\sfixing\sfor\svaluing\sAsian\scalls\struncated\sat\sone\syear.\r\n
+=\sfixing_average</c>
+            <c name="mlsb_spot">//\sML\sIndex\sprice.\r\n
+=\sHybridIndex.mlsb_index\r\n
+//=MlsbIndex.index</c>
+            <c name="mlsb_spot_1y">//\sMLSB\struncated\sat\sone\syear.\r\n
+=\smlsb_spot</c>
+            <c name="mlsb_spot_2y">//\sMLSB\struncated\sat\sone\syear.\r\n
+=\smlsb_spot</c>
+            <c name="pimco_spot">//\sPIMCO\sIndex\sprice.\r\n
+=\sHybridIndex.pimco_index\r\n
+//=\sPimcoIndex.pimco_index</c>
+            <c name="pimco_spot_1y">=\spimco_spot</c>
+            <c name="pimco_spot_2y">=\spimco_spot</c>
+            <c name="mseh_spot">//\sMSEH\sIndex\sprice.\r\n
+=\sHybridIndex.mseh_index</c>
+            <c name="mseh_spot_1y">=\smseh_spot</c>
+            <c name="mseh_spot_2y">=\smseh_spot</c>
+            <c name="mseh_fixing_level">//\sFixing\sstock\sprice\sfor\sCliquet\svaluation.\r\n
+//\sFor\sthe\sfirst\sfixing\swe\sreference\sthe\sstrike\sinstead\sof\sthe\sspot.\s\r\n
+//\sThis\sis\sto\sensure\sthat\sthe\sgreek\scalcuation\ssimulates\sthe\sbump\sin\sequity\r\n
+//\sa\smoment\safter\sthe\soption\sstrike\swas\sdetermined.\r\n
+=Variables.option_strike</c>
+            <c name="pimbap_spot">=\sHybridIndex.pimbap_index</c>
+            <c name="pimbap_spot_1y">=pimbap_spot</c>
+            <c name="pimbap_spot_2y">=pimbap_spot</c>
+            <c name="ab_global_allocator_spot">=\sHybridIndex.ab_global_allocator_index</c>
+            <c name="ab_global_allocator_spot_1y">=ab_global_allocator_spot</c>
+            <c name="ab_global_allocator_spot_2y">=ab_global_allocator_spot</c>
+            <c name="ab_spot">//\sAB\sIndex\sprice.\r\n
+=\sHybridIndex.ab_index\r\n
+//=\sAbIndex.index</c>
+            <c name="ab_spot_1y">//\sAB\struncated\sat\sone\syear.\r\n
+=\sab_spot</c>
+            <c name="ab_spot_2y">//\sAB\struncated\sat\stwo\syears.\r\n
+=\sab_spot</c>
+            <c name="pimco_gem_spot">//PIMCO_WO\sindex\sprice\r\n
+=HybridIndex.pimco_gem</c>
+            <c name="pimco_gem_spot_1y">//\sPICMO_WO\struncated\sat\sone\syear.\r\n
+=\spimco_gem_spot</c>
+            <c name="pimco_gem_fixing_level">//\sFixing\sstock\sprice\sfor\sCliquet\svaluation.\r\n
+//\sFor\sthe\sfirst\sfixing\swe\sreference\sthe\sstrike\sinstead\sof\sthe\sspot.\s\r\n
+//\sThis\sis\sto\sensure\sthat\sthe\sgreek\scalcuation\ssimulates\sthe\sbump\sin\sequity\r\n
+//\sa\smoment\safter\sthe\soption\sstrike\swas\sdetermined.\r\n
+=Variables.option_strike</c>
+            <c name="spx_rc_spot">//\sSPX_RC\sindex\sprice\r\n
+=\sHybridIndex.spx_rc</c>
+            <c name="spx_rc_spot_1y">//\sSPX_RC\struncated\sat\sone\syear.\r\n
+=\sspx_rc_spot</c>
+            <c name="lm_spot">//\sLegg\sMason\sIndex\sprice.\r\n
+=\sHybridIndex.lm_index</c>
+            <c name="lm_spot_1y">//\sLegg\sMason\struncated\sat\sone\syear.\r\n
+=\slm_spot</c>
+            <c name="lm_spot_2y">//\sLegg\sMason\struncated\sat\stwo\syears.\r\n
+=\slm_spot</c>
+            <c name="aqr_spot">//\sAQR\sindex\sprice\r\n
+=\sHybridIndex.aqr_index\r\n
+</c>
+            <c name="aqr_spot_1y">=aqr_spot</c>
+            <c name="aqr_spot_2y">=aqr_spot\r\n
+</c>
+            <c name="dfa_spot">//\sDFA\sindex\sprice\r\n
+=\sHybridIndex.dfa_index\r\n
+</c>
+            <c name="dfa_spot_1y">=\sdfa_spot</c>
+            <c name="dfa_spot_2y">=\sdfa_spot\r\n
+</c>
+            <c name="mlsb_spot_bid">=HybridIndex.mlsb_index_bid</c>
+            <c name="mlsb_spot_bid_1y">=mlsb_spot_bid</c>
+            <c name="mlsb_spot_bid_2y">=mlsb_spot_bid</c>
+            <c name="pimco_spot_bid">=HybridIndex.pimco_index_bid</c>
+            <c name="pimco_spot_bid_1y">=pimco_spot_bid</c>
+            <c name="pimco_spot_bid_2y">=pimco_spot_bid</c>
+            <c name="option_1y_ttm">=\sTimeStepLogic[step].option_1y_ttm\s*\s1</c>
+            <c name="option_6y_ttm">=\sTimeStepLogic[step].option_6y_ttm\s*\s1</c>
+            <c name="invesco_new_spot">=\sHybridIndex.invesco_new_index</c>
+            <c name="invesco_new_spot_1y">=invesco_new_spot</c>
+            <c name="invesco_new_spot_2y">=invesco_new_spot</c>
+            <c name="jpm_mom_spot">=\sHybridIndex.jpm_mom_index</c>
+            <c name="jpm_mom_spot_1y">=jpm_mom_spot</c>
+            <c name="jpm_qua_spot">=\sHybridIndex.jpm_qua_index</c>
+            <c name="jpm_qua_spot_1y">=jpm_qua_spot</c>
+            <c name="jpm_asc_spot">=\sHybridIndex.jpm_asc_index</c>
+            <c name="jpm_asc_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(jpm_asc_spot_1y),\sjpm_asc_spot)</c>
+          </columns>
+        </row-group>
+        <row-group name="rg1">
+          <repeat>=Variables.projection_steps</repeat>
+          <columns>
+            <c name="step">//\sTemporal\sdiscretization\sstep\sindex.\r\n
+=prev(step)+1\r\n
+</c>
+            <c name="t">//\sTemporal\sdiscretization\sstep\stime.\r\n
+=TimeStepLogic[step].t</c>
+            <c name="dt">//\sTemporal\sdiscretization\sstep\ssize.\r\n
+=TimeStepLogic[step].dt</c>
+            <c name="projection_date">//\st\sin\sdate.\r\n
+=TimeStepLogic[step].projection_date</c>
+            <c name="is_anniversary">//\sis_anniversary\sin\sdate.\r\n
+=TimeStepLogic[step].is_anniversary</c>
+            <c name="is_monthversary">//\sis_monthversary\sin\sdate.\r\n
+=TimeStepLogic[step].is_monthversary</c>
+            <c name="spx_spot">//\sBates\smodel\sspot\sequity\sprice.\r\n
+=Equity.spx</c>
+            <c name="spx_spot_1y">//Bates\smodel\sspot\sequity\sprice\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(spx_spot_1y),\sspx_spot)</c>
+            <c name="spx_spot_2y">//Bates\smodel\sspot\sequity\sprice\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.two_year_step,\sprev(spx_spot_2y),\sspx_spot)</c>
+            <c name="mxea_spot">=\sEquity.mxea</c>
+            <c name="mxea_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(mxea_spot_1y),\smxea_spot)</c>
+            <c name="mxea_spot_2y">=\siif(step\s&gt;\sVariables.two_year_step,\sprev(mxea_spot_2y),\smxea_spot)</c>
+            <c name="rty_spot">=\sEquity.rty</c>
+            <c name="rty_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(rty_spot_1y),\srty_spot)</c>
+            <c name="rty_spot_2y">=\siif(step\s&gt;\sVariables.two_year_step,\sprev(rty_spot_2y),\srty_spot)</c>
+            <c name="nasdaq_spot">=Equity.nasdaq</c>
+            <c name="nasdaq_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(nasdaq_spot_1y),\snasdaq_spot)</c>
+            <c name="nasdaq_spot_2y">=\siif(step\s&gt;\sVariables.two_year_step,\sprev(nasdaq_spot_2y),\snasdaq_spot)</c>
+            <c name="df">//\sRiskless\sdiscount\sfactor.\r\n
+=InterestRate.df</c>
+            <c name="df_1y">//\sRiskless\sdiscount\sfactor\struncated\sat\sone\syear.\r\n
+=\siif(compare((t\s-\soption.t_0)\s&gt;=1,\s1e-9),\sprev(df_1y),\sdf)</c>
+            <c name="df_2y">//\sRiskless\sdiscount\sfactor\struncated\sat\sone\syear.\r\n
+=\siif(compare((t\s-\soption.t_0)&gt;=2,\s1e-9),\sprev(df_2y),\sdf)</c>
+            <c name="df_credit">//\sRisky\sdiscount\sfactor.\r\n
+=InterestRate.df_credit</c>
+            <c name="df_npa">=InterestRate.df_npa</c>
+            <c name="fixing_step">//\sWhether\sthe\sdate\sis\sthe\slast\samongst\sall\sthe\sdates\sof\sthe\ssame\smonth.\r\n
+=TimeStepLogic[step].fixing_step</c>
+            <c name="fixing_level">//\sFixing\sstock\sprice\sfor\sCliquet\svaluation.\r\n
+=iif(fixing_step,\sspx_spot,\sprev(fixing_level))</c>
+            <c name="cliquet_sum">/*\sSum\sfor\sthe\scliquet\spricing.\r\n
+$$\\sum_{i=1}^{\\lfloor\\frac{t}{\\tau}\\rfloor}\\min\\Big(\\frac{S(i\\tau)}{S((i-1)\\tau)}-1,c\\Big).$$\r\n
+*/\r\n
+if\s!fixing_step\sthen\r\n
+\s\s\s\sreturn\sprev(cliquet_sum)\r\n
+\s\s\s\s\r\n
+end\r\n
+\r\n
+//\sFor\sthe\sfirst\sreturn\swe\sreference\sthe\sstrike\sinstead\sof\sthe\sspot.\s\r\n
+//\sThis\sis\sto\sensure\sgreek\scalcuation\ssimulated\sthe\sbump\sin\sequity\r\n
+//\shappen\sa\smoment\safter\sthe\soption\sstrike\swas\sdetermined.\r\n
+return\smin(fixing_level\s/\s(prev(fixing_level)\s+\s1e-5)\s-\s1,\scap_and_strike.mp2p_cap[$index])\s+\sprev(cliquet_sum)</c>
+            <c name="cliquet_sum_1y">//\sInitial\ssum\sfor\sthe\scliquet\spricing\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(cliquet_sum_1y),\scliquet_sum[$index])</c>
+            <c name="fixing_sum">//\sSum\sof\sthe\sfixing\sprices\saccumulated\sonly\sat\smonth\send.\r\n
+if\s!fixing_step\sthen\r\n
+\s\s\s\sreturn\sprev(fixing_sum)\r\n
+\r\n
+end\r\n
+\r\n
+//\sThe\sfirst\smonth\sis\snot\sincluded\sin\sthe\saveraging.\r\n
+return\siif(n_fixing\s==\s1,\s0,\sfixing_level\s+\sprev(fixing_sum))</c>
+            <c name="n_fixing">//\sNumber\sof\smonth\sends\sincluding\sthis\sone\spassed.\sSame\sas\stime_step_logic.eoms_passed.\r\n
+=iif(fixing_step,\sprev(n_fixing)+1,\sprev(n_fixing))</c>
+            <c name="fixing_average">//\sAverage\sfixing\sfor\svaluing\sAsian\scalls.\r\n
+=iif(n_fixing\s&gt;\s1,\sfixing_sum/(n_fixing\s-\s1),\s0)</c>
+            <c name="fixing_average_1y">//\sAverage\sfixing\sfor\svaluing\sAsian\scalls\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(fixing_average_1y),\sfixing_average)</c>
+            <c name="mlsb_spot">//\sML\sIndex\sprice.\r\n
+=\sHybridIndex.mlsb_index\r\n
+//=MlsbIndex.index</c>
+            <c name="mlsb_spot_1y">//\sMLSB\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(mlsb_spot_1y),\smlsb_spot)</c>
+            <c name="mlsb_spot_2y">//\sMLSB\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.two_year_step,\sprev(mlsb_spot_2y),\smlsb_spot)</c>
+            <c name="pimco_spot">//\sPIMCO\sIndex\sprice.\r\n
+=\sHybridIndex.pimco_index\r\n
+//=\sPimcoIndex.pimco_index</c>
+            <c name="pimco_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(pimco_spot_1y),\spimco_spot)</c>
+            <c name="pimco_spot_2y">=\siif(step\s&gt;\sVariables.two_year_step,\sprev(pimco_spot_2y),\spimco_spot)</c>
+            <c name="mseh_spot">//\sMSEH\sIndex\sprice.\r\n
+=\sHybridIndex.mseh_index</c>
+            <c name="mseh_spot_1y">//\sMSEH\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(mseh_spot_1y),\smseh_spot)</c>
+            <c name="mseh_spot_2y">//\sMSEH\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.two_year_step,\sprev(mseh_spot_2y),\smseh_spot)</c>
+            <c name="mseh_fixing_level">//\sFixing\sstock\sprice\sfor\sCliquet\svaluation.\r\n
+=iif(TimeStepLogic[step].annexus_5y_fixing_step,\smseh_spot,\sprev(mseh_fixing_level))</c>
+            <c name="pimbap_spot">=\sHybridIndex.pimbap_index</c>
+            <c name="pimbap_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(pimbap_spot_1y),\spimbap_spot)</c>
+            <c name="pimbap_spot_2y">=\siif(step\s&gt;\sVariables.two_year_step,\sprev(pimbap_spot_2y),\spimbap_spot)</c>
+            <c name="ab_global_allocator_spot">=\sHybridIndex.ab_global_allocator_index</c>
+            <c name="ab_global_allocator_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(ab_global_allocator_spot_1y),\sab_global_allocator_spot)</c>
+            <c name="ab_global_allocator_spot_2y">=\siif(step\s&gt;\sVariables.two_year_step,\sprev(ab_global_allocator_spot_2y),\sab_global_allocator_spot)</c>
+            <c name="ab_spot">//\sAB\sIndex\sprice.\r\n
+=\sHybridIndex.ab_index\r\n
+//=\sAbIndex.index</c>
+            <c name="ab_spot_1y">//\sAB\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(ab_spot_1y),\sab_spot)</c>
+            <c name="ab_spot_2y">//\sAB\struncated\sat\stwo\syears.\r\n
+=\siif(step\s&gt;\sVariables.two_year_step,\sprev(ab_spot_2y),\sab_spot)</c>
+            <c name="pimco_gem_spot">//PIMCO_WO\sindex\sprice\r\n
+=HybridIndex.pimco_gem</c>
+            <c name="pimco_gem_spot_1y">//\sPICMO_WO\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(pimco_gem_spot_1y),\spimco_gem_spot)</c>
+            <c name="pimco_gem_fixing_level">//\sFixing\sstock\sprice\sfor\sCliquet\svaluation.\r\n
+=iif(TimeStepLogic[step].annexus_5y_fixing_step,\spimco_gem_spot,\sprev(pimco_gem_fixing_level))</c>
+            <c name="spx_rc_spot">//\sSPX_RC\sindex\sprice\r\n
+=\sHybridIndex.spx_rc</c>
+            <c name="spx_rc_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(spx_rc_spot_1y),\sspx_rc_spot)</c>
+            <c name="lm_spot">//\sLegg\sMason\sIndex\sprice.\r\n
+=\sHybridIndex.lm_index</c>
+            <c name="lm_spot_1y">//\sLegg\sMason\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(lm_spot_1y),\slm_spot)</c>
+            <c name="lm_spot_2y">//\sLegg\sMason\struncated\sat\stwo\syear.\r\n
+=\siif(step\s&gt;\sVariables.two_year_step,\sprev(lm_spot_2y),\slm_spot)</c>
+            <c name="aqr_spot">//\sAQR\sindex\sprice\r\n
+=\sHybridIndex.aqr_index\r\n
+</c>
+            <c name="aqr_spot_1y">//\sAQR\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(aqr_spot_1y),\saqr_spot)</c>
+            <c name="aqr_spot_2y">//\sAQR\struncated\sat\stwo\syear.\r\n
+=\siif(step\s&gt;\sVariables.two_year_step,\sprev(aqr_spot_2y),\saqr_spot)</c>
+            <c name="dfa_spot">//\sDFA\sindex\sprice\r\n
+=\sHybridIndex.dfa_index\r\n
+</c>
+            <c name="dfa_spot_1y">//\sDFA\struncated\sat\sone\syear.\r\n
+=\siif(step\s&gt;\sVariables.one_year_step,\sprev(dfa_spot_1y),\sdfa_spot)</c>
+            <c name="dfa_spot_2y">//\sDFA\struncated\sat\stwo\syear.\r\n
+=\siif(step\s&gt;\sVariables.two_year_step,\sprev(dfa_spot_2y),\sdfa_spot)</c>
+            <c name="mlsb_spot_bid">=HybridIndex.mlsb_index_bid</c>
+            <c name="mlsb_spot_bid_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(mlsb_spot_bid_1y),\smlsb_spot_bid)</c>
+            <c name="mlsb_spot_bid_2y">=\siif(step\s&gt;\sVariables.two_year_step,\sprev(mlsb_spot_bid_2y),\smlsb_spot_bid)</c>
+            <c name="pimco_spot_bid">=HybridIndex.pimco_index_bid</c>
+            <c name="pimco_spot_bid_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(pimco_spot_bid_1y),\spimco_spot_bid)</c>
+            <c name="pimco_spot_bid_2y">=\siif(step\s&gt;\sVariables.two_year_step,\sprev(pimco_spot_bid_2y),\spimco_spot_bid)</c>
+            <c name="option_1y_ttm">=\sTimeStepLogic[step].option_1y_ttm\s*\s1</c>
+            <c name="option_6y_ttm">=\sTimeStepLogic[step].option_6y_ttm\s*\s1</c>
+            <c name="invesco_new_spot">=\sHybridIndex.invesco_new_index</c>
+            <c name="invesco_new_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(invesco_new_spot_1y),\sinvesco_new_spot)</c>
+            <c name="invesco_new_spot_2y">=\siif(step\s&gt;\sVariables.two_year_step,\sprev(invesco_new_spot_2y),\sinvesco_new_spot)</c>
+            <c name="jpm_mom_spot">=\sHybridIndex.jpm_mom_index</c>
+            <c name="jpm_mom_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(jpm_mom_spot_1y),\sjpm_mom_spot)</c>
+            <c name="jpm_qua_spot">=\sHybridIndex.jpm_qua_index</c>
+            <c name="jpm_qua_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(jpm_qua_spot_1y),\sjpm_qua_spot)</c>
+            <c name="jpm_asc_spot">=\sHybridIndex.jpm_asc_index</c>
+            <c name="jpm_asc_spot_1y">=\siif(step\s&gt;\sVariables.one_year_step,\sprev(jpm_asc_spot_1y),\sjpm_asc_spot)</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+    <table name="x5_5yr_option" type="KeyValue">
+      <column-groups>
+        <g name="g1" repeat-count="6" />
+        <g name="g2" repeat-count="6" />
+        <g name="g3" repeat-count="6" />
+        <g name="g4" repeat-count="6" />
+      </column-groups>
+      <c name="strike" datatype="real">=1</c>
+      <c name="strike_5pct" datatype="real">=1.05</c>
+      <c name="df_5yr" datatype="real">=iif(run.shocksos=True,\s\r\n
+\s\s\s\siif(run.use_extended_outer_loop=0,\r\n
+\s\s\s\s\s\s\s\sshocksdata_econ[option.step].df_5yr[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\siif(run.use_extended_outer_loop=2,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata_esg_gen[option.step].df_5yr[int(shocks.state.add)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sshocksdata[option.step].df_5yr[int(shocks.state.add)]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s\s\s\s),\r\n
+\s\s\s\s0)</c>
+      <c name="mseh_5yr_forward_atm_par" datatype="real" group="g1">return\scompute_index_forward(drift_and_volatility[0].drift_atm_par_rate[$index],\sdrift_and_volatility[0].volatility_atm_par_rate[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svol.mseh_corr,\shull_white[option.shock].sigma_t[4,1],\shull_white[option.shock].a)</c>
+      <c name="pimco_gem_5yr_forward_atm_par" datatype="real" group="g1">return\scompute_index_forward(drift_and_volatility[1].drift_atm_par_rate[$index],\sdrift_and_volatility[1].volatility_atm_par_rate[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svol.pimco_gem_corr,\shull_white[option.shock].sigma_t[4,1],\shull_white[option.shock].a)</c>
+      <c name="mseh_5yr_call_atm_par" datatype="real" group="g1">return\scompute_call_price(df_5yr,\smseh_5yr_forward_atm_par,\sstrike,\sdrift_and_volatility[0].volatility_atm_par_rate[$index],\s5)</c>
+      <c name="pimco_gem_5yr_atm_call_par" datatype="real" group="g1">return\scompute_call_price(df_5yr,\spimco_gem_5yr_forward_atm_par,\sstrike,\sdrift_and_volatility[1].volatility_atm_par_rate[$index],\s5)</c>
+      <c name="mseh_5yr_forward_otm_par" datatype="real" group="g3">return\scompute_index_forward(drift_and_volatility[0].drift_otm_par_rate[$index],\sdrift_and_volatility[0].volatility_otm_par_rate[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svol.mseh_corr,\shull_white[option.shock].sigma_t[4,1],\shull_white[option.shock].a)</c>
+      <c name="pimco_gem_5yr_forward_otm_par" datatype="real" group="g3">return\scompute_index_forward(drift_and_volatility[1].drift_otm_par_rate[$index],\sdrift_and_volatility[1].volatility_otm_par_rate[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svol.pimco_gem_corr,\shull_white[option.shock].sigma_t[4,1],\shull_white[option.shock].a)</c>
+      <c name="mseh_5yr_call_otm_par" datatype="real" group="g3">return\scompute_call_price(df_5yr,\smseh_5yr_forward_otm_par,\sstrike,\sdrift_and_volatility[0].volatility_otm_par_rate[$index],\s5)</c>
+      <c name="pimco_gem_5yr_otm_call_par" datatype="real" group="g3">return\scompute_call_price(df_5yr,\spimco_gem_5yr_forward_otm_par,\sstrike,\sdrift_and_volatility[1].volatility_otm_par_rate[$index],\s5)</c>
+      <c name="mseh_5yr_forward_spread" datatype="real" group="g2">return\scompute_index_forward(drift_and_volatility[0].drift_spread[$index],\sdrift_and_volatility[0].volatility_spread[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svol.mseh_corr,\shull_white[option.shock].sigma_t[4,1],\shull_white[option.shock].a)</c>
+      <c name="pimco_gem_5yr_forward_spread" datatype="real" group="g2">return\scompute_index_forward(drift_and_volatility[1].drift_spread[$index],\sdrift_and_volatility[1].volatility_spread[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svol.pimco_gem_corr,\shull_white[option.shock].sigma_t[4,1],\shull_white[option.shock].a)</c>
+      <c name="mseh_5yr_call_spread" datatype="real" group="g2">return\scompute_call_price(df_5yr,\smseh_5yr_forward_spread,\sstrike,\sdrift_and_volatility[0].volatility_spread[$index],\s5)</c>
+      <c name="pimco_gem_5yr_call_spread" datatype="real" group="g2">return\scompute_call_price(df_5yr,\spimco_gem_5yr_forward_spread,\sstrike,\sdrift_and_volatility[1].volatility_spread[$index],\s5)</c>
+      <c name="mseh_5yr_forward_atm_par_105pct_strike" datatype="real" group="g4">return\scompute_index_forward(drift_and_volatility[0].drift_atm_par_rate[$index],\sdrift_and_volatility[0].volatility_atm_par_rate[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svol.mseh_corr,\shull_white[option.shock].sigma_t[4,1],\shull_white[option.shock].a)</c>
+      <c name="pimco_gem_5yr_forward_atm_par_105pct_strike" datatype="real" group="g4">return\scompute_index_forward(drift_and_volatility[1].drift_atm_par_rate[$index],\sdrift_and_volatility[1].volatility_atm_par_rate[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svol.pimco_gem_corr,\shull_white[option.shock].sigma_t[4,1],\shull_white[option.shock].a)</c>
+      <c name="mseh_5yr_call_atm_par_105pct_strike" datatype="real" group="g4">return\scompute_call_price(df_5yr,\smseh_5yr_forward_atm_par_105pct_strike,\sstrike_5pct,\sdrift_and_volatility[0].volatility_atm_par_rate[$index],\s5)</c>
+      <c name="pimco_gem_5yr_call_atm_par_105pct_strike" datatype="real" group="g4">return\scompute_call_price(df_5yr,\spimco_gem_5yr_forward_atm_par_105pct_strike,\sstrike_5pct,\sdrift_and_volatility[1].volatility_atm_par_rate[$index],\s5)</c>
+    </table>
+  </calculations>
+  <results2>
+    <result name="fmvs">
+      <set name="pricings" active="True" type="CustomLastStep" agg="ByPath">
+        <column-groups>
+          <g name="g1" repeat-count="8" />
+          <g name="g4" repeat-count="8" />
+          <g name="g5" repeat-count="8" />
+          <g name="g6" repeat-count="6" />
+          <g name="g2" repeat-count="8" />
+          <g name="g7" repeat-count="8" />
+          <g name="g8" repeat-count="8" />
+          <g name="g9" repeat-count="8" />
+          <g name="g10" repeat-count="8" />
+          <g name="g13" repeat-count="6" />
+          <g name="g16" repeat-count="6" />
+          <g name="g17" repeat-count="6" />
+          <g name="g3" repeat-count="6" />
+          <g name="g19" repeat-count="6" />
+          <g name="g21" repeat-count="6" />
+          <g name="g11" repeat-count="6" />
+          <g name="g26" repeat-count="6" />
+          <g name="g32" repeat-count="6" />
+          <g name="g31" repeat-count="6" />
+          <g name="g33" repeat-count="6" />
+          <g name="g35" repeat-count="6" />
+          <g name="g34" repeat-count="6" />
+          <g name="g37" repeat-count="6" />
+          <g name="g38" repeat-count="6" />
+          <g name="g39" repeat-count="6" />
+          <g name="g41" repeat-count="6" />
+          <g name="g42" repeat-count="6" />
+          <g name="g43" repeat-count="6" />
+          <g name="g44" repeat-count="6" />
+          <g name="g36" repeat-count="6" />
+          <g name="g40" repeat-count="6" />
+          <g name="g45" repeat-count="6" />
+          <g name="g46" repeat-count="6" />
+          <g name="g49" repeat-count="6" />
+          <g name="g50" repeat-count="6" />
+          <g name="g51" repeat-count="6" />
+          <g name="g52" repeat-count="6" />
+          <g name="g53" repeat-count="6" />
+          <g name="g54" repeat-count="6" />
+          <g name="g55" repeat-count="6" />
+          <g name="g59" repeat-count="8" />
+          <g name="g58" repeat-count="8" />
+          <g name="g56" repeat-count="8" />
+          <g name="g57" repeat-count="8" />
+          <g name="g12" repeat-count="8" />
+          <g name="g14" repeat-count="8" />
+          <g name="g15" repeat-count="8" />
+        </column-groups>
+        <c name="spx_atm_call_1y" datatype="real" action="Avg">/*\s1\syear\sat-the-money\scall.\r\n
+$$\\mathrm{Vanilla\\\scall}=\\mathbf\sE\\bigg[\\exp\\Big(-\\int_0^t\sr(s)ds\\Big)\\Big(\\frac{S_t}{K}-1\\Big)_+\\bigg],$$\r\n
+where\s$K$\sis\sthe\sstrike.\r\n
+*/\r\n
+=\smax(last(Cashflow.spx_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="spx_atm_call_2y" datatype="real" action="Avg">/*\s2\syear\sat-the-money\scall.\r\n
+$$\\mathrm{Vanilla\\\scall}=\\mathbf\sE\\bigg[\\exp\\Big(-\\int_0^t\sr(s)ds\\Big)\\Big(\\frac{S_t}{K}-1\\Big)_+\\bigg],$$\r\n
+where\s$K$\sis\sthe\sstrike.\r\n
+*/\r\n
+=\smax(last(Cashflow.spx_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_2y)</c>
+        <c name="spx_otm_calls_1y" datatype="real" action="Avg" group="g4">/*\s1\syear\sat-the-money\scall\swith\sa\scap;\sequivalently\sa\scall-spread.\r\n
+$$\\mathrm{Vanilla\\\scall}=\\mathbf\sE\\bigg[\\exp\\Big(-\\int_0^t\sr(s)ds\\Big)\\Big(\\frac{S_t}{K}-(1+\\delta)\\Big)_+\\bigg],$$\r\n
+where\s$K$\sis\sthe\sstrike\sand\s$\\delta$\sthe\sspread.\r\n
+*/\r\n
+=\smax(\r\n
+\s\s\s\slast(Cashflow.spx_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="spx_otm_calls_2y" datatype="real" action="Avg" group="g2">/*\s2\syear\sat-the-money\scall\swith\sa\scap;\sequivalently\sa\scall-spread.\r\n
+$$\\mathrm{Vanilla\\\scall}=\\mathbf\sE\\bigg[\\exp\\Big(-\\int_0^t\sr(s)ds\\Big)\\Big(\\frac{S_t}{K}-(1+\\delta)\\Big)_+\\bigg],$$\r\n
+where\s$K$\sis\sthe\sstrike\sand\s$\\delta$\sthe\sspread.\r\n
+*/\r\n
+=\smax(\r\n
+\s\s\s\slast(Cashflow.spx_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="mxea_atm_call_1y" datatype="real" action="Avg">=\smax(last(Cashflow.mxea_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="mxea_otm_calls_1y" datatype="real" action="Avg" group="g9">=\smax(\r\n
+\s\s\s\slast(Cashflow.mxea_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="rty_atm_call_1y" datatype="real" action="Avg">=\smax(last(Cashflow.rty_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="rty_otm_calls_1y" datatype="real" action="Avg" group="g10">=\smax(\r\n
+\s\s\s\slast(Cashflow.rty_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="mlsb_atm_call_1y" datatype="real" action="Avg">//\sat-the-money\sone-year\scall\son\sthe\sMLSB\sindex.\r\n
+=\smax(last(Cashflow.mlsb_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="mlsb_atm_call_2y" datatype="real" action="Avg">//\sat-the-money\stwo-year\scall\son\sthe\sMLSB\sindex.\r\n
+=\smax(last(Cashflow.mlsb_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_2y)</c>
+        <c name="mlsb_otm_calls_1y" datatype="real" action="Avg" group="g1">//\sA\sone-year\scall\son\sthe\sMLSB\sindex.\r\n
+=\smax(last(Cashflow.mlsb_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="mlsb_otm_calls_2y" datatype="real" action="Avg" group="g5">//\sA\stwo-year\scall\son\sthe\sMLSB\sindex.\r\n
+=\smax(last(Cashflow.mlsb_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="spx_asian_atm_call" datatype="real" action="Avg">/*\sAisian\scall\son\sSPX.\r\n
+$$\\mathrm{Asian\\\scall}=\\mathbf\sE\\bigg[\\exp\\Big(-\\int_0^{n\\tau}\sr(s)ds\\Big)\\Big(\\frac{1}{nK}\\sum_{i=1}^nS(i\\tau)-1\\Big)_+\\bigg],$$\r\n
+where\s$r$\sis\sthe\sriskless\sshort\srate,\s$\\tau$\sthe\sfixing\sinterval\ssize,\sand\s$n$\sthe\snumber\sof\sfixing\speriods.\r\n
+*/\r\n
+=\smax(last(Cashflow.fixing_average_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="spx_asian_otm_calls" datatype="real" action="Avg" group="g6">/*\sAsian\swith\sa\scap\scall\son\sSPX.\r\n
+$$\\mathrm{Asian\\\scall}=\\mathbf\sE\\bigg[\\exp\\Big(-\\int_0^{n\\tau}\sr(s)ds\\Big)\\Big(\\frac{1}{nK}\r\n
+\\sum_{i=1}^nS(i\\tau)-(1+c)\\Big)_+\\bigg],$$\r\n
+where\s$r$\sis\sthe\sriskless\sshort\srate,\s$\\tau$\sthe\sfixing\sinterval\ssize,\s$n$\sthe\snumber\sof\sfixing\speriods,\sand\s\r\n
+$c$\sis\sa\scap.\r\n
+*/\r\n
+=\smax(\r\n
+\s\s\s\slast(Cashflow.fixing_average_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.ap2p_cap[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="pimco_atm_call_1y" datatype="real" action="Avg">//\sat-the-money\sone-year\scall\son\sthe\sPimco\sindex.\r\n
+=\smax(last(Cashflow.pimco_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="pimco_atm_call_2y" datatype="real" action="Avg">//\sat-the-money\stwo-year\scall\son\sthe\sPimco\sindex.\r\n
+=\smax(last(Cashflow.pimco_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_2y)</c>
+        <c name="pimco_otm_calls_1y" datatype="real" action="Avg" group="g8">//\sone-year\sotm\scalls\son\sthe\sPimco\sindex.\r\n
+\r\n
+=\smax(last(Cashflow.pimco_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)\r\n
+</c>
+        <c name="pimco_otm_calls_2y" datatype="real" action="Avg" group="g7">//\stwo-year\sotm\scalls\son\sthe\sPimco\sindex.\r\n
+\r\n
+=\smax(last(Cashflow.pimco_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)\r\n
+</c>
+        <c name="mseh_atm_calls_1y_part_rate" datatype="real" action="Avg" group="g21">=\smax((last(Cashflow.mseh_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate[$index],\svol.x5_global_floor)\s*\slast(Cashflow.df_1y)</c>
+        <c name="mseh_atm_cliquets_part_rate" datatype="real" action="Avg" group="g13">=x5_5yr_option.mseh_5yr_call_atm_par[$index]</c>
+        <c name="ab_atm_call_1y" datatype="real" action="Avg">//\sat-the-money\sone-year\scall\son\sthe\sAB\sindex.\r\n
+=\smax(last(Cashflow.ab_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="ab_atm_call_2y" datatype="real" action="Avg">//\sat-the-money\stwo-year\scall\son\sthe\sAB\sindex.\r\n
+=\smax(last(Cashflow.ab_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_2y)</c>
+        <c name="ab_otm_calls_1y" datatype="real" action="Avg" group="g16">//\sA\sone-year\scall\son\sthe\sAB\sindex.\r\n
+=\smax(last(Cashflow.ab_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="ab_otm_calls_2y" datatype="real" action="Avg" group="g17">//\sA\stwo-year\scall\son\sthe\sAB\sindex.\r\n
+=\smax(last(Cashflow.ab_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="ab_atm_calls_1y_part_rate" datatype="real" action="Avg" group="g41">=\smax((last(Cashflow.ab_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_aqr_ab[$index],\svol.x5_global_floor)\s*\slast(Cashflow.df_1y)</c>
+        <c name="ab_atm_calls_2y_part_rate" datatype="real" action="Avg" group="g42">=\smax((last(Cashflow.ab_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_aqr_ab[$index],\svol.x5_global_floor)\s*\slast(Cashflow.df_2y)</c>
+        <c name="ab_otm_calls_1y_part_rate" datatype="real" action="Avg" group="g43">=\smax((last(Cashflow.ab_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_aqr_ab[$index]\s\s-\svol.aqr_ab_1y_otm_spread,\svol.x5_global_floor)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="ab_otm_calls_2y_part_rate" datatype="real" action="Avg" group="g44">=\smax((last(Cashflow.ab_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_aqr_ab[$index]\s\s-\svol.aqr_ab_1y_otm_spread\s*\s2,\svol.x5_global_floor)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="spx_cliquet" datatype="real" action="Avg" group="g3">//\sSPX\sCliquet\sprice.\r\n
+/*\s$$\\mathrm{Cliquet}=\\mathbf\sE\\bigg[\\exp\\Big(-\\int_0^{n\\tau}\sr(s)ds\\Big)\\Big(\\sum_{i=1}^n\\min\r\n
+\\Big(\\frac{S(i\\tau)}{S((i-1)\\tau)}-1,c\\Big)\\Big)_+\\bigg],$$\r\n
+where\s$r$\sis\sthe\sriskless\sshort\srate,\s$\\tau$\sthe\sfixing\sinterval\ssize,\sand\s$n$\sthe\snumber\sof\sfixing\speriods.\r\n
+*/\r\n
+=\smax(last(Cashflow.cliquet_sum_1y[$index]),\s0)\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="pimco_gem_atm_calls_1y_part_rate" datatype="real" action="Avg" group="g11">=\smax((last(Cashflow.pimco_gem_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate[$index],\svol.x5_global_floor)\s*\slast(Cashflow.df_1y)</c>
+        <c name="pimco_gem_atm_cliquets_part_rate" datatype="real" action="Avg" group="g19">=x5_5yr_option.pimco_gem_5yr_atm_call_par[$index]</c>
+        <c name="spx_rc_atm_calls_1y_part_rate" datatype="real" action="Avg" group="g26">=\smax((last(Cashflow.spx_rc_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate[$index],\svol.x5_global_floor)\s*\slast(Cashflow.df_1y)</c>
+        <c name="lm_atm_call_1y" datatype="real" action="Avg">//\sat-the-money\sone-year\scall\son\sthe\sLM\sindex.\r\n
+=\smax(last(Cashflow.lm_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="lm_atm_call_2y" datatype="real" action="Avg">//\sat-the-money\stwo-year\scall\son\sthe\sLM\sindex.\r\n
+=\smax(last(Cashflow.lm_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_2y)</c>
+        <c name="lm_otm_calls_1y" datatype="real" action="Avg" group="g31">//\sA\sone-year\scall\son\sthe\sLM\sindex.\r\n
+=\smax(last(Cashflow.lm_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="lm_otm_calls_2y" datatype="real" action="Avg" group="g32">//\sA\stwo-year\scall\son\sthe\sLM\sindex.\r\n
+=\smax(last(Cashflow.lm_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="aqr_atm_call_1y" datatype="real" action="Avg">//\sat-the-money\sone-year\scall\son\sthe\sAQR\sindex.\r\n
+=\smax(last(Cashflow.aqr_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="aqr_atm_call_2y" datatype="real" action="Avg">//\sat-the-money\stwo-year\scall\son\sthe\sAQR\sindex.\r\n
+=\smax(last(Cashflow.aqr_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_2y)</c>
+        <c name="aqr_otm_calls_1y" datatype="real" action="Avg" group="g33">//\sA\sone-year\scall\son\sthe\sAQR\sindex.\r\n
+=\smax(last(Cashflow.aqr_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="aqr_otm_calls_2y" datatype="real" action="Avg" group="g37">//\sA\stwo-year\scall\son\sthe\sAQR\sindex.\r\n
+=\smax(last(Cashflow.aqr_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="aqr_atm_calls_1y_part_rate" datatype="real" action="Avg" group="g35">=\smax((last(Cashflow.aqr_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_aqr_ab[$index],\svol.x5_global_floor)\s*\slast(Cashflow.df_1y)</c>
+        <c name="aqr_atm_calls_2y_part_rate" datatype="real" action="Avg" group="g38">=\smax((last(Cashflow.aqr_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_aqr_ab[$index],\svol.x5_global_floor)\s*\slast(Cashflow.df_2y)</c>
+        <c name="aqr_otm_calls_1y_part_rate" datatype="real" action="Avg" group="g34">=\smax((last(Cashflow.aqr_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_aqr_ab[$index]\s\s-\svol.aqr_ab_1y_otm_spread,\svol.x5_global_floor)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="aqr_otm_calls_2y_part_rate" datatype="real" action="Avg" group="g39">=\smax((last(Cashflow.aqr_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_aqr_ab[$index]\s\s-\svol.aqr_ab_1y_otm_spread\s*\s2,\svol.x5_global_floor)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="pimbap_atm_call_1y" datatype="real" action="Avg">//\sat-the-money\sone-year\scall\son\sthe\sPIMBAP\sindex.\r\n
+=\smax(last(Cashflow.pimbap_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="pimbap_atm_call_2y" datatype="real" action="Avg">//\sat-the-money\s2-year\scall\son\sthe\sPIMBAP\sindex.\r\n
+=\smax(last(Cashflow.pimbap_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_2y)</c>
+        <c name="pimbap_otm_calls_1y" datatype="real" action="Avg" group="g36">=\smax(last(Cashflow.pimbap_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="pimbap_otm_calls_2y" datatype="real" action="Avg" group="g40">=\smax(last(Cashflow.pimbap_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2*cap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="pimbap_atm_calls_1y_part_rate" datatype="real" action="Avg" group="g50">=\smax((last(Cashflow.pimbap_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate[$index],\s0)\s*\slast(Cashflow.df_1y)</c>
+        <c name="ab_global_allocator_atm_call_1y" datatype="real" action="Avg">//\sat-the-money\sone-year\scall\son\sthe\sAB\sGlobal\sAllocator\sindex.\r\n
+=\smax(last(Cashflow.ab_global_allocator_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="ab_global_allocator_atm_call_2y" datatype="real" action="Avg">//\sat-the-money\s2-year\scall\son\sthe\sAB\sGlobal\sAllocator\sindex.\r\n
+=\smax(last(Cashflow.ab_global_allocator_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_2y)</c>
+        <c name="ab_global_allocator_otm_calls_2y" datatype="real" action="Avg" group="g46">=\smax(last(Cashflow.ab_global_allocator_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="ab_global_allocator_atm_calls_1y_part_rate" datatype="real" action="Avg" group="g49">=\smax((last(Cashflow.ab_global_allocator_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate[$index],\s0)\s*\slast(Cashflow.df_1y)</c>
+        <c name="ab_global_allocator_otm_calls_1y" datatype="real" action="Avg" group="g45">=\smax(last(Cashflow.ab_global_allocator_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="spx_binary_call_1y" datatype="real" action="Avg">//use\scall\sspread\sto\sreplicate\sthe\sbinary\scall\soption\sprice\r\n
+//The\snet\spayout\sat\sexpiry,\sT,\sis\stherefore\s{Max(ST-K,0)\s–\sMax\s(ST\s–\sS0,\s0)}.\swe\schoose\sK\sto\sbe\s1%\sbelow\sS0\s\r\n
+\r\n
+=\s100\s*\s(max(last(Cashflow.spx_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s0.99,\s0)\s\r\n
+\s\s-\smax(last(Cashflow.spx_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0))\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="mxea_binary_call_1y" datatype="real" action="Avg">//use\scall\sspread\sto\sreplicate\sthe\sbinary\scall\soption\sprice\r\n
+//The\snet\spayout\sat\sexpiry,\sT,\sis\stherefore\s{Max(ST-K,0)\s–\sMax\s(ST\s–\sS0,\s0)}.\swe\schoose\sK\sto\sbe\s1%\sbelow\sS0\s\r\n
+\r\n
+=\s100\s*\s(max(last(Cashflow.mxea_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s0.99,\s0)\s\r\n
+\s\s-\smax(last(Cashflow.mxea_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0))\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="rty_binary_call_1y" datatype="real" action="Avg">//use\scall\sspread\sto\sreplicate\sthe\sbinary\scall\soption\sprice\r\n
+//The\snet\spayout\sat\sexpiry,\sT,\sis\stherefore\s{Max(ST-K,0)\s–\sMax\s(ST\s–\sS0,\s0)}.\swe\schoose\sK\sto\sbe\s1%\sbelow\sS0\s\r\n
+\r\n
+=\s100\s*\s(max(last(Cashflow.rty_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s0.99,\s0)\s\r\n
+\s\s-\smax(last(Cashflow.rty_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0))\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="nasdaq_atm_call_1y" datatype="real" action="Avg">=\smax(last(Cashflow.nasdaq_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1,\s0)\s\r\n
+*\slast(Cashflow.df_1y)</c>
+        <c name="nasdaq_otm_calls_1y" datatype="real" action="Avg" group="g51">=\smax(\r\n
+\s\s\s\slast(Cashflow.nasdaq_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="dfa_atm_calls_1y_part_rate" datatype="real" action="Avg" group="g52">=\smax((last(Cashflow.dfa_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_cliquet[$index],\s0)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="dfa_atm_calls_2y_part_rate" datatype="real" action="Avg" group="g53">=\smax((last(Cashflow.dfa_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\scap_and_strike.participation_rate_cliquet[$index],\s0)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="dfa_otm_calls_1y" datatype="real" action="Avg" group="g54">=\smax(\r\n
+\s\s\s\slast(Cashflow.dfa_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="dfa_otm_calls_2y" datatype="real" action="Avg" group="g55">=\smax(\r\n
+\s\s\s\slast(Cashflow.dfa_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="invesco_new_otm_calls_1y" datatype="real" action="Avg" group="g58">=\smax(\r\n
+\s\s\s\slast(Cashflow.invesco_new_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="invesco_new_otm_calls_2y" datatype="real" action="Avg" group="g59">=\smax(\r\n
+\s\s\s\slast(Cashflow.invesco_new_spot_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="mlsb_otm_calls_bid_1y" datatype="real" action="Avg" group="g56">//\sA\sone-year\scall\son\sthe\sMLSB\sindex.\r\n
+=\smax(last(Cashflow.mlsb_spot_bid_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="mlsb_otm_calls_bid_2y" datatype="real" action="Avg" group="g57">//\sA\stwo-year\scall\son\sthe\sMLSB\sindex.\r\n
+=\smax(last(Cashflow.mlsb_spot_bid_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="pimco_otm_calls_bid_1y" datatype="real" action="Avg" group="g58">//\sA\sone-year\scall\son\sthe\sMLSB\sindex.\r\n
+=\smax(last(Cashflow.pimco_spot_bid_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="pimco_otm_calls_bid_2y" datatype="real" action="Avg" group="g59">//\sA\stwo-year\scall\son\sthe\sMLSB\sindex.\r\n
+=\smax(last(Cashflow.pimco_spot_bid_2y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\s2\s*\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_2y)</c>
+        <c name="jpm_mom_otm_calls_1y" datatype="real" action="Avg" group="g12">=\smax(last(Cashflow.jpm_mom_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="jpm_qua_otm_calls_1y" datatype="real" action="Avg" group="g14">=\smax(last(Cashflow.jpm_qua_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+        <c name="jpm_asc_otm_calls_1y" datatype="real" action="Avg" group="g15">=\smax(last(Cashflow.jpm_asc_spot_1y)\s/\s(Variables.option_strike\s+\s1e-5)\r\n
+\s\s\s\s-\s(1\s+\scap_and_strike.strike[$index]),\s0)\r\n
+\s\s\s\s*\slast(Cashflow.df_1y)</c>
+      </set>
+    </result>
+    <result name="sos">
+      <set name="verbose" active="True" type="AllSteps" from-cashflow="Cashflow" agg="None" auto="False">
+        <c name="t" />
+        <c name="projection_date" />
+        <c name="is_monthversary" />
+        <c name="df" />
+        <c name="df_credit" />
+        <c name="df_npa" />
+        <c name="Equity.spx" />
+        <c name="Equity.diffusion_variance_unclipped" />
+        <c name="Equity.sptr" />
+        <c name="Equity.mxea" />
+        <c name="Equity.rty" />
+        <c name="Equity.diffusion_variance_unclipped_mxea" />
+        <c name="Equity.diffusion_variance_unclipped_rty" />
+        <c name="Equity.nasdaq" />
+        <c name="Equity.diffusion_variance_unclipped_nasdaq" />
+        <c name="Equity.sptr_driftless" />
+        <c name="Equity.ig_kappa" />
+        <c name="Equity.ig_theta" />
+        <c name="Equity.ig_lambda" />
+        <c name="Equity.ig_xi" />
+        <c name="Equity.ig_q" />
+        <c name="Equity.ig_vol" />
+        <c name="Equity.ig_rho" />
+        <c name="Equity.ig_funding_spread" />
+        <c name="Equity.spx_trigger_calls_1y_seasoned" agg="None" />
+        <c name="Equity.secure_rate_gmab_5y_spread_1pct" agg="None" />
+        <c name="Equity.secure_rate_gmab_5y_spread_2pct" agg="None" />
+        <c name="Equity.secure_rate_gmab_5y_spread_3pct" agg="None" />
+        <c name="Equity.secure_rate_cliquet_5y" agg="None" />
+        <c name="Equity.gmab_5y_spread_1pct" agg="None" />
+        <c name="Equity.gmab_5y_spread_2pct" agg="None" />
+        <c name="Equity.gmab_5y_spread_3pct" agg="None" />
+        <c name="Equity.secure_rate_gmab_7y_spread_1pct" agg="None" />
+        <c name="Equity.secure_rate_gmab_7y_spread_2pct" agg="None" />
+        <c name="Equity.secure_rate_gmab_7y_spread_3pct" agg="None" />
+        <c name="Equity.secure_rate_cliquet_7y" agg="None" />
+        <c name="Equity.gmab_7y_spread_1pct" agg="None" />
+        <c name="Equity.gmab_7y_spread_2pct" agg="None" />
+        <c name="Equity.gmab_7y_spread_3pct" agg="None" />
+        <c name="InterestRate.money_market" />
+        <c name="InterestRate.factor" />
+        <c name="InterestRate.swap_curve_spot" />
+        <c name="InterestRate.libor_curve_spot" />
+        <c name="InterestRate.swap_table" />
+        <c name="InterestRate.libor_swap_table" />
+        <c name="InterestRate.treasury_yields" />
+        <c name="InterestRate.corporate_table" />
+        <c name="InterestRate.df_5yr" />
+        <c name="InterestRate.zcb_1y_price" />
+        <c name="InterestRate.zcb_6m_price" />
+        <c name="InterestRate.zcb_6y_price" />
+        <c name="InterestRate.npa_table" />
+        <c name="InterestRate.bond_price_5y_driftless" />
+        <c name="InterestRate.bond_price_30y_driftless" />
+        <c name="InterestRate.corporate_table_crbg" />
+        <c name="Bond.bond_price_ga" />
+        <c name="Bond.bond_yield_ga" />
+        <c name="Bond.bond_price_mva" />
+        <c name="Bond.bond_yield_mva" />
+        <c name="Bond.bond_price_agg" />
+        <c name="HybridIndex.mlsb_index" />
+        <c name="HybridIndex.pimco_gem" agg="None" />
+        <c name="HybridIndex.spx_rc" agg="None" />
+        <c name="HybridIndex.pimco_index" />
+        <c name="HybridIndex.mseh_index" agg="None" />
+        <c name="HybridIndex.ab_index" />
+        <c name="HybridIndex.lm_index" />
+        <c name="HybridIndex.dap" />
+        <c name="HybridIndex.aqr_index" />
+        <c name="HybridIndex.pimbap_index" />
+        <c name="HybridIndex.ab_global_allocator_index" />
+        <c name="HybridIndex.dfa_index" />
+        <c name="HybridIndex.invesco_new_index" />
+        <c name="HybridIndex.mlsb_index_bid" agg="None" />
+        <c name="HybridIndex.pimco_index_bid" agg="None" />
+        <c name="HybridIndex.jpm_mom_index" agg="None" />
+        <c name="HybridIndex.jpm_qua_index" agg="None" />
+        <c name="HybridIndex.jpm_asc_index" agg="None" />
+        <c name="HybridIndex.jpm_mom_secure_rate_value" agg="None" />
+        <c name="HybridIndex.jpm_qua_secure_rate_value" agg="None" />
+        <c name="HybridIndex.jpm_asc_secure_rate_value" agg="None" />
+        <c name="HybridIndex.jpm_mom_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_mom_gmab_value_2pct" agg="None" />
+        <c name="HybridIndex.jpm_mom_gmab_value_3pct" agg="None" />
+        <c name="HybridIndex.jpm_qua_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_qua_gmab_value_2pct" agg="None" />
+        <c name="HybridIndex.jpm_qua_gmab_value_3pct" agg="None" />
+        <c name="HybridIndex.jpm_asc_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_asc_gmab_value_2pct" agg="None" />
+        <c name="HybridIndex.jpm_asc_gmab_value_3pct" agg="None" />
+        <c name="HybridIndex.jpm_mom_secure_rate_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_mom_secure_rate_gmab_value_2pct" agg="None" />
+        <c name="HybridIndex.jpm_mom_secure_rate_gmab_value_3pct" agg="None" />
+        <c name="HybridIndex.jpm_qua_secure_rate_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_qua_secure_rate_gmab_value_2pct" agg="None" />
+        <c name="HybridIndex.jpm_qua_secure_rate_gmab_value_3pct" agg="None" />
+        <c name="HybridIndex.jpm_asc_secure_rate_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_asc_secure_rate_gmab_value_2pct" agg="None" />
+        <c name="HybridIndex.jpm_asc_secure_rate_gmab_value_3pct" agg="None" />
+      </set>
+    </result>
+  </results2>
+  <greeks>
+    <greeks-calculation name="greeks" shocks-datasource="shocks" shocks-dataset="shocks" result="fmvs" result-set="pricings">
+      <columns />
+      <shock_table collapsed-columns="">
+        <data dtype="[('state',\s[('add',\s'&lt;f8'),\s('mul',\s'&lt;f8')])]" count="6" />
+      </shock_table>
+    </greeks-calculation>
+  </greeks>
+  <local-runs>
+    <local-run name="book" result="fmvs" inforce-mode="Current" policies="" path-mode="Ranges" paths="1-128" shock-mode="Current" shocks="" current_combination="InverseGamma" />
+    <local-run name="test" result="sos" inforce-mode="All" policies="" path-mode="All" paths="" shock-mode="Current" shocks="" current_combination="InverseGamma" />
+    <local-run name="test_1" result="sos" inforce-mode="All" policies="" path-mode="All" paths="" shock-mode="Current" shocks="" current_combination="InverseGamma" />
+  </local-runs>
+  <view-customizations>
+    <view name="Cashflow:Cashflow">
+      <c name="ab_global_allocator_spot" formattype="General" width="80" />
+      <c name="ab_global_allocator_spot_1y" formattype="General" width="80" />
+      <c name="ab_global_allocator_spot_2y" formattype="General" width="80" />
+      <c name="ab_spot" formattype="General" width="80" />
+      <c name="ab_spot_1y" formattype="General" width="90" />
+      <c name="ab_spot_2y" formattype="General" width="80" />
+      <c name="aqr_spot" formattype="General" width="80" />
+      <c name="aqr_spot_1y" formattype="General" width="80" />
+      <c name="aqr_spot_2y" formattype="General" width="80" />
+      <c name="cliquet_sum[0]" formattype="General" width="80" />
+      <c name="cliquet_sum_1y[0]" formattype="General" width="80" />
+      <c name="dfa_spot" formattype="General" width="80" />
+      <c name="dfa_spot_1y" formattype="General" width="80" />
+      <c name="dfa_spot_2y" formattype="General" width="80" />
+      <c name="df_1y" formattype="General" width="80" />
+      <c name="df_2y" formattype="General" width="80" />
+      <c name="df_credit" formattype="General" width="80" />
+      <c name="df_npa" formattype="General" width="80" />
+      <c name="fixing_average" formattype="General" width="80" />
+      <c name="fixing_average_1y" formattype="General" width="80" />
+      <c name="fixing_level" formattype="General" width="80" />
+      <c name="fixing_sum" formattype="General" width="80" />
+      <c name="invesco_new_spot" formattype="General" width="80" />
+      <c name="invesco_new_spot_1y" formattype="General" width="80" />
+      <c name="invesco_new_spot_2y" formattype="General" width="80" />
+      <c name="is_anniversary" formattype="General" width="80" />
+      <c name="is_monthversary" formattype="General" width="80" />
+      <c name="jpm_asc_spot" formattype="General" width="80" />
+      <c name="jpm_asc_spot_1y" formattype="General" width="80" />
+      <c name="jpm_mom_spot" formattype="General" width="80" />
+      <c name="jpm_mom_spot_1y" formattype="General" width="80" />
+      <c name="jpm_qua_spot" formattype="General" width="80" />
+      <c name="jpm_qua_spot_1y" formattype="General" width="80" />
+      <c name="lm_spot" formattype="General" width="80" />
+      <c name="lm_spot_1y" formattype="General" width="80" />
+      <c name="lm_spot_2y" formattype="General" width="80" />
+      <c name="mlsb_spot" formattype="General" width="80" />
+      <c name="mlsb_spot_1y" formattype="General" width="80" />
+      <c name="mlsb_spot_2y" formattype="General" width="80" />
+      <c name="mlsb_spot_bid" formattype="General" width="80" />
+      <c name="mlsb_spot_bid_1y" formattype="General" width="80" />
+      <c name="mlsb_spot_bid_2y" formattype="General" width="80" />
+      <c name="mseh_fixing_level" formattype="General" width="169" />
+      <c name="mseh_spot" formattype="General" width="80" />
+      <c name="mseh_spot_1y" formattype="General" width="80" />
+      <c name="mseh_spot_2y" formattype="General" width="80" />
+      <c name="mxea_spot" formattype="General" width="80" />
+      <c name="mxea_spot_1y" formattype="General" width="80" />
+      <c name="mxea_spot_2y" formattype="General" width="80" />
+      <c name="nasdaq_spot" formattype="General" width="80" />
+      <c name="nasdaq_spot_1y" formattype="General" width="80" />
+      <c name="nasdaq_spot_2y" formattype="General" width="80" />
+      <c name="n_fixing" formattype="General" width="80" />
+      <c name="option_1y_ttm" formattype="General" width="80" />
+      <c name="option_6y_ttm" formattype="General" width="80" />
+      <c name="pimbap_spot" formattype="General" width="80" />
+      <c name="pimbap_spot_1y" formattype="General" width="80" />
+      <c name="pimbap_spot_2y" formattype="General" width="80" />
+      <c name="pimco_gem_fixing_level" formattype="General" width="64" />
+      <c name="pimco_gem_spot" formattype="General" width="105" />
+      <c name="pimco_gem_spot_1y" formattype="General" width="130" />
+      <c name="pimco_spot" formattype="General" width="80" />
+      <c name="pimco_spot_1y" formattype="General" width="170" />
+      <c name="pimco_spot_2y" formattype="General" width="152" />
+      <c name="pimco_spot_bid" formattype="General" width="80" />
+      <c name="pimco_spot_bid_1y" formattype="General" width="80" />
+      <c name="pimco_spot_bid_2y" formattype="General" width="80" />
+      <c name="projection_date" formattype="General" width="107" />
+      <c name="rty_spot" formattype="General" width="80" />
+      <c name="rty_spot_1y" formattype="General" width="80" />
+      <c name="rty_spot_2y" formattype="General" width="80" />
+      <c name="spx_rc_spot" formattype="General" width="80" />
+      <c name="spx_rc_spot_1y" formattype="General" width="98" />
+      <c name="spx_spot" formattype="General" width="80" />
+      <c name="spx_spot_1y" formattype="General" width="80" />
+      <c name="spx_spot_2y" formattype="General" width="80" />
+    </view>
+    <view name="Computation:TimeStepLogic">
+      <c name="annexus_5y_fixing_date_next" formattype="General" width="80" />
+      <c name="annexus_5y_fixing_step" formattype="General" width="80" />
+      <c name="annexus_5y_n_fixing" formattype="General" width="80" />
+      <c name="is_3monthversary" formattype="General" width="80" />
+      <c name="is_3rd_anniversary" formattype="General" width="80" />
+      <c name="is_5th_anniversary" formattype="General" width="80" />
+      <c name="is_7th_anniversary" formattype="General" width="80" />
+      <c name="is_anniversary" formattype="General" width="100.666666666667" />
+      <c name="is_monthversary" formattype="General" width="106.666666666667" />
+      <c name="next_3monthversary" formattype="General" width="80" />
+      <c name="next_3rd_anniversary" formattype="General" width="80" />
+      <c name="next_5th_anniversary" formattype="General" width="80" />
+      <c name="next_7th_anniversary" formattype="General" width="80" />
+      <c name="next_anniversary_date" formattype="General" width="139.333333333333" />
+      <c name="next_monthversary" formattype="General" width="104" />
+      <c name="nth_yr_hdv_3yr" formattype="General" width="80" />
+      <c name="nth_yr_hdv_6yr" formattype="General" width="80" />
+      <c name="option_2y_ttm_hdv_3y" formattype="General" width="80" />
+      <c name="option_3m_ttm" formattype="General" width="80" />
+      <c name="option_3y_ttm" formattype="General" width="80" />
+      <c name="option_4y_ttm_hdv_6y" formattype="General" width="80" />
+      <c name="option_5y_ttm" formattype="General" width="80" />
+      <c name="option_5y_ttm_hdv_6y" formattype="General" width="80" />
+      <c name="option_6y_ttm" formattype="General" width="111.333333333334" />
+      <c name="option_7y_ttm" formattype="General" width="80" />
+      <c name="projection_date" formattype="General" width="114.4" />
+      <c name="projection_date_next" formattype="General" width="152" />
+    </view>
+    <view name="NpyData:cap_and_strike">
+      <c name="barrier_level_6y[2]" formattype="General" width="115.333333333333" />
+      <c name="extended_strike_1y" formattype="General" width="134.43" />
+      <c name="extended_strike_6y" formattype="General" width="130.666666666667" />
+      <c name="ig_strike" formattype="General" width="73.3333333333338" />
+      <c name="mp2p_cap[0]" formattype="General" width="116.516666666667" />
+      <c name="secure_strike_6y" formattype="General" width="127.333333333333" />
+      <c name="sptr_strike_put_1y" formattype="General" width="94" />
+    </view>
+    <view name="NpyData:hybrid_index">
+      <c name="equity_betas[0]" formattype="General" width="100.58000000000001" />
+    </view>
+    <view name="NpyData:interest_curves">
+      <c name="credit_spread_spot" formattype="General" width="184" />
+      <c name="libor_spot_proxy" formattype="General" width="122.42333333333335" />
+      <c name="npa_spread_spot" formattype="General" width="131.83333333333334" />
+      <c name="swap_rate_spot" formattype="General" width="232.8" />
+    </view>
+    <view name="NpyData:inverse_gamma">
+      <c name="div" formattype="General" width="357.333333333332" />
+      <c name="div_tenor" formattype="General" width="163.333333333333" />
+      <c name="funding_spread_tenor" formattype="General" width="142.666666666667" />
+      <c name="reversion" formattype="General" width="191.333333333333" />
+      <c name="reversion_tenor" formattype="General" width="1" />
+      <c name="vol_inf" formattype="General" width="197.726666666667" />
+      <c name="vol_inf_bs" formattype="General" width="1" />
+      <c name="vol_inf_bs_tenor" formattype="General" width="1" />
+      <c name="vol_inf_tenor" formattype="General" width="112" />
+      <c name="vol_of_vol" formattype="General" width="1" />
+      <c name="vol_of_vol_tenor" formattype="General" width="1" />
+    </view>
+    <view name="NpyData:option">
+      <c name="shock" formattype="General" width="59.8333333333333" />
+      <c name="spot_pimco" formattype="General" width="83.82" />
+    </view>
+    <view name="NpyData:run">
+      <c name="shocksos" formattype="General" width="121.106666666667" />
+    </view>
+    <view name="NpyData:shocksdata">
+      <c name="df_5yr" formattype="General" width="1" />
+      <c name="equity_diffusion_variance_unclipped" formattype="General" width="178.000000000001" />
+      <c name="equity_diffusion_variance_unclipped_mxea" formattype="General" width="1" />
+      <c name="equity_diffusion_variance_unclipped_nasdaq" formattype="General" width="1" />
+      <c name="equity_diffusion_variance_unclipped_rty" formattype="General" width="202.666666666667" />
+      <c name="hw_factor" formattype="General" width="1" />
+      <c name="spot" formattype="General" width="117.496666666667" />
+      <c name="spot_aqr" formattype="General" width="177" />
+      <c name="spot_mseh" formattype="General" width="1" />
+      <c name="spot_nasdaq" formattype="General" width="123" />
+    </view>
+    <view name="NpyData:shocksdata_econ">
+      <c name="df_5yr" formattype="General" width="1" />
+      <c name="equity_diffusion_variance_unclipped_mxea" formattype="General" width="1" />
+      <c name="equity_diffusion_variance_unclipped_nasdaq" formattype="General" width="1" />
+      <c name="equity_diffusion_variance_unclipped_rty" formattype="General" width="1" />
+      <c name="hw_factor" formattype="General" width="1" />
+      <c name="spot_nasdaq" formattype="General" width="1" />
+    </view>
+  </view-customizations>
+  <BranchMergeHistory>
+    <Item ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/149">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/140" />
+      <From ref="t7edxevu947u:Development/678a3854-34a6-4ad1-8e49-001d1cf7aafe/29" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/b27717bb-4ec1-4a7c-9ac6-2f13b53d4208:IA_ESG_MODEL_ADD_SWITCH/1">
+      <From ref="awrkpdhs8rgr:Production/3061a9b0-7f2c-451c-b6ff-9fe59b09598e:IA_ESG_MODEL/15" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/163">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/161" />
+      <From ref="t7edxevu947u:Development/b27717bb-4ec1-4a7c-9ac6-2f13b53d4208:IA_ESG_MODEL_ADD_SWITCH/2" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/0dbdb87f-9ae8-4259-8ef2-46366531b172:IA_ESG_MODEL_EXPAND_CORR/1">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/163" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/0dbdb87f-9ae8-4259-8ef2-46366531b172:IA_ESG_MODEL_EXPAND_CORR/2">
+      <From ref="t7edxevu947u:Development/0dbdb87f-9ae8-4259-8ef2-46366531b172:IA_ESG_MODEL_EXPAND_CORR/1" />
+      <From ref="t7edxevu947u:Development/678a3854-34a6-4ad1-8e49-001d1cf7aafe:IA_ESG_MODEL_AOA_X5_GUARDIAN/58" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/0dbdb87f-9ae8-4259-8ef2-46366531b172:IA_ESG_MODEL_EXPAND_CORR/6">
+      <From ref="t7edxevu947u:Development/0dbdb87f-9ae8-4259-8ef2-46366531b172:IA_ESG_MODEL_EXPAND_CORR/4" />
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/167" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/168">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/167" />
+      <From ref="t7edxevu947u:Development/0dbdb87f-9ae8-4259-8ef2-46366531b172:IA_ESG_MODEL_EXPAND_CORR/9" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/1480fbbe-ccda-434a-ae30-94b8b9311c63:IA_ESG_MODEL_RILA/1">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/213" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/216">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/215" />
+      <From ref="t7edxevu947u:Development/1480fbbe-ccda-434a-ae30-94b8b9311c63:IA_ESG_MODEL_RILA/48" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/c424a98a-7f60-4497-946b-dfa5b60ead11:IA_ESG_MODEL_IRF_2757/1">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/238" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/243">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/242" />
+      <From ref="t7edxevu947u:Development/c424a98a-7f60-4497-946b-dfa5b60ead11:IA_ESG_MODEL_IRF_2757/4" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/35d544fc-efbc-42c6-8000-4a823967de27:IA_ESG_MODEL_v662_add_RILA/0">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/246" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/6aa1de5b-c9ca-4bfd-8a8d-1ffc5f86b3ad:IA_ESG_MODEL_INVESCO_NEW_FINAL/0">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/246" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/35d544fc-efbc-42c6-8000-4a823967de27:IA_ESG_MODEL_v662_add_RILA/5">
+      <From ref="t7edxevu947u:Development/35d544fc-efbc-42c6-8000-4a823967de27:IA_ESG_MODEL_v662_add_RILA/4" />
+      <From ref="t7edxevu947u:Development/6aa1de5b-c9ca-4bfd-8a8d-1ffc5f86b3ad:IA_ESG_MODEL_INVESCO_NEW_FINAL/14" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/58b23054-70a9-4d94-9309-500f805b1ff7:IA_ESG_MODEL_MLSB_PIMCO_CAP_ADJ/1">
+      <From ref="t7edxevu947u:Development/95873810-3cb7-4857-83ec-01c67d37d876:IA_ESG_MODEL/246" />
+    </Item>
+    <Item ref="t7edxevu947u:Development/35d544fc-efbc-42c6-8000-4a823967de27:IA_ESG_MODEL_v662_add_RILA/6">
+      <From ref="t7edxevu947u:Development/35d544fc-efbc-42c6-8000-4a823967de27:IA_ESG_MODEL_v662_add_RILA/5" />
+      <From ref="t7edxevu947u:Development/58b23054-70a9-4d94-9309-500f805b1ff7:IA_ESG_MODEL_MLSB_PIMCO_CAP_ADJ/6" />
+    </Item>
+  </BranchMergeHistory>
+</pathwise-model-root>
