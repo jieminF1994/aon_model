@@ -219,7 +219,17 @@ end</udf>
 \s\s\s\sreal\sP_xxyy\s=\sP_ssyy*exp(2*x)\s+\sP_syy*exp(x)\r\n
 \r\n
 \r\n
-\s\s\s\s$result\s=\sP\s+\sa_0*P_y\s+\sa_1*P_xy\s+\sa_2*P_xxy\s+\sb_0*P_yy\s+\sb_2*P_xxyy\s\r\n
+\s\s\s\sreal\sput_price\s=\sP\s+\sa_0*P_y\s+\sa_1*P_xy\s+\sa_2*P_xxy\s+\sb_0*P_yy\s+\sb_2*P_xxyy\s\r\n
+\r\n
+\s\s\s\sreal\sdf\s=\sexp(-r*T)\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sput_lower\s=\smax(Strike\s*\sdf\s-\sS0,\s0.0)\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sput_upper\s=\sStrike\s*\sdf\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\smin(max(put_price,\sput_lower),\sput_upper)\r\n
+\r\n
+\s\r\n
 \r\n
 \r\n
 \r\n
@@ -530,7 +540,11 @@ end</udf>
 \s\s\s\sreal\sP_xxyy\s=\sP_ssyy*exp(2*x)\s+\sP_syy*exp(x)\r\n
 \r\n
 \r\n
-\s\s\s\s$result\s=\sP\s+\sa_0*P_y\s+\sa_1*P_xy\s+\sa_2*P_xxy\s+\sb_0*P_yy\s+\sb_2*P_xxyy\s\r\n
+\s\s\s\sreal\sput_price\s=\sP\s+\sa_0*P_y\s+\sa_1*P_xy\s+\sa_2*P_xxy\s+\sb_0*P_yy\s+\sb_2*P_xxyy\s\r\n
+\s\s\s\sreal\sdf\s=\sexp(-r*T)\r\n
+\s\s\s\sreal\sput_lower\s=\smax(Strike\s*\sdf\s-\sS0,\s0.0)\r\n
+\s\s\s\sreal\sput_upper\s=\sStrike\s*\sdf\r\n
+\s\s\s\s$result\s=\smin(max(put_price,\sput_lower),\sput_upper)\r\n
 \r\n
 \r\n
 \r\n
@@ -557,7 +571,8 @@ end</udf>
 \s\s\send\r\n
 \s\s\s$result\s=\sc\r\n
 end</udf>
-    <udf name="gmab_binomial">real\sgmab_binomial(int\sn,\sreal\sp_curr,\sreal\sp_next,\sreal\sundis_call_spread_curr,\sreal\sundis_call_spread_next,\sreal\sK_min,\sreal\sAV_curr,\sreal\sdiscount_factor)\r\n
+    <udf name="gmab_binomial">real\sgmab_binomial(int\sn,\sreal\sp_curr,\sreal\sp_next,\sreal\sundis_call_spread_curr,\sreal\sundis_call_spread_next,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sK_min,\sreal\sAV_curr,\sreal\sdiscount_factor,\sreal\scoupon,\sbool\sis_trigger)\r\n
 \r\n
 \s\s\sreal\sp_k\r\n
 \s\s\sreal\sav_k\r\n
@@ -574,12 +589,17 @@ end</udf>
 \s\s\s//\s-\sCompute\sprobability-weighted\sGMAB\spayoff\sand\sdiscount\sback\r\n
 \s\s\s//\sConditional\scredited\sreturns:\r\n
 \s\s\s//\sundiscounted\scall\sspread\s=\sprobability\s*\sconditional\scredited\sreturn\r\n
-\s\s\sx_curr\s=\sundis_call_spread_curr\s/\sp_curr\r\n
-\s\s\sx_next\s=\sundis_call_spread_next\s/\sp_next\r\n
+\s\s\sif\sis_trigger\sthen\r\n
+\s\s\s\s\s\s\sx_curr\s=\scoupon\r\n
+\s\s\s\s\s\s\sx_next\s=\scoupon\r\n
+\s\s\selse\r\n
+\s\s\s\s\s\s\sx_curr\s=\sundis_call_spread_curr\s/\sp_curr\r\n
+\s\s\s\s\s\s\sx_next\s=\sundis_call_spread_next\s/\sp_next\r\n
+\s\s\send\r\n
 \s\s\sgmab_value\s=\s0.0\s\r\n
 \s\s\s//\sk\s=\stotal\snumber\sof\spositive-credit\syears\sacross:current\syear\s+\sn\sfuture\syears\r\n
 \s\s\sfor\sk\s=\s0\sto\sn\s+\s1\r\n
-\s\s\s\s\s\s\s//\sp_k\s=\sprobability\sthat\sexactly\sk\syears\shit\sthe\scap\r\n
+\s\s\s\s\s\s\s//\sp_k\s=\sprobability\sthat\sexactly\sk\syears\shave\spositive\scredit\r\n
 \s\s\s\s\s\s\sp_k\s=\s0\r\n
 \s\s\s\s\s\s\s//\sCase\s1:\scurrent\syear\sgets\spositive\scredited\sreturn\r\n
 \s\s\s\s\s\s\sif\sk\s&gt;=\s1\sthen\r\n
@@ -615,6 +635,26 @@ end</udf>
 \s\s\s$result\s=\ssqrt(total_variance)\r\n
 end\r\n
 end</udf>
+    <udf name="second_moment_call_square">real\ssecond_moment_call_square(real\sf,\sreal\sK,\sreal\ssigma,\sreal\st)\r\n
+\s\s\sreal\stotal_vol\r\n
+\s\s\sreal\sd1\r\n
+\s\s\sreal\sd2\r\n
+\s\s\sreal\sd3\r\n
+\s\s\sif\scompare(t\s&lt;=\s0,\s1e-8)\sthen\r\n
+\s\s\s\s\s\s\s$result\s=\smax(f\s-\sK,\s0)^2\r\n
+\s\s\send\r\n
+\s\s\sif\scompare(sigma\s&lt;=\s0,\s1e-8)\sthen\r\n
+\s\s\s\s\s\s\s$result\s=\smax(f\s-\sK,\s0)^2\r\n
+\s\s\send\r\n
+\s\s\stotal_vol\s=\ssigma\s*\ssqrt(t)\r\n
+\s\s\sd1\s=\s(log(f\s/\sK)\s+\s0.5\s*\ssigma\s*\ssigma\s*\st)\s/\stotal_vol\r\n
+\s\s\sd2\s=\sd1\s-\stotal_vol\r\n
+\s\s\sd3\s=\sd1\s+\stotal_vol\r\n
+\s\s\s$result\s=\r\n
+\s\s\s\s\s\s\sf\s*\sf\s*\sexp(sigma\s*\ssigma\s*\st)\s*\snormal_cdf(d3)\r\n
+\s\s\s\s\s\s\s-\s2.0\s*\sK\s*\sf\s*\snormal_cdf(d1)\r\n
+\s\s\s\s\s\s\s+\sK\s*\sK\s*\snormal_cdf(d2)\r\n
+end\s</udf>
   </UserUDFs>
   <inputs>
     <input name="time" type="real" shape="*" />
@@ -703,7 +743,8 @@ end</udf>
     <input name="strike_put_1y_sptr" type="real" shape="*" />
     <input name="spx_spot_1y" type="real" shape="*" />
     <input name="binary_strike" type="real" shape="*" />
-    <input name="binary_strike_spx_6y" type="real" shape="*" />
+    <input name="binary_strike_3y" type="real" shape="*" />
+    <input name="binary_strike_6y" type="real" shape="*" />
     <input name="barrier_level_3y" type="real" shape="*" />
     <input name="barrier_level_6y" type="real" shape="*" />
     <input name="secure_strike_6y" type="real" shape="*" />
@@ -721,7 +762,6 @@ end</udf>
     <input name="zcb_5y_hdv" type="real" modifier="Cashflow" />
     <input name="run_deterministic_equity_vol_rate" type="bool" />
     <input name="apply_inner_loop_vol" type="bool" />
-    <input name="is_5th_anniversary" type="bool" shape="*" />
     <input name="is_7th_anniversary" type="bool" shape="*" />
     <input name="secure_rate_cap" type="real" shape="*" />
     <input name="gmab_cap" type="real" shape="*" />
@@ -731,6 +771,9 @@ end</udf>
     <input name="zcb_7y_price" type="real" modifier="Cashflow" />
     <input name="option_5y_ttm" type="real" shape="*" />
     <input name="option_7y_ttm" type="real" shape="*" />
+    <input name="gmab_par_rate" type="real" shape="*" />
+    <input name="gmab_5y_cap" type="real" shape="*" />
+    <input name="is_5th_anniversary" type="bool" shape="*" />
   </inputs>
   <results>
     <result name="diffusion_variance" ref="=Projection.equity_variance" />
@@ -758,6 +801,8 @@ end</udf>
     <result name="ig_rho" ref="=Projection.rila_param_placeholder" />
     <result name="ig_funding_spread" ref="=Projection.rila_param_placeholder" />
     <result name="spx_puts_3y_seasoned" ref="=Projection.spx_puts_3y_seasoned" />
+    <result name="rty_puts_3y_seasoned" ref="=Projection.rty_puts_3y_seasoned" />
+    <result name="mxea_puts_3y_seasoned" ref="=Projection.mxea_puts_3y_seasoned" />
     <result name="ndx_puts_3y_seasoned" ref="=Projection.ndx_puts_3y_seasoned" />
     <result name="spx_puts_6y_seasoned" ref="=Projection.spx_puts_6y_seasoned" />
     <result name="mxea_puts_6y_seasoned" ref="=Projection.mxea_puts_6y_seasoned" />
@@ -765,6 +810,8 @@ end</udf>
     <result name="ndx_puts_6y_seasoned" ref="=Projection.ndx_puts_6y_seasoned" />
     <result name="spx_puts_1y_seasoned" ref="=Projection.spx_puts_1y_seasoned" />
     <result name="adj_spx_calls_3y_seasoned" ref="=Projection.adj_spx_calls_3y_seasoned" />
+    <result name="adj_rty_calls_3y_seasoned" ref="=Projection.adj_rty_calls_3y_seasoned" />
+    <result name="adj_mxea_calls_3y_seasoned" ref="=Projection.adj_mxea_calls_3y_seasoned" />
     <result name="adj_ndx_calls_3y_seasoned" ref="=Projection.adj_ndx_calls_3y_seasoned" />
     <result name="adj_spx_calls_6y_seasoned" ref="=Projection.adj_spx_calls_6y_seasoned" />
     <result name="adj_mxea_calls_6y_seasoned" ref="=Projection.adj_mxea_calls_6y_seasoned" />
@@ -774,10 +821,15 @@ end</udf>
     <result name="sptr_puts_1y_seasoned" ref="=Projection.sptr_puts_1y_seasoned" />
     <result name="adj_sptr_calls_1y_seasoned" ref="=Projection.adj_sptr_calls_1y_seasoned" />
     <result name="spx_trigger_calls_1y_seasoned" ref="=Projection.spx_trigger_calls_1y_seasoned" />
+    <result name="spx_trigger_calls_3y_seasoned" ref="=Projection.spx_trigger_calls_3y_seasoned" />
     <result name="spx_trigger_calls_6y_seasoned" ref="=Projection.spx_trigger_calls_6y_seasoned" />
+    <result name="mxea_trigger_calls_3y_seasoned" ref="=Projection.mxea_trigger_calls_3y_seasoned" />
+    <result name="mxea_trigger_calls_6y_seasoned" ref="=Projection.mxea_trigger_calls_6y_seasoned" />
+    <result name="rty_trigger_calls_3y_seasoned" ref="=Projection.rty_trigger_calls_3y_seasoned" />
     <result name="nasdaq_puts_1y_seasoned" ref="=Projection.nasdaq_puts_1y_seasoned" />
     <result name="adj_nasdaq_calls_1y_seasoned" ref="=Projection.adj_nasdaq_calls_1y_seasoned" />
     <result name="nasdaq_trigger_calls_1y_seasoned" ref="=Projection.nasdaq_trigger_calls_1y_seasoned" />
+    <result name="nasdaq_trigger_calls_3y_seasoned" ref="=Projection.nasdaq_trigger_calls_3y_seasoned" />
     <result name="spx_up_out_atm_calls_3y_seasoned" ref="=Projection.spx_up_out_atm_calls_3y_seasoned" />
     <result name="spx_up_out_atm_calls_6y_seasoned" ref="=Projection.spx_up_out_atm_calls_6y_seasoned" />
     <result name="spx_up_out_5pct_otm_puts_3y_seasoned" ref="=Projection.spx_up_out_5pct_otm_puts_3y_seasoned" />
@@ -791,24 +843,35 @@ end</udf>
     <result name="spx_up_out_5pct_otm_puts_6y_seasoned" ref="=Projection.spx_up_out_5pct_otm_puts_6y_seasoned" />
     <result name="spx_step_digital_hdv_3y_seasoned" ref="=Projection.spx_step_digital_hdv_3y" />
     <result name="spx_step_digital_hdv_6y_seasoned" ref="=Projection.spx_step_digital_hdv_6y" />
-    <result name="secure_rate_gmab_5y_spread_1pct" ref="=Projection.secure_rate_gmab_5y_spread_1pct" />
     <result name="secure_rate_gmab_5y_spread_2pct" ref="=Projection.secure_rate_gmab_5y_spread_2pct" />
     <result name="secure_rate_gmab_5y_spread_3pct" ref="=Projection.secure_rate_gmab_5y_spread_3pct" />
     <result name="secure_rate_cliquet_5y" ref="=Projection.secure_rate_cliquet_5y" />
-    <result name="gmab_5y_spread_1pct" ref="=Projection.gmab_5y_spread_1pct" />
     <result name="gmab_5y_spread_2pct" ref="=Projection.gmab_5y_spread_2pct" />
     <result name="gmab_5y_spread_3pct" ref="=Projection.gmab_5y_spread_3pct" />
-    <result name="secure_rate_gmab_7y_spread_1pct" ref="=Projection.secure_rate_gmab_7y_spread_1pct" />
     <result name="secure_rate_gmab_7y_spread_2pct" ref="=Projection.secure_rate_gmab_7y_spread_2pct" />
     <result name="secure_rate_gmab_7y_spread_3pct" ref="=Projection.secure_rate_gmab_7y_spread_3pct" />
     <result name="secure_rate_cliquet_7y" ref="=Projection.secure_rate_cliquet_7y" />
-    <result name="gmab_7y_spread_1pct" ref="=Projection.gmab_7y_spread_1pct" />
     <result name="gmab_7y_spread_2pct" ref="=Projection.gmab_7y_spread_2pct" />
     <result name="gmab_7y_spread_3pct" ref="=Projection.gmab_7y_spread_3pct" />
-    <result name="vol_bs_1y" ref="=Projection.vol_bs_1y" />
-    <result name="vol_bs_5y" ref="=Projection.vol_bs_5y" />
-    <result name="p_curr" ref="=Projection.p_curr" />
-    <result name="p_next" ref="=Projection.p_next_5y" />
+    <result name="gmab_5y_spread_4pct" ref="=Projection.gmab_5y_spread_4pct" />
+    <result name="gmab_7y_spread_4pct" ref="=Projection.gmab_7y_spread_4pct" />
+    <result name="secure_rate_gmab_5y_spread_4pct" ref="=Projection.secure_rate_gmab_5y_spread_4pct" />
+    <result name="secure_rate_gmab_7y_spread_4pct" ref="=Projection.secure_rate_gmab_7y_spread_4pct" />
+    <result name="spx_trigger_gmab_5y_spread_2pct" ref="=Projection.trigger_gmab_5y_spread_2pct" />
+    <result name="spx_trigger_gmab_5y_spread_3pct" ref="=Projection.trigger_gmab_5y_spread_3pct" />
+    <result name="spx_trigger_gmab_5y_spread_4pct" ref="=Projection.trigger_gmab_5y_spread_4pct" />
+    <result name="spx_trigger_gmab_7y_spread_2pct" ref="=Projection.trigger_gmab_7y_spread_2pct" />
+    <result name="spx_trigger_gmab_7y_spread_3pct" ref="=Projection.trigger_gmab_7y_spread_3pct" />
+    <result name="spx_trigger_gmab_7y_spread_4pct" ref="=Projection.trigger_gmab_7y_spread_4pct" />
+    <result name="spx_par_gmab_5y_spread_2pct" ref="=Projection.par_gmab_5y_spread_2pct" />
+    <result name="spx_par_gmab_5y_spread_3pct" ref="=Projection.par_gmab_5y_spread_3pct" />
+    <result name="spx_par_gmab_5y_spread_4pct" ref="=Projection.par_gmab_5y_spread_4pct" />
+    <result name="spx_par_gmab_7y_spread_2pct" ref="=Projection.par_gmab_7y_spread_2pct" />
+    <result name="spx_par_gmab_7y_spread_3pct" ref="=Projection.par_gmab_7y_spread_3pct" />
+    <result name="spx_par_gmab_7y_spread_4pct" ref="=Projection.par_gmab_7y_spread_4pct" />
+    <result name="spx_5y_calls_with_gmab_2pct_seasoned" ref="=Projection.spx_5y_calls_with_gmab_2pct_seasoned" />
+    <result name="spx_5y_calls_with_gmab_3pct_seasoned" ref="=Projection.spx_5y_calls_with_gmab_3pct_seasoned" />
+    <result name="spx_5y_calls_with_gmab_4pct_seasoned" ref="=Projection.spx_5y_calls_with_gmab_4pct_seasoned" />
   </results>
   <calculations>
     <table name="dividends" type="Computation">
@@ -1316,9 +1379,10 @@ return\sintegral_average(inv_gamma_params.div_tenor,\sinv_gamma_params.div,\st,\
         <g name="g63" repeat-count="5" />
         <g name="g64" repeat-count="5" />
         <g name="g65" repeat-count="5" />
-        <g name="g66">2\r\n
+        <g name="g66">4\r\n
 \r\n
-//index\s=\s0\s:\sSPX\s&amp;&amp;\sindex\s=\s1:\sNASDAQ</g>
+//index\s=\s0\s:\sSPX\s&amp;&amp;\sindex\s=\s1:\sMXEA\s&amp;&amp;\sindex\s=\s2:RTY\s**\sindex\s=\s3:\sNDX\r\n
+</g>
         <g name="g67" repeat-count="8" />
         <g name="g68" repeat-count="8" />
         <g name="g69" repeat-count="8" />
@@ -1340,6 +1404,44 @@ return\sintegral_average(inv_gamma_params.div_tenor,\sinv_gamma_params.div,\st,\
         <g name="g85" repeat-count="5" />
         <g name="g86" repeat-count="5" />
         <g name="g87" repeat-count="5" />
+        <g name="g88" repeat-count="5" />
+        <g name="g89" repeat-count="5" />
+        <g name="g90" repeat-count="5" />
+        <g name="g91" repeat-count="5" />
+        <g name="g92" repeat-count="5" />
+        <g name="g93" repeat-count="5" />
+        <g name="g94" repeat-count="5" />
+        <g name="g95" repeat-count="5" />
+        <g name="g96" repeat-count="10" />
+        <g name="g97" repeat-count="10" />
+        <g name="g98" repeat-count="10" />
+        <g name="g99" repeat-count="10" />
+        <g name="g100" repeat-count="10" />
+        <g name="g101" repeat-count="10" />
+        <g name="g102" repeat-count="10" />
+        <g name="g103" repeat-count="10" />
+        <g name="g104" repeat-count="10" />
+        <g name="g106" repeat-count="10" />
+        <g name="g108" repeat-count="10" />
+        <g name="g109" repeat-count="10" />
+        <g name="g110" repeat-count="10" />
+        <g name="g111" repeat-count="10" />
+        <g name="g105" repeat-count="5" />
+        <g name="g107" repeat-count="5" />
+        <g name="g112" repeat-count="10" />
+        <g name="g113" repeat-count="10" />
+        <g name="g114" repeat-count="10" />
+        <g name="g115" repeat-count="10" />
+        <g name="g116" repeat-count="9" />
+        <g name="g117" repeat-count="9" />
+        <g name="g118" repeat-count="9" />
+        <g name="g119" repeat-count="9" />
+        <g name="g120" repeat-count="9" />
+        <g name="g121" repeat-count="5" />
+        <g name="g122" repeat-count="5" />
+        <g name="g123" repeat-count="5" />
+        <g name="g124" repeat-count="5" />
+        <g name="g125" repeat-count="5" />
       </column-groups>
       <columns>
         <c name="step" datatype="int" />
@@ -1374,6 +1476,7 @@ return\sintegral_average(inv_gamma_params.div_tenor,\sinv_gamma_params.div,\st,\
         <c name="S_anniversary" datatype="real" group="g8" />
         <c name="S_6monthversary" datatype="real" group="g8" />
         <c name="S_3rd_anniversary" datatype="real" group="g8" />
+        <c name="S_5th_anniversary" datatype="real" group="g8" />
         <c name="S_6th_anniversary" datatype="real" group="g8" />
         <c name="SPTR_anniversary" datatype="real" />
         <c name="SPTR_6th_anniversary" datatype="real" />
@@ -1386,6 +1489,12 @@ return\sintegral_average(inv_gamma_params.div_tenor,\sinv_gamma_params.div,\st,\
         <c name="spx_otm_calls_3y_ig" datatype="real" group="g57" />
         <c name="cut_off_strike_3y" datatype="int" />
         <c name="adj_spx_calls_3y_seasoned" datatype="real" group="g58" />
+        <c name="mxea_otm_calls_3y_ig" datatype="real" group="g112" />
+        <c name="cut_off_strike_3y_mxea" datatype="int" />
+        <c name="adj_mxea_calls_3y_seasoned" datatype="real" group="g113" />
+        <c name="rty_otm_calls_3y_ig" datatype="real" group="g114" />
+        <c name="cut_off_strike_3y_rty" datatype="int" />
+        <c name="adj_rty_calls_3y_seasoned" datatype="real" group="g115" />
         <c name="ndx_otm_calls_3y_ig" datatype="real" group="g59" />
         <c name="cut_off_strike_3y_ndx" datatype="int" />
         <c name="adj_ndx_calls_3y_seasoned" datatype="real" group="g60" />
@@ -1402,6 +1511,8 @@ return\sintegral_average(inv_gamma_params.div_tenor,\sinv_gamma_params.div,\st,\
         <c name="cut_off_strike_6y_ndx" datatype="int" />
         <c name="adj_ndx_calls_6y_seasoned" datatype="real" group="g56" />
         <c name="spx_puts_3y_seasoned" datatype="real" group="g61" />
+        <c name="mxea_puts_3y_seasoned" datatype="real" group="g105" />
+        <c name="rty_puts_3y_seasoned" datatype="real" group="g107" />
         <c name="ndx_puts_3y_seasoned" datatype="real" group="g62" />
         <c name="spx_puts_6y_seasoned" datatype="real" group="g32" />
         <c name="mxea_puts_6y_seasoned" datatype="real" group="g63" />
@@ -1413,8 +1524,13 @@ return\sintegral_average(inv_gamma_params.div_tenor,\sinv_gamma_params.div,\st,\
         <c name="sptr_puts_1y_seasoned" datatype="real" group="g35" />
         <c name="trigger_vol_spread" datatype="real" group="g66" />
         <c name="spx_trigger_calls_1y_seasoned" datatype="real" group="g40" />
+        <c name="spx_trigger_calls_3y_seasoned" datatype="real" group="g121" />
         <c name="spx_trigger_calls_6y_seasoned" datatype="real" group="g42" />
+        <c name="mxea_trigger_calls_3y_seasoned" datatype="real" group="g122" />
+        <c name="mxea_trigger_calls_6y_seasoned" datatype="real" group="g123" />
+        <c name="rty_trigger_calls_3y_seasoned" datatype="real" group="g124" />
         <c name="nasdaq_trigger_calls_1y_seasoned" datatype="real" group="g41" />
+        <c name="nasdaq_trigger_calls_3y_seasoned" datatype="real" group="g125" />
         <c name="nasdaq_otm_calls_1y_ig" datatype="real" group="g36" />
         <c name="nasdaq_cut_off_strike" datatype="int" />
         <c name="adj_nasdaq_calls_1y_seasoned" datatype="real" group="g37" />
@@ -1474,24 +1590,52 @@ return\sintegral_average(inv_gamma_params.div_tenor,\sinv_gamma_params.div,\st,\
         <c name="p_curr" datatype="real" />
         <c name="p_next_5y" datatype="real" />
         <c name="secure_rate_cliquet_5y" datatype="real" group="g71" />
-        <c name="secure_rate_gmab_5y_spread_1pct" datatype="real" group="g72" />
+        <c name="secure_rate_gmab_5y_spread_4pct" datatype="real" group="g72" />
         <c name="secure_rate_gmab_5y_spread_2pct" datatype="real" group="g73" />
         <c name="secure_rate_gmab_5y_spread_3pct" datatype="real" group="g74" />
-        <c name="gmab_5y_spread_1pct" datatype="real" group="g82" />
+        <c name="gmab_5y_spread_4pct" datatype="real" group="g82" />
         <c name="gmab_5y_spread_2pct" datatype="real" group="g83" />
         <c name="gmab_5y_spread_3pct" datatype="real" group="g84" />
+        <c name="account_val_trigger_5y" datatype="real" group="g89" />
+        <c name="trigger_gmab_5y_spread_2pct" datatype="real" group="g88" />
+        <c name="trigger_gmab_5y_spread_3pct" datatype="real" group="g90" />
+        <c name="trigger_gmab_5y_spread_4pct" datatype="real" group="g91" />
+        <c name="account_val_par_rate_5y" datatype="real" group="g96" />
+        <c name="par_m_curr" datatype="real" group="g97" />
+        <c name="par_m_next_5y" datatype="real" group="g98" />
+        <c name="par_q_curr" datatype="real" group="g99" />
+        <c name="par_q_next_5y" datatype="real" group="g100" />
+        <c name="par_gmab_5y_spread_2pct" datatype="real" group="g101" />
+        <c name="par_gmab_5y_spread_3pct" datatype="real" group="g102" />
+        <c name="par_gmab_5y_spread_4pct" datatype="real" group="g103" />
         <c name="account_val_cliquet_7y" datatype="real" group="g75" />
         <c name="vol_bs_7y" datatype="real" />
         <c name="vol_otm_7y" datatype="real" group="g76" />
         <c name="annual_call_spread_next_7y" datatype="real" group="g78" />
         <c name="secure_rate_cliquet_7y" datatype="real" group="g79" />
         <c name="p_next_7y" datatype="real" />
-        <c name="secure_rate_gmab_7y_spread_1pct" datatype="real" group="g77" />
+        <c name="secure_rate_gmab_7y_spread_4pct" datatype="real" group="g77" />
         <c name="secure_rate_gmab_7y_spread_2pct" datatype="real" group="g80" />
         <c name="secure_rate_gmab_7y_spread_3pct" datatype="real" group="g81" />
-        <c name="gmab_7y_spread_1pct" datatype="real" group="g85" />
+        <c name="gmab_7y_spread_4pct" datatype="real" group="g85" />
         <c name="gmab_7y_spread_2pct" datatype="real" group="g86" />
         <c name="gmab_7y_spread_3pct" datatype="real" group="g87" />
+        <c name="account_val_trigger_7y" datatype="real" group="g92" />
+        <c name="trigger_gmab_7y_spread_2pct" datatype="real" group="g93" />
+        <c name="trigger_gmab_7y_spread_3pct" datatype="real" group="g94" />
+        <c name="trigger_gmab_7y_spread_4pct" datatype="real" group="g95" />
+        <c name="account_val_par_rate_7y" datatype="real" group="g104" />
+        <c name="par_m_next_7y" datatype="real" group="g106" />
+        <c name="par_q_next_7y" datatype="real" group="g108" />
+        <c name="par_gmab_7y_spread_2pct" datatype="real" group="g109" />
+        <c name="par_gmab_7y_spread_3pct" datatype="real" group="g110" />
+        <c name="par_gmab_7y_spread_4pct" datatype="real" group="g111" />
+        <c name="spx_otm_calls_5y_ig" datatype="real" group="g116" />
+        <c name="cut_off_strike_5y_spx" datatype="int" />
+        <c name="adj_spx_calls_5y_seasoned" datatype="real" group="g117" />
+        <c name="spx_5y_calls_with_gmab_2pct_seasoned" datatype="real" group="g118" />
+        <c name="spx_5y_calls_with_gmab_3pct_seasoned" datatype="real" group="g119" />
+        <c name="spx_5y_calls_with_gmab_4pct_seasoned" datatype="real" group="g120" />
       </columns>
       <data>
         <row-group name="rg1">
@@ -1596,6 +1740,7 @@ else\r\n
             <c name="S_anniversary">=S[$index]</c>
             <c name="S_6monthversary">=S[$index]</c>
             <c name="S_3rd_anniversary">=S[$index]</c>
+            <c name="S_5th_anniversary">=S[$index]</c>
             <c name="S_6th_anniversary">=S[$index]</c>
             <c name="SPTR_anniversary">=\sequity_tr</c>
             <c name="SPTR_6th_anniversary">=\sequity_tr</c>
@@ -1723,6 +1868,118 @@ if\s$index\s&gt;\scut_off_strike_3y\sthen\s\r\n
 \s\s\send\r\n
 else\r\n
 \s\s\sreturn\s\sspx_otm_calls_3y_ig[$index]\r\n
+end\r\n
+</c>
+            <c name="mxea_otm_calls_3y_ig">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+ivg_params_idx\s=\s1\r\n
+S0\s=\sS_3rd_anniversary[ivg_params_idx]\r\n
+Si\s=\sS[ivg_params_idx]\r\n
+K\s=\sS0\s*\s(1\s+\sextended_strike_3y[$index])\r\n
+T\s=\soption_3y_ttm[step]\s/*\s3\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[ivg_params_idx]\r\n
+theta\s=\sComputation[step].theta[ivg_params_idx]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[ivg_params_idx]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[ivg_params_idx]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[ivg_params_idx]\s-\sComputation[step].funding_spread_3y[ivg_params_idx]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_3y,\stheta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[ivg_params_idx],ig_vol[ivg_params_idx],\sq_average_3y)\r\n
+call_price\s=\sput_price\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+return\smax(0,call_price)\s/\sS0</c>
+            <c name="cut_off_strike_3y_mxea">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+return\scompute_cut_off_strike(mxea_otm_calls_3y_ig,len(mxea_otm_calls_3y_ig))</c>
+            <c name="adj_mxea_calls_3y_seasoned">/*\sFor\sapproach\s2\s\r\n
+\r\n
+If\sk*=200%,\sp\swould\sbe\sf(k*).\sIf\sk*&lt;200%,\sset\sp\sto\sbe\sf(k*)*BS(200%)/\sBS(k*)\r\n
+where\sBS(K)\sis\sthe\sBS\soption\sprice\swith\srespect\sto\sstrike\sK.\s*/\r\n
+if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+idx\s=\s1\r\n
+S0\s=\sS_3rd_anniversary[idx]\r\n
+Si\s=\sS[idx]\r\n
+\r\n
+if\s$index\s&gt;\scut_off_strike_3y_mxea\sthen\s\r\n
+\s\s\scall_price_prev\s=\smxea_otm_calls_3y_ig[cut_off_strike_3y_mxea]\r\n
+\s\s\sig_strike_prev\s=\sextended_strike_3y[cut_off_strike_3y_mxea]\r\n
+\s\s\sig_strike_end\s=\sextended_strike_3y[len(extended_strike_3y)-1]\r\n
+\s\s\sK_star\s=\sS0\s*\s(1\s+\sig_strike_prev)\r\n
+\s\s\sK_end\s=\sS0\s*\s(1\s+\sig_strike_end)\r\n
+\s\s\sT\s=\soption_3y_ttm[step]\r\n
+\s\s\svol\s=\sComputation[step].xi_average_3y[idx]\s*\sig_vol[idx]\r\n
+\s\s\sr\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+\s\s\sq\s=\sComputation[step].q_average_3y[idx]\s-\sComputation[step].funding_spread_3y[idx]\r\n
+\s\s\s\r\n
+\s\s\sif\scompare(compute_black_scholes(Si,K_star,r,T,vol,q)\s&lt;=0,1E-04)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\selse\r\n
+\s\s\s\s\s\s\s\scall_price_end\s=\scall_price_prev*max(0,compute_black_scholes(Si,K_end,r,T,vol,q))/compute_black_scholes(Si,K_star,r,T,vol,q)\s\s\s\r\n
+\s\s\s\s\s\s\s\sig_strike_current\s=\sextended_strike_3y[$index]\r\n
+\s\s\s\s\s\s\s\sreturn\s((call_price_end\s-\scall_price_prev)*(ig_strike_current\s-\sig_strike_end))/(ig_strike_end-ig_strike_prev)\s+\scall_price_end\r\n
+\s\s\send\r\n
+else\r\n
+\s\s\sreturn\s\smxea_otm_calls_3y_ig[$index]\r\n
+end\r\n
+</c>
+            <c name="rty_otm_calls_3y_ig">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+ivg_params_idx\s=\s2\r\n
+S0\s=\sS_3rd_anniversary[ivg_params_idx]\r\n
+Si\s=\sS[ivg_params_idx]\r\n
+K\s=\sS0\s*\s(1\s+\sextended_strike_3y[$index])\r\n
+T\s=\soption_3y_ttm[step]\s/*\s3\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[ivg_params_idx]\r\n
+theta\s=\sComputation[step].theta[ivg_params_idx]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[ivg_params_idx]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[ivg_params_idx]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[ivg_params_idx]\s-\sComputation[step].funding_spread_3y[ivg_params_idx]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_3y,\stheta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[ivg_params_idx],ig_vol[ivg_params_idx],\sq_average_3y)\r\n
+call_price\s=\sput_price\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+return\smax(0,call_price)\s/\sS0</c>
+            <c name="cut_off_strike_3y_rty">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+return\scompute_cut_off_strike(rty_otm_calls_3y_ig,len(rty_otm_calls_3y_ig))</c>
+            <c name="adj_rty_calls_3y_seasoned">/*\sFor\sapproach\s2\s\r\n
+\r\n
+If\sk*=200%,\sp\swould\sbe\sf(k*).\sIf\sk*&lt;200%,\sset\sp\sto\sbe\sf(k*)*BS(200%)/\sBS(k*)\r\n
+where\sBS(K)\sis\sthe\sBS\soption\sprice\swith\srespect\sto\sstrike\sK.\s*/\r\n
+if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+idx\s=\s2\r\n
+S0\s=\sS_3rd_anniversary[idx]\r\n
+Si\s=\sS[idx]\r\n
+\r\n
+if\s$index\s&gt;\scut_off_strike_3y_rty\sthen\s\r\n
+\s\s\scall_price_prev\s=\srty_otm_calls_3y_ig[cut_off_strike_3y_rty]\r\n
+\s\s\sig_strike_prev\s=\sextended_strike_3y[cut_off_strike_3y_rty]\r\n
+\s\s\sig_strike_end\s=\sextended_strike_3y[len(extended_strike_3y)-1]\r\n
+\s\s\sK_star\s=\sS0\s*\s(1\s+\sig_strike_prev)\r\n
+\s\s\sK_end\s=\sS0\s*\s(1\s+\sig_strike_end)\r\n
+\s\s\sT\s=\soption_3y_ttm[step]\r\n
+\s\s\svol\s=\sComputation[step].xi_average_3y[idx]\s*\sig_vol[idx]\r\n
+\s\s\sr\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+\s\s\sq\s=\sComputation[step].q_average_3y[idx]\s-\sComputation[step].funding_spread_3y[idx]\r\n
+\s\s\s\r\n
+\s\s\sif\scompare(compute_black_scholes(Si,K_star,r,T,vol,q)\s&lt;=0,1E-04)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\selse\r\n
+\s\s\s\s\s\s\s\scall_price_end\s=\scall_price_prev*max(0,compute_black_scholes(Si,K_end,r,T,vol,q))/compute_black_scholes(Si,K_star,r,T,vol,q)\s\s\s\r\n
+\s\s\s\s\s\s\s\sig_strike_current\s=\sextended_strike_3y[$index]\r\n
+\s\s\s\s\s\s\s\sreturn\s((call_price_end\s-\scall_price_prev)*(ig_strike_current\s-\sig_strike_end))/(ig_strike_end-ig_strike_prev)\s+\scall_price_end\r\n
+\s\s\send\r\n
+else\r\n
+\s\s\sreturn\s\srty_otm_calls_3y_ig[$index]\r\n
 end\r\n
 </c>
             <c name="ndx_otm_calls_3y_ig">if\srun_shocksos\sthen\r\n
@@ -2001,7 +2258,43 @@ idx\s=\s0\r\n
 S0\s=\sS_3rd_anniversary[idx]\r\n
 Si\s=\sS[idx]\r\n
 K\s=\sS0\s*\s(1\s+\sput_strike[$index])\r\n
-T\s=\soption_3y_ttm[step]\s/*\s6\syr\soption\sprice\s*/\r\n
+T\s=\soption_3y_ttm[step]\s\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[idx]\r\n
+theta\s=\sComputation[step].theta[idx]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[idx]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[idx]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[idx]\s-\sComputation[step].funding_spread_3y[idx]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_3y,\stheta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[idx],ig_vol[idx],\sq_average_3y)\r\n
+\r\n
+return\sput_price\s/\sS0\r\n
+</c>
+            <c name="mxea_puts_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+idx\s=\s1\r\n
+S0\s=\sS_3rd_anniversary[idx]\r\n
+Si\s=\sS[idx]\r\n
+K\s=\sS0\s*\s(1\s+\sput_strike[$index])\r\n
+T\s=\soption_3y_ttm[step]\s\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[idx]\r\n
+theta\s=\sComputation[step].theta[idx]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[idx]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[idx]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[idx]\s-\sComputation[step].funding_spread_3y[idx]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_3y,\stheta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[idx],ig_vol[idx],\sq_average_3y)\r\n
+\r\n
+return\sput_price\s/\sS0\r\n
+</c>
+            <c name="rty_puts_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+idx\s=\s2\r\n
+S0\s=\sS_3rd_anniversary[idx]\r\n
+Si\s=\sS[idx]\r\n
+K\s=\sS0\s*\s(1\s+\sput_strike[$index])\r\n
+T\s=\soption_3y_ttm[step]\s\r\n
 r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
 k_average_3y\s=\sComputation[step].k_average_3y[idx]\r\n
 theta\s=\sComputation[step].theta[idx]\r\n
@@ -2019,7 +2312,7 @@ idx\s=\s3\r\n
 S0\s=\sS_3rd_anniversary[idx]\r\n
 Si\s=\sS[idx]\r\n
 K\s=\sS0\s*\s(1\s+\sput_strike[$index])\r\n
-T\s=\soption_3y_ttm[step]\s/*\s6\syr\soption\sprice\s*/\r\n
+T\s=\soption_3y_ttm[step]\s\r\n
 r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
 k_average_3y\s=\sComputation[step].k_average_3y[idx]\r\n
 theta\s=\sComputation[step].theta[idx]\r\n
@@ -2172,11 +2465,18 @@ put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_1y,\sspx_theta,\slam
 \r\n
 \r\n
 return\sput_price/\sS0</c>
-            <c name="trigger_vol_spread">if\s$index\s==\s0\sthen\s\r\n
-\s\s\s\sreturn\s0.0008\s\s\s//SPX\r\n
-else\r\n
-\s\s\s\sreturn\s0.0008\s//\sNASDAQ\r\n
-end\s</c>
+            <c name="trigger_vol_spread">switch\s$index\r\n
+\s\s\s\scase\s0:\s//\sSPX\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0008\r\n
+\s\s\s\scase\s1:\s//\sMXEA\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0008\r\n
+\s\s\s\scase\s2:\s//\sRTY\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0008\r\n
+\s\s\s\scase\s3:\s//nasdaq\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0008\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+end</c>
             <c name="spx_trigger_calls_1y_seasoned">if\srun_shocksos\sthen\r\n
 \s\s\s\sreturn\s0\r\n
 endif\r\n
@@ -2199,11 +2499,33 @@ put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,
 call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s-\sK_epsilon*exp(-r*T)\r\n
 \r\n
 return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
+            <c name="spx_trigger_calls_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_3rd_anniversary[0]\s*\s(1\s+\sbinary_strike_3y[$index])\r\n
+Si\s=\sS[0]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_3y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[0]\r\n
+spx_theta\s=\sComputation[step].theta[0]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[0]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[0]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[0]\s-\sComputation[step].funding_spread_3y[0]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_3y,\sspx_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[0],ig_vol[0],\sq_average_3y,\s-trigger_vol_spread[0])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_3y,\sspx_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[0],ig_vol[0],\sq_average_3y,\strigger_vol_spread[0])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_3y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
             <c name="spx_trigger_calls_6y_seasoned">if\srun_shocksos\sthen\r\n
 \s\s\s\sreturn\s0\r\n
 endif\r\n
 \r\n
-K\s=\sS_6th_anniversary[0]\s*\s(1\s+\sbinary_strike_spx_6y[$index])\r\n
+K\s=\sS_6th_anniversary[0]\s*\s(1\s+\sbinary_strike_6y[$index])\r\n
 Si\s=\sS[0]\r\n
 K_epsilon\s=\sK\s*\s0.99\r\n
 T\s=\soption_6y_ttm[step]\s/*\s6\syr\soption\sprice\s*/\r\n
@@ -2222,6 +2544,72 @@ call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_6y*T)\s
 \r\n
 return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)\r\n
 </c>
+            <c name="mxea_trigger_calls_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_3rd_anniversary[1]\s*\s(1\s+\sbinary_strike_3y[$index])\r\n
+Si\s=\sS[1]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_3y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[1]\r\n
+mxea_theta\s=\sComputation[step].theta[1]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[1]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[1]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[1]\s-\sComputation[step].funding_spread_3y[1]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_3y,\smxea_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[1],ig_vol[1],\sq_average_3y,\s-trigger_vol_spread[1])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_3y,\smxea_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[1],ig_vol[1],\sq_average_3y,\strigger_vol_spread[1])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_3y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
+            <c name="mxea_trigger_calls_6y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_6th_anniversary[1]\s*\s(1\s+\sbinary_strike_6y[$index])\r\n
+Si\s=\sS[1]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_6y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_6y_price)/option_6y_ttm[step]\r\n
+k_average_6y\s=\sComputation[step].k_average_6y[1]\r\n
+mxea_theta\s=\sComputation[step].theta[1]\r\n
+lambda_average_6y\s=\sComputation[step].lambda_average_6y[1]\r\n
+xi_average_6y\s=\sComputation[step].xi_average_6y[1]\r\n
+q_average_6y\s=\sComputation[step].q_average_6y[1]\s-\sComputation[step].funding_spread_6y[1]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_6y,\smxea_theta,\slambda_average_6y,\sxi_average_6y,\srho_idx_vol[1],ig_vol[1],\sq_average_6y,\s-trigger_vol_spread[1])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_6y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_6y,\smxea_theta,\slambda_average_6y,\sxi_average_6y,\srho_idx_vol[1],ig_vol[1],\sq_average_6y,\strigger_vol_spread[1])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_6y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
+            <c name="rty_trigger_calls_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_3rd_anniversary[2]\s*\s(1\s+\sbinary_strike_3y[$index])\r\n
+Si\s=\sS[2]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_3y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[2]\r\n
+rty_theta\s=\sComputation[step].theta[2]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[2]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[2]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[2]\s-\sComputation[step].funding_spread_3y[2]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_3y,\srty_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[2],ig_vol[2],\sq_average_3y,\s-trigger_vol_spread[2])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_3y,\srty_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[2],ig_vol[2],\sq_average_3y,\strigger_vol_spread[2])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_3y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
             <c name="nasdaq_trigger_calls_1y_seasoned">if\srun_shocksos\sthen\r\n
 \s\s\s\sreturn\s0\r\n
 endif\r\n
@@ -2237,11 +2625,34 @@ lambda_average_1y\s=\sComputation[step].lambda_average_1y[3]\r\n
 xi_average_1y\s=\sComputation[step].xi_average_1y[3]\r\n
 q_average_1y\s=\sComputation[step].q_average_1y[3]\s-\sComputation[step].funding_spread_1y[3]\r\n
 \r\n
-put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_1y,\snasdaq_theta,\slambda_average_1y,\sxi_average_1y,\srho_idx_vol[3],ig_vol[3],\sq_average_1y,\s-trigger_vol_spread[1])\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_1y,\snasdaq_theta,\slambda_average_1y,\sxi_average_1y,\srho_idx_vol[3],ig_vol[3],\sq_average_1y,\s-trigger_vol_spread[3])\r\n
 call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_1y*T)\s-\sK*exp(-r*T)\r\n
 \r\n
-put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_1y,\snasdaq_theta,\slambda_average_1y,\sxi_average_1y,\srho_idx_vol[3],ig_vol[3],\sq_average_1y,\strigger_vol_spread[1])\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_1y,\snasdaq_theta,\slambda_average_1y,\sxi_average_1y,\srho_idx_vol[3],ig_vol[3],\sq_average_1y,\strigger_vol_spread[3])\r\n
 call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)\r\n
+</c>
+            <c name="nasdaq_trigger_calls_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_3rd_anniversary[3]\s*\s(1\s+\sbinary_strike_3y[$index])\r\n
+Si\s=\sS[3]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_3y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[3]\r\n
+nasdaq_theta\s=\sComputation[step].theta[3]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[3]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[3]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[3]\s-\sComputation[step].funding_spread_3y[3]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_3y,\snasdaq_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[3],ig_vol[3],\sq_average_3y,\s-trigger_vol_spread[3])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_3y,\snasdaq_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[3],ig_vol[3],\sq_average_3y,\strigger_vol_spread[3])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_3y*T)\s-\sK_epsilon*exp(-r*T)\r\n
 \r\n
 return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)\r\n
 </c>
@@ -2848,7 +3259,7 @@ return\satm_call\s-\sotm_call</c>
 r\s=\s-log(zcb_1y_price)/option_1y_ttm[step]\r\n
 vol\s=\svol_bs_1y\r\n
 q\s=\sComputation[step].q_average_1y[0]\s-\sComputation[step].funding_spread_1y[0]\r\n
-S_return\s=\slog(safeDivide(S[0],S_anniversary[0],1e-8))\r\n
+S_return\s=\slog(safeDivide(S[0],S_anniversary[0],1.0))\r\n
 d2\s=\ssafeDivide(S_return\s+\s(r\s-\sq\s-\s0.5\s*\svol\s*\svol)\s*\soption_1y_ttm[step],\svol\s*\ssqrt(option_1y_ttm[step]),\s0)\r\n
 \r\n
 return\smax(1e-8,\smin(1.0,\snormal_cdf(d2)))</c>
@@ -2867,7 +3278,7 @@ base\scliquet\s=\s[AV(t-1)*(1\s+\sundiscounted\scurr\sivg\scall\sspread)*(1\s+\s
 */\r\n
 n\s=\s\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 return\s(account_val_cliquet_5y[$index]\s*\s(1\s+\scall_spread_curr_undiscounted[$index])\s*\s(1\s+\sannual_call_spread_next_5y[$index])\s^\sn\s-\s1)\s*\szcb_5y_price</c>
-            <c name="secure_rate_gmab_5y_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="secure_rate_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -2889,7 +3300,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_5y[$index]\r\n
 \r\n
@@ -2916,7 +3327,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_5y[$index]\r\n
 \r\n
@@ -2943,11 +3354,11 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_5y[$index]\r\n
 </c>
-            <c name="gmab_5y_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -2969,7 +3380,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 \r\n
 </c>
@@ -2995,7 +3406,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 \r\n
 </c>
@@ -3021,9 +3432,174 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 </c>
+            <c name="account_val_trigger_5y">1.0</c>
+            <c name="trigger_gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_5y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_5y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="trigger_gmab_5y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_5y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_5y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="trigger_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_5y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_5y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="account_val_par_rate_5y">1.0</c>
+            <c name="par_m_curr">part\s=\sgmab_par_rate[$index]\r\n
+call_atm\s=\sinterp1_constant(0,\sextended_strike_1y,\sadj_spx_calls_1y_seasoned)\r\n
+return\spart\s*\sSafeDivide(call_atm,\szcb_1y_price,\s0.0)\s//par\srate*\sundiscounted\sATM\scall</c>
+            <c name="par_m_next_5y">part\s=\sgmab_par_rate[$index]\r\n
+S0\s=\s1.0\r\n
+K\s=\s1.0\r\n
+r\s=\s-log(zcb_5y_price)\s/\soption_5y_ttm[step]\r\n
+T\s=\s1\r\n
+vol_atm\s=\svol_bs_5y\r\n
+q\s=\sComputation[step].q_average_5y[0]\s-\sComputation[step].funding_spread_5y[0]\r\n
+atm_call\s=\sundiscounted_black_scholes(S0,\sK,\sr,\sT,\svol_atm,\sq,\sTrue)\r\n
+return\spart\s*\satm_call</c>
+            <c name="par_q_curr">part\s=\sgmab_par_rate[$index]\r\n
+//current\syear\sseasoned\r\n
+tau\s=\soption_1y_ttm[step]\r\n
+r\s=\s-log(zcb_1y_price)\s/\stau\r\n
+q\s=\sComputation[step].q_average_1y[0]\s-\sComputation[step].funding_spread_1y[0]\r\n
+sigma\s=\svol_bs_1y\r\n
+spot_ratio\s=\sSafeDivide(S[0],\sS_anniversary[0],\s1.0)\r\n
+K\s=\sSafeDivide(1.0,\sspot_ratio,\s1.0)\r\n
+f\s=\sexp((r\s-\sq)\s*\stau)\r\n
+return\spart\s*\spart\s*\sspot_ratio\s*\sspot_ratio\s*\ssecond_moment_call_square(f,\sK,\ssigma,\stau)</c>
+            <c name="par_q_next_5y">part\s=\sgmab_par_rate[$index]\r\n
+r\s=\s-log(zcb_5y_price)\s/\soption_5y_ttm[step]\r\n
+q\s=\sComputation[step].q_average_5y[0]\s-\sComputation[step].funding_spread_5y[0]\r\n
+sigma\s=\svol_bs_5y\r\n
+f\s=\sexp(r\s-\sq)\r\n
+return\spart\s*\spart\s*\ssecond_moment_call_square(f,\s1.0,\ssigma,\s1.0)</c>
+            <c name="par_gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_5y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_5y[$index]\r\n
+q_next\s=\spar_q_next_5y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="par_gmab_5y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_5y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_5y[$index]\r\n
+q_next\s=\spar_q_next_5y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="par_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_5y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_5y[$index]\r\n
+q_next\s=\spar_q_next_5y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
             <c name="account_val_cliquet_7y">//\saccount\svalue\sat\slast\sanniversary\sfor\ssecure\srate\sand\snon\ssecure\srate\scliquet\r\n
 \r\n
 =\s1.0</c>
@@ -3077,7 +3653,7 @@ q\s=\sComputation[step].q_average_7y[0]\s-\sComputation[step].funding_spread_7y[
 d2\s=\ssafeDivide((r\s-\sq\s-\s0.5\s*\svol\s*\svol),\svol,\s0)\r\n
 \r\n
 return\smax(1e-8,\smin(1.0,\snormal_cdf(d2)))</c>
-            <c name="secure_rate_gmab_7y_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="secure_rate_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -3099,7 +3675,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_7y[$index]\r\n
 </c>
@@ -3125,7 +3701,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_7y[$index]\r\n
 \r\n
@@ -3152,12 +3728,12 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_7y[$index]\r\n
 \r\n
 </c>
-            <c name="gmab_7y_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -3179,7 +3755,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end</c>
             <c name="gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
@@ -3203,7 +3779,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 </c>
             <c name="gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
@@ -3228,9 +3804,232 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 </c>
+            <c name="account_val_trigger_7y">1.0</c>
+            <c name="trigger_gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_7y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_7y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="trigger_gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_7y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_7y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="trigger_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_7y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_7y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="account_val_par_rate_7y">1.0</c>
+            <c name="par_m_next_7y">part\s=\sgmab_par_rate[$index]\r\n
+S0\s=\s1.0\r\n
+K\s=\s1.0\r\n
+r\s=\s-log(zcb_7y_price)\s/\soption_7y_ttm[step]\r\n
+T\s=\s1\r\n
+vol_atm\s=\svol_bs_7y\r\n
+q\s=\sComputation[step].q_average_7y[0]\s-\sComputation[step].funding_spread_7y[0]\r\n
+atm_call\s=\sundiscounted_black_scholes(S0,\sK,\sr,\sT,\svol_atm,\sq,\sTrue)\r\n
+return\spart\s*\satm_call</c>
+            <c name="par_q_next_7y">part\s=\sgmab_par_rate[$index]\r\n
+r\s=\s-log(zcb_7y_price)\s/\soption_7y_ttm[step]\r\n
+q\s=\sComputation[step].q_average_7y[0]\s-\sComputation[step].funding_spread_7y[0]\r\n
+sigma\s=\svol_bs_7y\r\n
+f\s=\sexp(r\s-\sq)\r\n
+return\spart\s*\spart\s*\ssecond_moment_call_square(f,\s1.0,\ssigma,\s1.0)</c>
+            <c name="par_gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_7y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_7y[$index]\r\n
+q_next\s=\spar_q_next_7y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="par_gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_7y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_7y[$index]\r\n
+q_next\s=\spar_q_next_7y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="par_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_7y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_7y[$index]\r\n
+q_next\s=\spar_q_next_7y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="spx_otm_calls_5y_ig">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+S0\s=\sS_5th_anniversary[0]\r\n
+Si\s=\sS[0]\r\n
+K\s=\sS0\s*\s(1\s+\sgmab_5y_cap[$index])\r\n
+T\s=\soption_5y_ttm[step]\s/*\s5\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_5y_price)/option_5y_ttm[step]\r\n
+k_average_5y\s=\sComputation[step].k_average_5y[0]\r\n
+spx_theta\s=\sComputation[step].theta[0]\r\n
+lambda_average_5y\s=\sComputation[step].lambda_average_5y[0]\r\n
+xi_average_5y\s=\sComputation[step].xi_average_5y[0]\r\n
+q_average_5y\s=\sComputation[step].q_average_5y[0]\s-\sComputation[step].funding_spread_5y[0]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_5y,\sspx_theta,\slambda_average_5y,\sxi_average_5y,\srho_idx_vol[0],ig_vol[0],\sq_average_5y)\r\n
+call_price\s=\sput_price\s+\sSi*exp(-q_average_5y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+return\smax(0,call_price)\s/\sS0\r\n
+</c>
+            <c name="cut_off_strike_5y_spx">return\scompute_cut_off_strike(spx_otm_calls_5y_ig,len(spx_otm_calls_5y_ig))\r\n
+</c>
+            <c name="adj_spx_calls_5y_seasoned">/*\sFor\sapproach\s2\s\r\n
+\r\n
+If\sk*=200%,\sp\swould\sbe\sf(k*).\sIf\sk*&lt;200%,\sset\sp\sto\sbe\sf(k*)*BS(200%)/\sBS(k*)\r\n
+where\sBS(K)\sis\sthe\sBS\soption\sprice\swith\srespect\sto\sstrike\sK.\s*/\r\n
+if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+S0\s=\sS_5th_anniversary[0]\r\n
+Si\s=\sS[0]\r\n
+if\s$index\s&gt;\scut_off_strike_5y_spx\sthen\s\r\n
+\s\s\scall_price_prev\s=\sspx_otm_calls_5y_ig[cut_off_strike_5y_spx]\r\n
+\s\s\sig_strike_prev\s=\sgmab_5y_cap[cut_off_strike_5y_spx]\r\n
+\s\s\sig_strike_end\s=\sgmab_5y_cap[len(gmab_5y_cap)-1]\r\n
+\s\s\sK_star\s=\sS0\s*\s(1\s+\sig_strike_prev)\r\n
+\s\s\sK_end\s=\sS0\s*\s(1\s+\sig_strike_end)\r\n
+\s\s\sT\s=\soption_5y_ttm[step]\r\n
+\s\s\svol\s=\sComputation[step].xi_average_5y[0]\s*\sig_vol[0]\r\n
+\s\s\sr\s=\s-log(zcb_5y_price)/option_5y_ttm[step]\r\n
+\s\s\sq\s=\sComputation[step].q_average_5y[0]\s-\sComputation[step].funding_spread_5y[0]\r\n
+\s\s\s\r\n
+\s\s\sif\scompare(compute_black_scholes(Si,K_star,r,T,vol,q)\s&lt;=0,1E-04)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\selse\r\n
+\s\s\s\s\s\s\s\scall_price_end\s=\scall_price_prev*max(0,compute_black_scholes(Si,K_end,r,T,vol,q))/compute_black_scholes(Si,K_star,r,T,vol,q)\s\s\s\r\n
+\s\s\s\s\s\s\s\sig_strike_current\s=\sgmab_5y_cap[$index]\r\n
+\s\s\s\s\s\s\s\sreturn\s((call_price_end\s-\scall_price_prev)*(ig_strike_current\s-\sig_strike_end))/(ig_strike_end-ig_strike_prev)\s+\scall_price_end\r\n
+\s\s\send\r\n
+else\r\n
+\s\s\sreturn\s\sspx_otm_calls_5y_ig[$index]\r\n
+end\r\n
+</c>
+            <c name="spx_5y_calls_with_gmab_2pct_seasoned">//Seasoned\s5y\scall\swith\sGMAB\scombined\s=\s{DF(t,5)\s×\sK_min\s−\sC(K\s=\s1+Cap)\s+\sC(K\s=\s1\s+\sK_min)}\s\r\n
+min_credit\s=\s0.02\r\n
+K_min\s=\s5\s*\smin_credit\r\n
+call_otm_1\s=\sadj_spx_calls_5y_seasoned[$index]\s//C(K\s=\s1+Cap)\r\n
+call_otm_2\s=\sinterp1_constant(K_min,\sgmab_5y_cap,\sadj_spx_calls_5y_seasoned)\s\s//C(K\s=\s1\s+\sK_min)\r\n
+return\szcb_5y_price\s*\sK_min\s+\smax(0,\scall_otm_2\s-\scall_otm_1)//when\scap\s&lt;\sK_min,\sreturn\szcb_5y_price*K_min,\sreflecting\sGMAB</c>
+            <c name="spx_5y_calls_with_gmab_3pct_seasoned">//Seasoned\s5y\scall\swith\sGMAB\scombined\s=\s{DF(t,5)\s×\sK_min\s−\sC(K\s=\s1+Cap)\s+\sC(K\s=\s1\s+\sK_min)}\s\r\n
+min_credit\s=\s0.03\r\n
+K_min\s=\s5\s*\smin_credit\r\n
+call_otm_1\s=\sadj_spx_calls_5y_seasoned[$index]\s//C(K\s=\s1+Cap)\r\n
+call_otm_2\s=\sinterp1_constant(K_min,\sgmab_5y_cap,\sadj_spx_calls_5y_seasoned)\s\s//C(K\s=\s1\s+\sK_min)\r\n
+return\szcb_5y_price\s*\sK_min\s+\smax(0,\scall_otm_2\s-\scall_otm_1)//when\scap\s&lt;\sK_min,\sreturn\szcb_5y_price*K_min,\sreflecting\sGMAB</c>
+            <c name="spx_5y_calls_with_gmab_4pct_seasoned">//Seasoned\s5y\scall\swith\sGMAB\scombined\s=\s{DF(t,5)\s×\sK_min\s−\sC(K\s=\s1+Cap)\s+\sC(K\s=\s1\s+\sK_min)}\s\r\n
+min_credit\s=\s0.04\r\n
+K_min\s=\s5\s*\smin_credit\r\n
+call_otm_1\s=\sadj_spx_calls_5y_seasoned[$index]\s//C(K\s=\s1+Cap)\r\n
+call_otm_2\s=\sinterp1_constant(K_min,\sgmab_5y_cap,\sadj_spx_calls_5y_seasoned)\s\s//C(K\s=\s1\s+\sK_min)\r\n
+return\szcb_5y_price\s*\sK_min\s+\smax(0,\scall_otm_2\s-\scall_otm_1)//when\scap\s&lt;\sK_min,\sreturn\szcb_5y_price*K_min,\sreflecting\sGMAB</c>
           </columns>
         </row-group>
         <row-group name="rg2">
@@ -3334,6 +4133,7 @@ return\sprev_log_equity_tr\s+\s(risk_premium\s*\svol_t\s-\s0.5\s*\svol_t\s^\s2)\
             <c name="S_anniversary">=\siif(is_anniversary,\sS[$index],\sprev(S_anniversary))</c>
             <c name="S_6monthversary">=\siif(is_6monthversary[step],\sS[$index],\sprev(S_6monthversary))</c>
             <c name="S_3rd_anniversary">=\siif(is_3rd_anniversary[step],\sS[$index],\sprev(S_3rd_anniversary))</c>
+            <c name="S_5th_anniversary">=\siif(is_5th_anniversary[step],\sS[$index],\sprev(S_5th_anniversary))</c>
             <c name="S_6th_anniversary">=\siif(is_6th_anniversary[step],\sS[$index],\sprev(S_6th_anniversary))</c>
             <c name="SPTR_anniversary">=\siif(is_anniversary,\sequity_tr,\sprev(SPTR_anniversary))</c>
             <c name="SPTR_6th_anniversary">=\siif(is_6th_anniversary[step],\sequity_tr,\sprev(SPTR_6th_anniversary))</c>
@@ -3462,6 +4262,118 @@ if\s$index\s&gt;\scut_off_strike_3y\sthen\s\r\n
 else\r\n
 \s\s\sreturn\s\sspx_otm_calls_3y_ig[$index]\r\n
 end</c>
+            <c name="mxea_otm_calls_3y_ig">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+ivg_params_idx\s=\s1\r\n
+S0\s=\sS_3rd_anniversary[ivg_params_idx]\r\n
+Si\s=\sS[ivg_params_idx]\r\n
+K\s=\sS0\s*\s(1\s+\sextended_strike_3y[$index])\r\n
+T\s=\soption_3y_ttm[step]\s/*\s3\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[ivg_params_idx]\r\n
+theta\s=\sComputation[step].theta[ivg_params_idx]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[ivg_params_idx]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[ivg_params_idx]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[ivg_params_idx]\s-\sComputation[step].funding_spread_3y[ivg_params_idx]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_3y,\stheta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[ivg_params_idx],ig_vol[ivg_params_idx],\sq_average_3y)\r\n
+call_price\s=\sput_price\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+return\smax(0,call_price)\s/\sS0</c>
+            <c name="cut_off_strike_3y_mxea">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+return\scompute_cut_off_strike(mxea_otm_calls_3y_ig,len(mxea_otm_calls_3y_ig))</c>
+            <c name="adj_mxea_calls_3y_seasoned">/*\sFor\sapproach\s2\s\r\n
+\r\n
+If\sk*=200%,\sp\swould\sbe\sf(k*).\sIf\sk*&lt;200%,\sset\sp\sto\sbe\sf(k*)*BS(200%)/\sBS(k*)\r\n
+where\sBS(K)\sis\sthe\sBS\soption\sprice\swith\srespect\sto\sstrike\sK.\s*/\r\n
+if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+idx\s=\s1\r\n
+S0\s=\sS_3rd_anniversary[idx]\r\n
+Si\s=\sS[idx]\r\n
+\r\n
+if\s$index\s&gt;\scut_off_strike_3y_mxea\sthen\s\r\n
+\s\s\scall_price_prev\s=\smxea_otm_calls_3y_ig[cut_off_strike_3y_mxea]\r\n
+\s\s\sig_strike_prev\s=\sextended_strike_3y[cut_off_strike_3y_mxea]\r\n
+\s\s\sig_strike_end\s=\sextended_strike_3y[len(extended_strike_3y)-1]\r\n
+\s\s\sK_star\s=\sS0\s*\s(1\s+\sig_strike_prev)\r\n
+\s\s\sK_end\s=\sS0\s*\s(1\s+\sig_strike_end)\r\n
+\s\s\sT\s=\soption_3y_ttm[step]\r\n
+\s\s\svol\s=\sComputation[step].xi_average_3y[idx]\s*\sig_vol[idx]\r\n
+\s\s\sr\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+\s\s\sq\s=\sComputation[step].q_average_3y[idx]\s-\sComputation[step].funding_spread_3y[idx]\r\n
+\s\s\s\r\n
+\s\s\sif\scompare(compute_black_scholes(Si,K_star,r,T,vol,q)\s&lt;=0,1E-04)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\selse\r\n
+\s\s\s\s\s\s\s\scall_price_end\s=\scall_price_prev*max(0,compute_black_scholes(Si,K_end,r,T,vol,q))/compute_black_scholes(Si,K_star,r,T,vol,q)\s\s\s\r\n
+\s\s\s\s\s\s\s\sig_strike_current\s=\sextended_strike_3y[$index]\r\n
+\s\s\s\s\s\s\s\sreturn\s((call_price_end\s-\scall_price_prev)*(ig_strike_current\s-\sig_strike_end))/(ig_strike_end-ig_strike_prev)\s+\scall_price_end\r\n
+\s\s\send\r\n
+else\r\n
+\s\s\sreturn\s\smxea_otm_calls_3y_ig[$index]\r\n
+end\r\n
+</c>
+            <c name="rty_otm_calls_3y_ig">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+ivg_params_idx\s=\s2\r\n
+S0\s=\sS_3rd_anniversary[ivg_params_idx]\r\n
+Si\s=\sS[ivg_params_idx]\r\n
+K\s=\sS0\s*\s(1\s+\sextended_strike_3y[$index])\r\n
+T\s=\soption_3y_ttm[step]\s/*\s3\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[ivg_params_idx]\r\n
+theta\s=\sComputation[step].theta[ivg_params_idx]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[ivg_params_idx]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[ivg_params_idx]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[ivg_params_idx]\s-\sComputation[step].funding_spread_3y[ivg_params_idx]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_3y,\stheta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[ivg_params_idx],ig_vol[ivg_params_idx],\sq_average_3y)\r\n
+call_price\s=\sput_price\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+return\smax(0,call_price)\s/\sS0</c>
+            <c name="cut_off_strike_3y_rty">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+return\scompute_cut_off_strike(rty_otm_calls_3y_ig,len(rty_otm_calls_3y_ig))</c>
+            <c name="adj_rty_calls_3y_seasoned">/*\sFor\sapproach\s2\s\r\n
+\r\n
+If\sk*=200%,\sp\swould\sbe\sf(k*).\sIf\sk*&lt;200%,\sset\sp\sto\sbe\sf(k*)*BS(200%)/\sBS(k*)\r\n
+where\sBS(K)\sis\sthe\sBS\soption\sprice\swith\srespect\sto\sstrike\sK.\s*/\r\n
+if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+idx\s=\s2\r\n
+S0\s=\sS_3rd_anniversary[idx]\r\n
+Si\s=\sS[idx]\r\n
+\r\n
+if\s$index\s&gt;\scut_off_strike_3y_rty\sthen\s\r\n
+\s\s\scall_price_prev\s=\srty_otm_calls_3y_ig[cut_off_strike_3y_rty]\r\n
+\s\s\sig_strike_prev\s=\sextended_strike_3y[cut_off_strike_3y_rty]\r\n
+\s\s\sig_strike_end\s=\sextended_strike_3y[len(extended_strike_3y)-1]\r\n
+\s\s\sK_star\s=\sS0\s*\s(1\s+\sig_strike_prev)\r\n
+\s\s\sK_end\s=\sS0\s*\s(1\s+\sig_strike_end)\r\n
+\s\s\sT\s=\soption_3y_ttm[step]\r\n
+\s\s\svol\s=\sComputation[step].xi_average_3y[idx]\s*\sig_vol[idx]\r\n
+\s\s\sr\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+\s\s\sq\s=\sComputation[step].q_average_3y[idx]\s-\sComputation[step].funding_spread_3y[idx]\r\n
+\s\s\s\r\n
+\s\s\sif\scompare(compute_black_scholes(Si,K_star,r,T,vol,q)\s&lt;=0,1E-04)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\selse\r\n
+\s\s\s\s\s\s\s\scall_price_end\s=\scall_price_prev*max(0,compute_black_scholes(Si,K_end,r,T,vol,q))/compute_black_scholes(Si,K_star,r,T,vol,q)\s\s\s\r\n
+\s\s\s\s\s\s\s\sig_strike_current\s=\sextended_strike_3y[$index]\r\n
+\s\s\s\s\s\s\s\sreturn\s((call_price_end\s-\scall_price_prev)*(ig_strike_current\s-\sig_strike_end))/(ig_strike_end-ig_strike_prev)\s+\scall_price_end\r\n
+\s\s\send\r\n
+else\r\n
+\s\s\sreturn\s\srty_otm_calls_3y_ig[$index]\r\n
+end\r\n
+</c>
             <c name="ndx_otm_calls_3y_ig">if\srun_shocksos\sthen\r\n
 \s\s\s\sreturn\s0\r\n
 end\r\n
@@ -3733,7 +4645,43 @@ idx\s=\s0\r\n
 S0\s=\sS_3rd_anniversary[idx]\r\n
 Si\s=\sS[idx]\r\n
 K\s=\sS0\s*\s(1\s+\sput_strike[$index])\r\n
-T\s=\soption_3y_ttm[step]\s/*\s6\syr\soption\sprice\s*/\r\n
+T\s=\soption_3y_ttm[step]\s\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[idx]\r\n
+theta\s=\sComputation[step].theta[idx]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[idx]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[idx]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[idx]\s-\sComputation[step].funding_spread_3y[idx]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_3y,\stheta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[idx],ig_vol[idx],\sq_average_3y)\r\n
+\r\n
+return\sput_price\s/\sS0\r\n
+</c>
+            <c name="mxea_puts_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+idx\s=\s1\r\n
+S0\s=\sS_3rd_anniversary[idx]\r\n
+Si\s=\sS[idx]\r\n
+K\s=\sS0\s*\s(1\s+\sput_strike[$index])\r\n
+T\s=\soption_3y_ttm[step]\s\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[idx]\r\n
+theta\s=\sComputation[step].theta[idx]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[idx]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[idx]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[idx]\s-\sComputation[step].funding_spread_3y[idx]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_3y,\stheta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[idx],ig_vol[idx],\sq_average_3y)\r\n
+\r\n
+return\sput_price\s/\sS0\r\n
+</c>
+            <c name="rty_puts_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+idx\s=\s2\r\n
+S0\s=\sS_3rd_anniversary[idx]\r\n
+Si\s=\sS[idx]\r\n
+K\s=\sS0\s*\s(1\s+\sput_strike[$index])\r\n
+T\s=\soption_3y_ttm[step]\s\r\n
 r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
 k_average_3y\s=\sComputation[step].k_average_3y[idx]\r\n
 theta\s=\sComputation[step].theta[idx]\r\n
@@ -3751,7 +4699,7 @@ idx\s=\s3\r\n
 S0\s=\sS_3rd_anniversary[idx]\r\n
 Si\s=\sS[idx]\r\n
 K\s=\sS0\s*\s(1\s+\sput_strike[$index])\r\n
-T\s=\soption_3y_ttm[step]\s/*\s6\syr\soption\sprice\s*/\r\n
+T\s=\soption_3y_ttm[step]\s\r\n
 r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
 k_average_3y\s=\sComputation[step].k_average_3y[idx]\r\n
 theta\s=\sComputation[step].theta[idx]\r\n
@@ -3903,11 +4851,18 @@ put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_1y,\sspx_theta,\slam
 \r\n
 \r\n
 return\sput_price/\sS0</c>
-            <c name="trigger_vol_spread">if\s$index\s==\s0\sthen\s\r\n
-\s\s\s\sreturn\s0.0008\s\s\s//SPX\r\n
-else\r\n
-\s\s\s\sreturn\s0.0008\s//\sNASDAQ\r\n
-end\s</c>
+            <c name="trigger_vol_spread">switch\s$index\r\n
+\s\s\s\scase\s0:\s//\sSPX\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0008\r\n
+\s\s\s\scase\s1:\s//\sMXEA\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0008\r\n
+\s\s\s\scase\s2:\s//\sRTY\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0008\r\n
+\s\s\s\scase\s3:\s//nasdaq\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0008\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+end</c>
             <c name="spx_trigger_calls_1y_seasoned">if\srun_shocksos\sthen\r\n
 \s\s\s\sreturn\s0\r\n
 endif\r\n
@@ -3930,11 +4885,33 @@ put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,
 call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s-\sK_epsilon*exp(-r*T)\r\n
 \r\n
 return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
+            <c name="spx_trigger_calls_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_3rd_anniversary[0]\s*\s(1\s+\sbinary_strike_3y[$index])\r\n
+Si\s=\sS[0]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_3y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[0]\r\n
+spx_theta\s=\sComputation[step].theta[0]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[0]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[0]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[0]\s-\sComputation[step].funding_spread_3y[0]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_3y,\sspx_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[0],ig_vol[0],\sq_average_3y,\s-trigger_vol_spread[0])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_3y,\sspx_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[0],ig_vol[0],\sq_average_3y,\strigger_vol_spread[0])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_3y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
             <c name="spx_trigger_calls_6y_seasoned">if\srun_shocksos\sthen\r\n
 \s\s\s\sreturn\s0\r\n
 endif\r\n
 \r\n
-K\s=\sS_6th_anniversary[0]\s*\s(1\s+\sbinary_strike_spx_6y[$index])\r\n
+K\s=\sS_6th_anniversary[0]\s*\s(1\s+\sbinary_strike_6y[$index])\r\n
 Si\s=\sS[0]\r\n
 K_epsilon\s=\sK\s*\s0.99\r\n
 T\s=\soption_6y_ttm[step]\s/*\s6\syr\soption\sprice\s*/\r\n
@@ -3950,6 +4927,72 @@ call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_6y*T)\s-\sK*exp(-r*T)\r
 \r\n
 put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_6y,\sspx_theta,\slambda_average_6y,\sxi_average_6y,\srho_idx_vol[0],ig_vol[0],\sq_average_6y,\strigger_vol_spread[0])\r\n
 call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_6y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
+            <c name="mxea_trigger_calls_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_3rd_anniversary[1]\s*\s(1\s+\sbinary_strike_3y[$index])\r\n
+Si\s=\sS[1]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_3y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[1]\r\n
+mxea_theta\s=\sComputation[step].theta[1]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[1]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[1]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[1]\s-\sComputation[step].funding_spread_3y[1]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_3y,\smxea_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[1],ig_vol[1],\sq_average_3y,\s-trigger_vol_spread[1])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_3y,\smxea_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[1],ig_vol[1],\sq_average_3y,\strigger_vol_spread[1])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_3y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
+            <c name="mxea_trigger_calls_6y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_6th_anniversary[1]\s*\s(1\s+\sbinary_strike_6y[$index])\r\n
+Si\s=\sS[1]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_6y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_6y_price)/option_6y_ttm[step]\r\n
+k_average_6y\s=\sComputation[step].k_average_6y[1]\r\n
+mxea_theta\s=\sComputation[step].theta[1]\r\n
+lambda_average_6y\s=\sComputation[step].lambda_average_6y[1]\r\n
+xi_average_6y\s=\sComputation[step].xi_average_6y[1]\r\n
+q_average_6y\s=\sComputation[step].q_average_6y[1]\s-\sComputation[step].funding_spread_6y[1]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_6y,\smxea_theta,\slambda_average_6y,\sxi_average_6y,\srho_idx_vol[1],ig_vol[1],\sq_average_6y,\s-trigger_vol_spread[1])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_6y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_6y,\smxea_theta,\slambda_average_6y,\sxi_average_6y,\srho_idx_vol[1],ig_vol[1],\sq_average_6y,\strigger_vol_spread[1])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_6y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
+            <c name="rty_trigger_calls_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_3rd_anniversary[2]\s*\s(1\s+\sbinary_strike_3y[$index])\r\n
+Si\s=\sS[2]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_3y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[2]\r\n
+rty_theta\s=\sComputation[step].theta[2]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[2]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[2]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[2]\s-\sComputation[step].funding_spread_3y[2]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_3y,\srty_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[2],ig_vol[2],\sq_average_3y,\s-trigger_vol_spread[2])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_3y,\srty_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[2],ig_vol[2],\sq_average_3y,\strigger_vol_spread[2])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_3y*T)\s-\sK_epsilon*exp(-r*T)\r\n
 \r\n
 return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)</c>
             <c name="nasdaq_trigger_calls_1y_seasoned">if\srun_shocksos\sthen\r\n
@@ -3975,6 +5018,29 @@ call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s
 \r\n
 return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)\r\n
 \r\n
+</c>
+            <c name="nasdaq_trigger_calls_3y_seasoned">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+K\s=\sS_3rd_anniversary[3]\s*\s(1\s+\sbinary_strike_3y[$index])\r\n
+Si\s=\sS[3]\r\n
+K_epsilon\s=\sK\s*\s0.99\r\n
+T\s=\soption_3y_ttm[step]\s/*\s1\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_3y_price)/option_3y_ttm[step]\r\n
+k_average_3y\s=\sComputation[step].k_average_3y[3]\r\n
+nasdaq_theta\s=\sComputation[step].theta[3]\r\n
+lambda_average_3y\s=\sComputation[step].lambda_average_3y[3]\r\n
+xi_average_3y\s=\sComputation[step].xi_average_3y[3]\r\n
+q_average_3y\s=\sComputation[step].q_average_3y[3]\s-\sComputation[step].funding_spread_3y[3]\r\n
+\r\n
+put_price_at_K\s=\sinverse_gamma_option_price_vol_spread(Si,K,r,T,k_average_3y,\snasdaq_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[3],ig_vol[3],\sq_average_3y,\s-trigger_vol_spread[3])\r\n
+call_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_3y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+put_price_at_K_epsilon\s=\sinverse_gamma_option_price_vol_spread(Si,K_epsilon,r,T,k_average_3y,\snasdaq_theta,\slambda_average_3y,\sxi_average_3y,\srho_idx_vol[3],ig_vol[3],\sq_average_3y,\strigger_vol_spread[3])\r\n
+call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_3y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\r\n
+return\smax(0.01,\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK)\r\n
 </c>
             <c name="nasdaq_otm_calls_1y_ig">if\srun_shocksos\sthen\r\n
 \s\s\s\sreturn\s0\r\n
@@ -4585,7 +5651,7 @@ return\satm_call\s-\sotm_call</c>
 r\s=\s-log(zcb_1y_price)/option_1y_ttm[step]\r\n
 vol\s=\svol_bs_1y\r\n
 q\s=\sComputation[step].q_average_1y[0]\s-\sComputation[step].funding_spread_1y[0]\r\n
-S_return\s=\slog(safeDivide(S[0],S_anniversary[0],1e-8))\r\n
+S_return\s=\slog(safeDivide(S[0],S_anniversary[0],1.0))\r\n
 d2\s=\ssafeDivide(S_return\s+\s(r\s-\sq\s-\s0.5\s*\svol\s*\svol)\s*\soption_1y_ttm[step],\svol\s*\ssqrt(option_1y_ttm[step]),\s0)\r\n
 \r\n
 return\smax(1e-8,\smin(1.0,\snormal_cdf(d2)))</c>
@@ -4605,7 +5671,7 @@ base\scliquet\s=\s[AV(t-1)*(1\s+\sundiscounted\scurr\sivg\scall\sspread)*(1\s+\s
 n\s=\s\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 return\s(account_val_cliquet_5y[$index]\s*\s(1\s+\scall_spread_curr_undiscounted[$index])\s*\s(1\s+\sannual_call_spread_next_5y[$index])\s^\sn\s-\s1)\s*\szcb_5y_price\r\n
 </c>
-            <c name="secure_rate_gmab_5y_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="secure_rate_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -4627,7 +5693,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_5y[$index]</c>
             <c name="secure_rate_gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
@@ -4652,7 +5718,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_5y[$index]\r\n
 </c>
@@ -4678,12 +5744,12 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_5y[$index]\r\n
 \r\n
 </c>
-            <c name="gmab_5y_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -4705,7 +5771,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end</c>
             <c name="gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
@@ -4729,7 +5795,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 \r\n
 </c>
@@ -4755,9 +5821,190 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price,\s0,\sFalse)\r\n
 end\r\n
 </c>
+            <c name="account_val_trigger_5y">coupon\s=\sgmab_cap[$index]\s//coupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+if\sis_5th_anniversary[step]\sthen\r\n
+\s\s\sreturn\s1.0\r\n
+elif\sis_anniversary\sand\scompare(S[0]\s&gt;\sprev(S_anniversary[0]),\s1e-8)\sthen\r\n
+\s\s\sreturn\sprev(account_val_trigger_5y)\s*\s(1\s+\scoupon)\r\n
+else\r\n
+\s\s\sreturn\sprev(account_val_trigger_5y)\r\n
+end</c>
+            <c name="trigger_gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_5y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_5y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="trigger_gmab_5y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_5y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_5y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="trigger_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_5y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_5y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_5y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="account_val_par_rate_5y">part\s=\sgmab_par_rate[$index]\s//\sparticipation\srate\r\n
+if\sis_5th_anniversary[step]\sthen\r\n
+\s\s\sreturn\s1.0\r\n
+elif\sis_anniversary\sthen\r\n
+\s\s\srtn\s=\sSafeDivide(S[0],\sprev(S_anniversary[0]),\s1.0)\s-\s1\r\n
+\s\s\scredit\s=\spart\s*\smax(rtn,\s0)\r\n
+\s\s\sreturn\sprev(account_val_par_rate_5y)\s*\s(1\s+\scredit)\r\n
+else\r\n
+\s\s\sreturn\sprev(account_val_par_rate_5y)\r\n
+end</c>
+            <c name="par_m_curr">part\s=\sgmab_par_rate[$index]\r\n
+call_atm\s=\sinterp1_constant(0,\sextended_strike_1y,\sadj_spx_calls_1y_seasoned)\r\n
+return\spart\s*\sSafeDivide(call_atm,\szcb_1y_price,\s0.0)\s//par\srate*\sundiscounted\sATM\scall</c>
+            <c name="par_m_next_5y">part\s=\sgmab_par_rate[$index]\r\n
+S0\s=\s1.0\r\n
+K\s=\s1.0\r\n
+r\s=\s-log(zcb_5y_price)\s/\soption_5y_ttm[step]\r\n
+T\s=\s1\r\n
+vol_atm\s=\svol_bs_5y\r\n
+q\s=\sComputation[step].q_average_5y[0]\s-\sComputation[step].funding_spread_5y[0]\r\n
+atm_call\s=\sundiscounted_black_scholes(S0,\sK,\sr,\sT,\svol_atm,\sq,\sTrue)\r\n
+return\spart\s*\satm_call</c>
+            <c name="par_q_curr">part\s=\sgmab_par_rate[$index]\r\n
+//current\syear\sseasoned\r\n
+tau\s=\soption_1y_ttm[step]\r\n
+r\s=\s-log(zcb_1y_price)\s/\stau\r\n
+q\s=\sComputation[step].q_average_1y[0]\s-\sComputation[step].funding_spread_1y[0]\r\n
+sigma\s=\svol_bs_1y\r\n
+spot_ratio\s=\sSafeDivide(S[0],\sS_anniversary[0],\s1.0)\r\n
+K\s=\sSafeDivide(1.0,\sspot_ratio,\s1.0)\r\n
+f\s=\sexp((r\s-\sq)\s*\stau)\r\n
+return\spart\s*\spart\s*\sspot_ratio\s*\sspot_ratio\s*\ssecond_moment_call_square(f,\sK,\ssigma,\stau)</c>
+            <c name="par_q_next_5y">part\s=\sgmab_par_rate[$index]\r\n
+r\s=\s-log(zcb_5y_price)\s/\soption_5y_ttm[step]\r\n
+q\s=\sComputation[step].q_average_5y[0]\s-\sComputation[step].funding_spread_5y[0]\r\n
+sigma\s=\svol_bs_5y\r\n
+f\s=\sexp(r\s-\sq)\r\n
+return\spart\s*\spart\s*\ssecond_moment_call_square(f,\s1.0,\ssigma,\s1.0)</c>
+            <c name="par_gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_5y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_5y[$index]\r\n
+q_next\s=\spar_q_next_5y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="par_gmab_5y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_5y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_5y[$index]\r\n
+q_next\s=\spar_q_next_5y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="par_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_5y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_5y[$index]\r\n
+q_next\s=\spar_q_next_5y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
             <c name="account_val_cliquet_7y">//\saccount\svalue\sat\slast\sanniversary\sfor\ssecure\srate\sand\snon\ssecure\srate\scliquet\r\n
 \r\n
 if\sis_7th_anniversary[step]\sthen\r\n
@@ -4818,7 +6065,7 @@ q\s=\sComputation[step].q_average_7y[0]\s-\sComputation[step].funding_spread_7y[
 d2\s=\ssafeDivide((r\s-\sq\s-\s0.5\s*\svol\s*\svol),\svol,\s0)\r\n
 \r\n
 return\smax(1e-8,\smin(1.0,\snormal_cdf(d2)))</c>
-            <c name="secure_rate_gmab_7y_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="secure_rate_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -4840,7 +6087,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_7y[$index]\r\n
 \r\n
@@ -4867,7 +6114,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_7y[$index]\r\n
 \r\n
@@ -4894,13 +6141,13 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 return\spv_gmab\s+\ssecure_rate_cliquet_7y[$index]\r\n
 \r\n
 \r\n
 </c>
-            <c name="gmab_7y_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -4922,7 +6169,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end</c>
             <c name="gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
@@ -4946,7 +6193,7 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 </c>
             <c name="gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
@@ -4971,9 +6218,246 @@ if\sn\s==\s0\sthen\r\n
 //\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
 //\s--------------------------------------------------\r\n
 else\r\n
-\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price,\s0,\sFalse)\r\n
 end\r\n
 </c>
+            <c name="account_val_trigger_7y">coupon\s=\sgmab_cap[$index]\s//coupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+if\sis_7th_anniversary[step]\sthen\r\n
+\s\s\sreturn\s1.0\r\n
+elif\sis_anniversary\sand\scompare(S[0]\s&gt;\sprev(S_anniversary[0]),\s1e-8)\sthen\r\n
+\s\s\sreturn\sprev(account_val_trigger_7y)\s*\s(1\s+\scoupon)\r\n
+else\r\n
+\s\s\sreturn\sprev(account_val_trigger_7y)\r\n
+end</c>
+            <c name="trigger_gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_7y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_7y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="trigger_gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_7y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_7y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="trigger_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_trigger_7y[$index]\r\n
+coupon\s=\sgmab_cap[$index]\s//\scoupon\srates\sassumed\sto\sbe\ssame\sas\sgmab\scap\srates\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sgmab_value\s=\sp_curr\s*\smax(K\s-\sAV_curr\s*\s(1\s+\scoupon),\s0)\s+\s(1\s-\sp_curr)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr,\sp_next_7y,\s0.0,\s0.0,\sK,\sAV_curr,\szcb_7y_price,\scoupon,\sTrue)\r\n
+end\r\n
+</c>
+            <c name="account_val_par_rate_7y">part\s=\sgmab_par_rate[$index]\s//\sparticipation\srate\r\n
+if\sis_7th_anniversary[step]\sthen\r\n
+\s\s\sreturn\s1.0\r\n
+elif\sis_anniversary\sthen\r\n
+\s\s\srtn\s=\sSafeDivide(S[0],\sprev(S_anniversary[0]),\s1.0)\s-\s1\r\n
+\s\s\scredit\s=\spart\s*\smax(rtn,\s0)\r\n
+\s\s\sreturn\sprev(account_val_par_rate_7y)\s*\s(1\s+\scredit)\r\n
+else\r\n
+\s\s\sreturn\sprev(account_val_par_rate_7y)\r\n
+end</c>
+            <c name="par_m_next_7y">part\s=\sgmab_par_rate[$index]\r\n
+S0\s=\s1.0\r\n
+K\s=\s1.0\r\n
+r\s=\s-log(zcb_7y_price)\s/\soption_7y_ttm[step]\r\n
+T\s=\s1\r\n
+vol_atm\s=\svol_bs_7y\r\n
+q\s=\sComputation[step].q_average_7y[0]\s-\sComputation[step].funding_spread_7y[0]\r\n
+atm_call\s=\sundiscounted_black_scholes(S0,\sK,\sr,\sT,\svol_atm,\sq,\sTrue)\r\n
+return\spart\s*\satm_call</c>
+            <c name="par_q_next_7y">part\s=\sgmab_par_rate[$index]\r\n
+r\s=\s-log(zcb_7y_price)\s/\soption_7y_ttm[step]\r\n
+q\s=\sComputation[step].q_average_7y[0]\s-\sComputation[step].funding_spread_7y[0]\r\n
+sigma\s=\svol_bs_7y\r\n
+f\s=\sexp(r\s-\sq)\r\n
+return\spart\s*\spart\s*\ssecond_moment_call_square(f,\s1.0,\ssigma,\s1.0)</c>
+            <c name="par_gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_7y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_7y[$index]\r\n
+q_next\s=\spar_q_next_7y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="par_gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_7y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_7y[$index]\r\n
+q_next\s=\spar_q_next_7y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="par_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\saccount_val_par_rate_7y[$index]\r\n
+m_curr\s=\spar_m_curr[$index]\r\n
+q_curr\s=\spar_q_curr[$index]\r\n
+m_next\s=\spar_m_next_7y[$index]\r\n
+q_next\s=\spar_q_next_7y[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="spx_otm_calls_5y_ig">if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+S0\s=\sS_5th_anniversary[0]\r\n
+Si\s=\sS[0]\r\n
+K\s=\sS0\s*\s(1\s+\sgmab_5y_cap[$index])\r\n
+T\s=\soption_5y_ttm[step]\s/*\s5\syr\soption\sprice\s*/\r\n
+r\s=\s-log(zcb_5y_price)/option_5y_ttm[step]\r\n
+k_average_5y\s=\sComputation[step].k_average_5y[0]\r\n
+spx_theta\s=\sComputation[step].theta[0]\r\n
+lambda_average_5y\s=\sComputation[step].lambda_average_5y[0]\r\n
+xi_average_5y\s=\sComputation[step].xi_average_5y[0]\r\n
+q_average_5y\s=\sComputation[step].q_average_5y[0]\s-\sComputation[step].funding_spread_5y[0]\r\n
+put_price\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_5y,\sspx_theta,\slambda_average_5y,\sxi_average_5y,\srho_idx_vol[0],ig_vol[0],\sq_average_5y)\r\n
+call_price\s=\sput_price\s+\sSi*exp(-q_average_5y*T)\s-\sK*exp(-r*T)\r\n
+\r\n
+return\smax(0,call_price)\s/\sS0</c>
+            <c name="cut_off_strike_5y_spx">return\scompute_cut_off_strike(spx_otm_calls_5y_ig,len(spx_otm_calls_5y_ig))\r\n
+</c>
+            <c name="adj_spx_calls_5y_seasoned">/*\sFor\sapproach\s2\s\r\n
+\r\n
+If\sk*=200%,\sp\swould\sbe\sf(k*).\sIf\sk*&lt;200%,\sset\sp\sto\sbe\sf(k*)*BS(200%)/\sBS(k*)\r\n
+where\sBS(K)\sis\sthe\sBS\soption\sprice\swith\srespect\sto\sstrike\sK.\s*/\r\n
+if\srun_shocksos\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+S0\s=\sS_5th_anniversary[0]\r\n
+Si\s=\sS[0]\r\n
+if\s$index\s&gt;\scut_off_strike_5y_spx\sthen\s\r\n
+\s\s\scall_price_prev\s=\sspx_otm_calls_5y_ig[cut_off_strike_5y_spx]\r\n
+\s\s\sig_strike_prev\s=\sgmab_5y_cap[cut_off_strike_5y_spx]\r\n
+\s\s\sig_strike_end\s=\sgmab_5y_cap[len(gmab_5y_cap)-1]\r\n
+\s\s\sK_star\s=\sS0\s*\s(1\s+\sig_strike_prev)\r\n
+\s\s\sK_end\s=\sS0\s*\s(1\s+\sig_strike_end)\r\n
+\s\s\sT\s=\soption_5y_ttm[step]\r\n
+\s\s\svol\s=\sComputation[step].xi_average_5y[0]\s*\sig_vol[0]\r\n
+\s\s\sr\s=\s-log(zcb_5y_price)/option_5y_ttm[step]\r\n
+\s\s\sq\s=\sComputation[step].q_average_5y[0]\s-\sComputation[step].funding_spread_5y[0]\r\n
+\s\s\s\r\n
+\s\s\sif\scompare(compute_black_scholes(Si,K_star,r,T,vol,q)\s&lt;=0,1E-04)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\selse\r\n
+\s\s\s\s\s\s\s\scall_price_end\s=\scall_price_prev*max(0,compute_black_scholes(Si,K_end,r,T,vol,q))/compute_black_scholes(Si,K_star,r,T,vol,q)\s\s\s\r\n
+\s\s\s\s\s\s\s\sig_strike_current\s=\sgmab_5y_cap[$index]\r\n
+\s\s\s\s\s\s\s\sreturn\s((call_price_end\s-\scall_price_prev)*(ig_strike_current\s-\sig_strike_end))/(ig_strike_end-ig_strike_prev)\s+\scall_price_end\r\n
+\s\s\send\r\n
+else\r\n
+\s\s\sreturn\s\sspx_otm_calls_5y_ig[$index]\r\n
+end</c>
+            <c name="spx_5y_calls_with_gmab_2pct_seasoned">//Seasoned\s5y\scall\swith\sGMAB\scombined\s=\s{DF(t,5)\s×\sK_min\s−\sC(K\s=\s1+Cap)\s+\sC(K\s=\s1\s+\sK_min)}\s\r\n
+min_credit\s=\s0.02\r\n
+K_min\s=\s5\s*\smin_credit\r\n
+call_otm_1\s=\sadj_spx_calls_5y_seasoned[$index]\s//C(K\s=\s1+Cap)\r\n
+call_otm_2\s=\sinterp1_constant(K_min,\sgmab_5y_cap,\sadj_spx_calls_5y_seasoned)\s\s//C(K\s=\s1\s+\sK_min)\r\n
+return\szcb_5y_price\s*\sK_min\s+\smax(0,\scall_otm_2\s-\scall_otm_1)\s//when\scap\s&lt;\sK_min,\sreturn\szcb_5y_price*K_min,\sreflecting\sGMAB</c>
+            <c name="spx_5y_calls_with_gmab_3pct_seasoned">//Seasoned\s5y\scall\swith\sGMAB\scombined\s=\s{DF(t,5)\s×\sK_min\s−\sC(K\s=\s1+Cap)\s+\sC(K\s=\s1\s+\sK_min)}\s\r\n
+min_credit\s=\s0.03\r\n
+K_min\s=\s5\s*\smin_credit\r\n
+call_otm_1\s=\sadj_spx_calls_5y_seasoned[$index]\s//C(K\s=\s1+Cap)\r\n
+call_otm_2\s=\sinterp1_constant(K_min,\sgmab_5y_cap,\sadj_spx_calls_5y_seasoned)\s\s//C(K\s=\s1\s+\sK_min)\r\n
+return\szcb_5y_price\s*\sK_min\s+\smax(0,\scall_otm_2\s-\scall_otm_1)//when\scap\s&lt;\sK_min,\sreturn\szcb_5y_price*K_min,\sreflecting\sGMAB</c>
+            <c name="spx_5y_calls_with_gmab_4pct_seasoned">//Seasoned\s5y\scall\swith\sGMAB\scombined\s=\s{DF(t,5)\s×\sK_min\s−\sC(K\s=\s1+Cap)\s+\sC(K\s=\s1\s+\sK_min)}\s\r\n
+min_credit\s=\s0.04\r\n
+K_min\s=\s5\s*\smin_credit\r\n
+call_otm_1\s=\sadj_spx_calls_5y_seasoned[$index]\s//C(K\s=\s1+Cap)\r\n
+call_otm_2\s=\sinterp1_constant(K_min,\sgmab_5y_cap,\sadj_spx_calls_5y_seasoned)\s\s//C(K\s=\s1\s+\sK_min)\r\n
+return\szcb_5y_price\s*\sK_min\s+\smax(0,\scall_otm_2\s-\scall_otm_1)//when\scap\s&lt;\sK_min,\sreturn\szcb_5y_price*K_min,\sreflecting\sGMAB</c>
           </columns>
         </row-group>
       </data>
@@ -4983,14 +6467,21 @@ end\r\n
     <view name="Cashflow:Projection">
       <c name="account_val_cliquet_5y[0]" formattype="General" width="122" />
       <c name="account_val_cliquet_7y[0]" formattype="General" width="80" />
+      <c name="account_val_par_rate_5y[0]" formattype="General" width="80" />
+      <c name="account_val_par_rate_7y[0]" formattype="General" width="80" />
+      <c name="account_val_trigger_5y[0]" formattype="General" width="80" />
+      <c name="account_val_trigger_7y[0]" formattype="General" width="80" />
+      <c name="adj_mxea_calls_3y_seasoned[0]" formattype="General" width="80" />
       <c name="adj_mxea_calls_6y_seasoned[0]" formattype="General" width="80" />
       <c name="adj_nasdaq_calls_1y_seasoned[0]" formattype="General" width="80" />
       <c name="adj_ndx_calls_3y_seasoned[0]" formattype="General" width="80" />
       <c name="adj_ndx_calls_6y_seasoned[0]" formattype="General" width="80" />
+      <c name="adj_rty_calls_3y_seasoned[0]" formattype="General" width="80" />
       <c name="adj_rty_calls_6y_seasoned[0]" formattype="General" width="80" />
       <c name="adj_sptr_calls_1y_seasoned[0]" formattype="General" width="80" />
       <c name="adj_spx_calls_1y_seasoned[0]" formattype="General" width="136" />
       <c name="adj_spx_calls_3y_seasoned[0]" formattype="General" width="80" />
+      <c name="adj_spx_calls_5y_seasoned[0]" formattype="General" width="80" />
       <c name="adj_spx_calls_6y_seasoned[0]" formattype="General" width="137.00000000000034" />
       <c name="annual_call_spread_next_5y[0]" formattype="General" width="80" />
       <c name="annual_call_spread_next_7y[0]" formattype="General" width="80" />
@@ -5003,7 +6494,10 @@ end\r\n
       <c name="cum_growth_of_realized_index_credits_15pct_buffer[0]" formattype="General" width="80" />
       <c name="cut_off_strike" formattype="General" width="80" />
       <c name="cut_off_strike_3y" formattype="General" width="80" />
+      <c name="cut_off_strike_3y_mxea" formattype="General" width="80" />
       <c name="cut_off_strike_3y_ndx" formattype="General" width="80" />
+      <c name="cut_off_strike_3y_rty" formattype="General" width="80" />
+      <c name="cut_off_strike_5y_spx" formattype="General" width="80" />
       <c name="cut_off_strike_6y" formattype="General" width="72" />
       <c name="cut_off_strike_6y_mxea" formattype="General" width="80" />
       <c name="cut_off_strike_6y_ndx" formattype="General" width="80" />
@@ -5015,12 +6509,12 @@ end\r\n
       <c name="equity_variance_mxea" formattype="General" width="80" />
       <c name="equity_variance_rty" formattype="General" width="80" />
       <c name="funding_spread[0]" formattype="General" width="84" />
-      <c name="gmab_5y_spread_1pct[0]" formattype="General" width="80" />
       <c name="gmab_5y_spread_2pct[0]" formattype="General" width="80" />
       <c name="gmab_5y_spread_3pct[0]" formattype="General" width="80" />
-      <c name="gmab_7y_spread_1pct[0]" formattype="General" width="80" />
+      <c name="gmab_5y_spread_4pct[0]" formattype="General" width="80" />
       <c name="gmab_7y_spread_2pct[0]" formattype="General" width="80" />
       <c name="gmab_7y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="gmab_7y_spread_4pct[0]" formattype="General" width="80" />
       <c name="ig_kappa[0]" formattype="General" width="80" />
       <c name="ig_lambda[0]" formattype="General" width="80" />
       <c name="ig_q[0]" formattype="General" width="80" />
@@ -5031,34 +6525,54 @@ end\r\n
       <c name="log_equity_tr" formattype="General" width="114.666666666667" />
       <c name="log_equity_tr_driftless" formattype="General" width="80" />
       <c name="mxea" formattype="General" width="80" />
+      <c name="mxea_otm_calls_3y_ig[0]" formattype="General" width="80" />
       <c name="mxea_otm_calls_6y_ig[0]" formattype="General" width="80" />
+      <c name="mxea_puts_3y_seasoned[0]" formattype="General" width="80" />
       <c name="mxea_puts_6y_seasoned[0]" formattype="General" width="80" />
+      <c name="mxea_trigger_calls_3y_seasoned[0]" formattype="General" width="80" />
+      <c name="mxea_trigger_calls_6y_seasoned[0]" formattype="General" width="80" />
       <c name="nasdaq_cut_off_strike" formattype="General" width="80" />
       <c name="nasdaq_otm_calls_1y_ig[0]" formattype="General" width="80" />
       <c name="nasdaq_otm_calls_1y_ig[0]" formattype="General" width="80" />
       <c name="nasdaq_puts_1y_seasoned[0]" formattype="General" width="80" />
       <c name="nasdaq_trigger_calls_1y_seasoned[0]" formattype="General" width="80" />
+      <c name="nasdaq_trigger_calls_3y_seasoned[0]" formattype="General" width="80" />
       <c name="ndx_otm_calls_3y_ig[0]" formattype="General" width="80" />
       <c name="ndx_otm_calls_6y_ig[0]" formattype="General" width="80" />
       <c name="ndx_puts_3y_seasoned[0]" formattype="General" width="80" />
       <c name="ndx_puts_6y_seasoned[0]" formattype="General" width="80" />
+      <c name="par_gmab_5y_spread_2pct[0]" formattype="General" width="80" />
+      <c name="par_gmab_5y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="par_gmab_5y_spread_4pct[0]" formattype="General" width="80" />
+      <c name="par_gmab_7y_spread_2pct[0]" formattype="General" width="80" />
+      <c name="par_gmab_7y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="par_gmab_7y_spread_4pct[0]" formattype="General" width="80" />
+      <c name="par_m_curr[0]" formattype="General" width="80" />
+      <c name="par_m_next_5y[0]" formattype="General" width="80" />
+      <c name="par_m_next_7y[0]" formattype="General" width="80" />
+      <c name="par_q_curr[0]" formattype="General" width="80" />
+      <c name="par_q_next_5y[0]" formattype="General" width="80" />
+      <c name="par_q_next_7y[0]" formattype="General" width="80" />
       <c name="p_curr" formattype="General" width="80" />
       <c name="p_next_5y" formattype="General" width="80" />
       <c name="p_next_7y" formattype="General" width="80" />
       <c name="rho_idx_vol[0]" formattype="General" width="80" />
       <c name="rila_param_placeholder[0]" formattype="General" width="80" />
       <c name="rty" formattype="General" width="80" />
+      <c name="rty_otm_calls_3y_ig[0]" formattype="General" width="80" />
       <c name="rty_otm_calls_6y_ig[0]" formattype="General" width="80" />
+      <c name="rty_puts_3y_seasoned[0]" formattype="General" width="80" />
       <c name="rty_puts_6y_seasoned[0]" formattype="General" width="80" />
+      <c name="rty_trigger_calls_3y_seasoned[0]" formattype="General" width="80" />
       <c name="S" formattype="General" width="80" />
       <c name="secure_rate_cliquet_5y[0]" formattype="General" width="80" />
       <c name="secure_rate_cliquet_7y[0]" formattype="General" width="80" />
-      <c name="secure_rate_gmab_5y_spread_1pct[0]" formattype="General" width="80" />
       <c name="secure_rate_gmab_5y_spread_2pct[0]" formattype="General" width="80" />
       <c name="secure_rate_gmab_5y_spread_3pct[0]" formattype="General" width="80" />
-      <c name="secure_rate_gmab_7y_spread_1pct[0]" formattype="General" width="80" />
+      <c name="secure_rate_gmab_5y_spread_4pct[0]" formattype="General" width="80" />
       <c name="secure_rate_gmab_7y_spread_2pct[0]" formattype="General" width="80" />
       <c name="secure_rate_gmab_7y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="secure_rate_gmab_7y_spread_4pct[0]" formattype="General" width="80" />
       <c name="SPTR_6th_anniversary" formattype="General" width="80" />
       <c name="SPTR_anniversary" formattype="General" width="80" />
       <c name="sptr_cut_off_strike" formattype="General" width="80" />
@@ -5067,6 +6581,9 @@ end\r\n
       <c name="spx" formattype="General" width="80" />
       <c name="spx_10pct_buffer_secure_cap_cliquet_6y_seasoned[0]" formattype="General" width="80" />
       <c name="spx_15pct_buffer_secure_cap_cliquet_6y_seasoned[0]" formattype="General" width="80" />
+      <c name="spx_5y_calls_with_gmab_2pct_seasoned[0]" formattype="General" width="80" />
+      <c name="spx_5y_calls_with_gmab_3pct_seasoned[0]" formattype="General" width="80" />
+      <c name="spx_5y_calls_with_gmab_4pct_seasoned[0]" formattype="General" width="80" />
       <c name="SPX_6monthversary" formattype="General" width="80" />
       <c name="spx_barrier_vol_1y_hdv" formattype="General" width="80" />
       <c name="spx_barrier_vol_2y_hdv" formattype="General" width="80" />
@@ -5077,6 +6594,7 @@ end\r\n
       <c name="spx_funding_spread" formattype="General" width="80" />
       <c name="spx_otm_calls_1y_ig[0]" formattype="General" width="80" />
       <c name="spx_otm_calls_3y_ig[0]" formattype="General" width="80" />
+      <c name="spx_otm_calls_5y_ig[0]" formattype="General" width="80" />
       <c name="spx_otm_calls_6y_ig[0]" formattype="General" width="93" />
       <c name="spx_puts_1y_seasoned[0]" formattype="General" width="80" />
       <c name="spx_puts_3y_seasoned[0]" formattype="General" width="80" />
@@ -5099,6 +6617,7 @@ end\r\n
       <c name="spx_step_digital_hdv_3y[0]" formattype="General" width="80" />
       <c name="spx_step_digital_hdv_6y[0]" formattype="General" width="80" />
       <c name="spx_trigger_calls_1y_seasoned[0]" formattype="General" width="80" />
+      <c name="spx_trigger_calls_3y_seasoned[0]" formattype="General" width="80" />
       <c name="spx_trigger_calls_6y_seasoned[0]" formattype="General" width="80" />
       <c name="spx_up_out_10pct_otm_puts_3y_seasoned[0]" formattype="General" width="80" />
       <c name="spx_up_out_10pct_otm_puts_6y_seasoned[0]" formattype="General" width="80" />
@@ -5111,10 +6630,17 @@ end\r\n
       <c name="spx_up_out_atm_calls_6y_seasoned[0]" formattype="General" width="80" />
       <c name="step" formattype="General" width="80" />
       <c name="S_3rd_anniversary[0]" formattype="General" width="80" />
+      <c name="S_5th_anniversary[0]" formattype="General" width="80" />
       <c name="S_6monthversary[1]" formattype="General" width="80" />
       <c name="S_6th_anniversary[1]" formattype="General" width="80" />
       <c name="S_anniversary[0]" formattype="General" width="80" />
       <c name="t" formattype="General" width="80" />
+      <c name="trigger_gmab_5y_spread_2pct[0]" formattype="General" width="80" />
+      <c name="trigger_gmab_5y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="trigger_gmab_5y_spread_4pct[0]" formattype="General" width="80" />
+      <c name="trigger_gmab_7y_spread_2pct[0]" formattype="General" width="80" />
+      <c name="trigger_gmab_7y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="trigger_gmab_7y_spread_4pct[0]" formattype="General" width="80" />
       <c name="trigger_vol_spread[0]" formattype="General" width="80" />
       <c name="vol_bs_1y" formattype="General" width="80" />
       <c name="vol_bs_5y" formattype="General" width="80" />

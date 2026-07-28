@@ -391,8 +391,13 @@ end\s\r\n
     <result name="sptr_puts_1y_seasoned" ref="=Projection.sptr_puts_1y_seasoned" />
     <result name="adj_sptr_calls_1y_seasoned" ref="=Projection.adj_sptr_calls_1y_seasoned" />
     <result name="spx_trigger_calls_1y_seasoned" ref="=Projection.spx_trigger_calls_1y_seasoned" />
+    <result name="spx_trigger_calls_3y_seasoned" ref="=Projection.spx_trigger_calls_3y_seasoned" />
     <result name="spx_trigger_calls_6y_seasoned" ref="=Projection.spx_trigger_calls_6y_seasoned" />
+    <result name="mxea_trigger_calls_3y_seasoned" ref="=Projection.mxea_trigger_calls_3y_seasoned" />
+    <result name="mxea_trigger_calls_6y_seasoned" ref="=Projection.mxea_trigger_calls_6y_seasoned" />
+    <result name="rty_trigger_calls_3y_seasoned" ref="=Projection.rty_trigger_calls_3y_seasoned" />
     <result name="nasdaq_puts_1y_seasoned" ref="=Projection.nasdaq_puts_1y_seasoned" />
+    <result name="nasdaq_trigger_calls_3y_seasoned" ref="=Projection.nasdaq_trigger_calls_3y_seasoned" />
     <result name="adj_nasdaq_calls_1y_seasoned" ref="=Projection.adj_nasdaq_calls_1y_seasoned" />
     <result name="nasdaq_trigger_calls_1y_seasoned" ref="=Projection.nasdaq_trigger_calls_1y_seasoned" />
     <result name="spx_up_out_atm_calls_3y_seasoned" ref="=Projection.spx_hdv_options_seasoned" />
@@ -420,20 +425,20 @@ end\s\r\n
     <result name="mxea_puts_6y_seasoned" ref="=Projection.mxea_puts_6y_seasoned" />
     <result name="rty_puts_6y_seasoned" ref="=Projection.rty_puts_6y_seasoned" />
     <result name="ndx_puts_6y_seasoned" ref="=Projection.ndx_puts_6y_seasoned" />
-    <result name="secure_rate_gmab_5y_spread_1pct" ref="=Projection.secure_rate_gmab_5y_spread_1pct" />
     <result name="secure_rate_gmab_5y_spread_2pct" ref="=Projection.secure_rate_gmab_5y_spread_2pct" />
     <result name="secure_rate_gmab_5y_spread_3pct" ref="=Projection.secure_rate_gmab_5y_spread_3pct" />
     <result name="secure_rate_cliquet_5y" ref="=Projection.secure_rate_cliquet_5y" />
-    <result name="gmab_5y_spread_1pct" ref="=Projection.gmab_5y_spread_1pct" />
     <result name="gmab_5y_spread_2pct" ref="=Projection.gmab_5y_spread_2pct" />
     <result name="gmab_5y_spread_3pct" ref="=Projection.gmab_5y_spread_3pct" />
-    <result name="secure_rate_gmab_7y_spread_1pct" ref="=Projection.secure_rate_gmab_7y_spread_1pct" />
     <result name="secure_rate_gmab_7y_spread_2pct" ref="=Projection.secure_rate_gmab_7y_spread_2pct" />
     <result name="secure_rate_gmab_7y_spread_3pct" ref="=Projection.secure_rate_gmab_7y_spread_3pct" />
     <result name="secure_rate_cliquet_7y" ref="=Projection.secure_rate_cliquet_7y" />
-    <result name="gmab_7y_spread_1pct" ref="=Projection.gmab_7y_spread_1pct" />
     <result name="gmab_7y_spread_2pct" ref="=Projection.gmab_7y_spread_2pct" />
     <result name="gmab_7y_spread_3pct" ref="=Projection.gmab_7y_spread_3pct" />
+    <result name="gmab_5y_spread_4pct" ref="=Projection.gmab_5y_spread_4pct" />
+    <result name="gmab_7y_spread_4pct" ref="=Projection.gmab_7y_spread_4pct" />
+    <result name="secure_rate_gmab_5y_spread_4pct" ref="=Projection.secure_rate_gmab_5y_spread_4pct" />
+    <result name="secure_rate_gmab_7y_spread_4pct" ref="=Projection.secure_rate_gmab_7y_spread_4pct" />
   </results>
   <calculations>
     <table name="dividends" type="Computation">
@@ -604,6 +609,11 @@ return\sintegral_average(inv_gamma_params.funding_spread_tenor,\sinv_gamma_param
         <g name="g43" repeat-count="1" />
         <g name="g44" repeat-count="1" />
         <g name="g45" repeat-count="1" />
+        <g name="g46" repeat-count="5" />
+        <g name="g47" repeat-count="5" />
+        <g name="g48" repeat-count="5" />
+        <g name="g49" repeat-count="5" />
+        <g name="g50" repeat-count="5" />
       </column-groups>
       <columns>
         <c name="step" datatype="int" />
@@ -656,8 +666,13 @@ return\sintegral_average(inv_gamma_params.funding_spread_tenor,\sinv_gamma_param
         <c name="adj_sptr_calls_1y_seasoned" datatype="real" group="g26" />
         <c name="sptr_puts_1y_seasoned" datatype="real" group="g27" />
         <c name="spx_trigger_calls_1y_seasoned" datatype="real" group="g31" />
+        <c name="spx_trigger_calls_3y_seasoned" datatype="real" group="g46" />
         <c name="spx_trigger_calls_6y_seasoned" datatype="real" group="g33" />
+        <c name="mxea_trigger_calls_3y_seasoned" datatype="real" group="g47" />
+        <c name="mxea_trigger_calls_6y_seasoned" datatype="real" group="g48" />
+        <c name="rty_trigger_calls_3y_seasoned" datatype="real" group="g49" />
         <c name="nasdaq_trigger_calls_1y_seasoned" datatype="real" group="g32" />
+        <c name="nasdaq_trigger_calls_3y_seasoned" datatype="real" group="g50" />
         <c name="adj_nasdaq_calls_1y_seasoned" datatype="real" group="g29" />
         <c name="nasdaq_puts_1y_seasoned" datatype="real" group="g30" />
         <c name="ig_kappa" datatype="real" group="g28" />
@@ -668,17 +683,17 @@ return\sintegral_average(inv_gamma_params.funding_spread_tenor,\sinv_gamma_param
         <c name="spx_hdv_options_seasoned" datatype="real" group="g34" />
         <c name="spx_secure_rate_options_seasoned" datatype="real" group="g2" />
         <c name="secure_rate_cliquet_5y" datatype="real" group="g21" />
-        <c name="secure_rate_gmab_5y_spread_1pct" datatype="real" group="g22" />
+        <c name="secure_rate_gmab_5y_spread_4pct" datatype="real" group="g22" />
         <c name="secure_rate_gmab_5y_spread_2pct" datatype="real" group="g23" />
         <c name="secure_rate_gmab_5y_spread_3pct" datatype="real" group="g35" />
-        <c name="gmab_5y_spread_1pct" datatype="real" group="g36" />
+        <c name="gmab_5y_spread_4pct" datatype="real" group="g36" />
         <c name="gmab_5y_spread_2pct" datatype="real" group="g37" />
         <c name="gmab_5y_spread_3pct" datatype="real" group="g38" />
-        <c name="secure_rate_gmab_7y_spread_1pct" datatype="real" group="g39" />
+        <c name="secure_rate_gmab_7y_spread_4pct" datatype="real" group="g39" />
         <c name="secure_rate_gmab_7y_spread_2pct" datatype="real" group="g40" />
         <c name="secure_rate_gmab_7y_spread_3pct" datatype="real" group="g41" />
         <c name="secure_rate_cliquet_7y" datatype="real" group="g42" />
-        <c name="gmab_7y_spread_1pct" datatype="real" group="g43" />
+        <c name="gmab_7y_spread_4pct" datatype="real" group="g43" />
         <c name="gmab_7y_spread_2pct" datatype="real" group="g44" />
         <c name="gmab_7y_spread_3pct" datatype="real" group="g45" />
       </columns>
@@ -818,7 +833,11 @@ call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s
 \r\n
 return\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
 </c>
+            <c name="spx_trigger_calls_3y_seasoned"></c>
             <c name="spx_trigger_calls_6y_seasoned">0</c>
+            <c name="mxea_trigger_calls_3y_seasoned"></c>
+            <c name="mxea_trigger_calls_6y_seasoned"></c>
+            <c name="rty_trigger_calls_3y_seasoned"></c>
             <c name="nasdaq_trigger_calls_1y_seasoned">if\srun_shocksos\sthen\r\n
 \s\s\s\sreturn\s0\r\n
 endif\r\n
@@ -840,6 +859,7 @@ call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s
 \r\n
 return\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
 </c>
+            <c name="nasdaq_trigger_calls_3y_seasoned"></c>
             <c name="adj_nasdaq_calls_1y_seasoned">0</c>
             <c name="nasdaq_puts_1y_seasoned">0</c>
             <c name="ig_kappa">=\sComputation[step].k[$index]</c>
@@ -850,17 +870,17 @@ return\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
             <c name="spx_hdv_options_seasoned">0</c>
             <c name="spx_secure_rate_options_seasoned">0</c>
             <c name="secure_rate_cliquet_5y">0</c>
-            <c name="secure_rate_gmab_5y_spread_1pct">0</c>
+            <c name="secure_rate_gmab_5y_spread_4pct">0</c>
             <c name="secure_rate_gmab_5y_spread_2pct">0</c>
             <c name="secure_rate_gmab_5y_spread_3pct">0</c>
-            <c name="gmab_5y_spread_1pct">0</c>
+            <c name="gmab_5y_spread_4pct">0</c>
             <c name="gmab_5y_spread_2pct">0</c>
             <c name="gmab_5y_spread_3pct">0</c>
-            <c name="secure_rate_gmab_7y_spread_1pct">0</c>
+            <c name="secure_rate_gmab_7y_spread_4pct">0</c>
             <c name="secure_rate_gmab_7y_spread_2pct">0</c>
             <c name="secure_rate_gmab_7y_spread_3pct">0</c>
             <c name="secure_rate_cliquet_7y">0</c>
-            <c name="gmab_7y_spread_1pct">0</c>
+            <c name="gmab_7y_spread_4pct">0</c>
             <c name="gmab_7y_spread_2pct">0</c>
             <c name="gmab_7y_spread_3pct">0</c>
           </columns>
@@ -1005,7 +1025,11 @@ call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s
 \r\n
 return\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
 </c>
+            <c name="spx_trigger_calls_3y_seasoned"></c>
             <c name="spx_trigger_calls_6y_seasoned">0</c>
+            <c name="mxea_trigger_calls_3y_seasoned"></c>
+            <c name="mxea_trigger_calls_6y_seasoned"></c>
+            <c name="rty_trigger_calls_3y_seasoned"></c>
             <c name="nasdaq_trigger_calls_1y_seasoned">if\srun_shocksos\sthen\r\n
 \s\s\s\sreturn\s0\r\n
 endif\r\n
@@ -1027,6 +1051,7 @@ call_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s
 \r\n
 return\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
 </c>
+            <c name="nasdaq_trigger_calls_3y_seasoned"></c>
             <c name="adj_nasdaq_calls_1y_seasoned">0</c>
             <c name="nasdaq_puts_1y_seasoned">0</c>
             <c name="ig_kappa">=\sComputation[step].k[$index]</c>
@@ -1037,17 +1062,17 @@ return\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
             <c name="spx_hdv_options_seasoned">0</c>
             <c name="spx_secure_rate_options_seasoned">0</c>
             <c name="secure_rate_cliquet_5y">0</c>
-            <c name="secure_rate_gmab_5y_spread_1pct">0</c>
+            <c name="secure_rate_gmab_5y_spread_4pct">0</c>
             <c name="secure_rate_gmab_5y_spread_2pct">0</c>
             <c name="secure_rate_gmab_5y_spread_3pct">0</c>
-            <c name="gmab_5y_spread_1pct">0</c>
+            <c name="gmab_5y_spread_4pct">0</c>
             <c name="gmab_5y_spread_2pct">0</c>
             <c name="gmab_5y_spread_3pct">0</c>
-            <c name="secure_rate_gmab_7y_spread_1pct">0</c>
+            <c name="secure_rate_gmab_7y_spread_4pct">0</c>
             <c name="secure_rate_gmab_7y_spread_2pct">0</c>
             <c name="secure_rate_gmab_7y_spread_3pct">0</c>
             <c name="secure_rate_cliquet_7y">0</c>
-            <c name="gmab_7y_spread_1pct">0</c>
+            <c name="gmab_7y_spread_4pct">0</c>
             <c name="gmab_7y_spread_2pct">0</c>
             <c name="gmab_7y_spread_3pct">0</c>
           </columns>
@@ -1074,12 +1099,12 @@ return\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
       <c name="equity_variance_mxea" formattype="General" width="80" />
       <c name="equity_variance_rty" formattype="General" width="80" />
       <c name="funding_spread[0]" formattype="General" width="80" />
-      <c name="gmab_5y_spread_1pct[0]" formattype="General" width="80" />
       <c name="gmab_5y_spread_2pct[0]" formattype="General" width="80" />
       <c name="gmab_5y_spread_3pct[0]" formattype="General" width="80" />
-      <c name="gmab_7y_spread_1pct[0]" formattype="General" width="80" />
+      <c name="gmab_5y_spread_4pct[0]" formattype="General" width="80" />
       <c name="gmab_7y_spread_2pct[0]" formattype="General" width="80" />
       <c name="gmab_7y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="gmab_7y_spread_4pct[0]" formattype="General" width="80" />
       <c name="ig_kappa[0]" formattype="General" width="80" />
       <c name="ig_lambda[0]" formattype="General" width="80" />
       <c name="ig_q[0]" formattype="General" width="80" />
@@ -1088,23 +1113,27 @@ return\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
       <c name="log_equity_tr" formattype="General" width="80" />
       <c name="mxea" formattype="General" width="80" />
       <c name="mxea_puts_6y_seasoned[0]" formattype="General" width="80" />
+      <c name="mxea_trigger_calls_3y_seasoned[0]" formattype="General" width="80" />
+      <c name="mxea_trigger_calls_6y_seasoned[0]" formattype="General" width="80" />
       <c name="nasdaq_puts_1y_seasoned[0]" formattype="General" width="80" />
       <c name="nasdaq_puts_1y_seasoned[0]" formattype="General" width="80" />
       <c name="nasdaq_trigger_calls_1y_seasoned[0]" formattype="General" width="80" />
+      <c name="nasdaq_trigger_calls_3y_seasoned[0]" formattype="General" width="80" />
       <c name="ndx_puts_3y_seasoned[0]" formattype="General" width="80" />
       <c name="ndx_puts_6y_seasoned[0]" formattype="General" width="80" />
       <c name="rho_idx_vol[0]" formattype="General" width="80" />
       <c name="rty" formattype="General" width="80" />
       <c name="rty_puts_6y_seasoned[0]" formattype="General" width="80" />
+      <c name="rty_trigger_calls_3y_seasoned[0]" formattype="General" width="80" />
       <c name="S" formattype="General" width="80" />
       <c name="secure_rate_cliquet_5y[0]" formattype="General" width="80" />
       <c name="secure_rate_cliquet_7y[0]" formattype="General" width="80" />
-      <c name="secure_rate_gmab_5y_spread_1pct[0]" formattype="General" width="80" />
       <c name="secure_rate_gmab_5y_spread_2pct[0]" formattype="General" width="80" />
       <c name="secure_rate_gmab_5y_spread_3pct[0]" formattype="General" width="80" />
-      <c name="secure_rate_gmab_7y_spread_1pct[0]" formattype="General" width="80" />
+      <c name="secure_rate_gmab_5y_spread_4pct[0]" formattype="General" width="80" />
       <c name="secure_rate_gmab_7y_spread_2pct[0]" formattype="General" width="80" />
       <c name="secure_rate_gmab_7y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="secure_rate_gmab_7y_spread_4pct[0]" formattype="General" width="80" />
       <c name="sptr_puts_1y_seasoned[0]" formattype="General" width="80" />
       <c name="spx" formattype="General" width="80" />
       <c name="SPX_6monthversary" formattype="General" width="80" />
@@ -1115,6 +1144,7 @@ return\s100\s*\smax(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
       <c name="spx_puts_6y_seasoned[0]" formattype="General" width="80" />
       <c name="spx_secure_rate_options_seasoned[0]" formattype="General" width="80" />
       <c name="spx_trigger_calls_1y_seasoned[0]" formattype="General" width="80" />
+      <c name="spx_trigger_calls_3y_seasoned[0]" formattype="General" width="80" />
       <c name="spx_trigger_calls_6y_seasoned[0]" formattype="General" width="80" />
       <c name="step" formattype="General" width="80" />
       <c name="S_6monthversary[0]" formattype="General" width="80" />

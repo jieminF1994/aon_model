@@ -16,7 +16,7 @@
     <result name="r2k" ref="=Projection.equity_r2k" />
     <result name="r2k_vol" ref="=Projection.r2_vol" />
     <result name="sa_tracking" ref="=Projection.sa_track_error" />
-    <result name="hybrid_taget_vol" ref="=Projection.hybrid_target_vol" />
+    <result name="hybrid_target_vol" ref="=Projection.hybrid_target_vol" />
   </results>
   <calculations>
     <table name="Projection" type="CashFlow">

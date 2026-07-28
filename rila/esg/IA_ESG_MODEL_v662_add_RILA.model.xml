@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<pathwise-model-root model-type="MonteCarlo" model-id="35d544fc-efbc-42c6-8000-4a823967de27" name="IA_ESG_MODEL_v662_add_RILA" version="v1_0_3_674" format-version="20" description="">
+<pathwise-model-root model-type="MonteCarlo" model-id="35d544fc-efbc-42c6-8000-4a823967de27" name="IA_ESG_MODEL_v662_add_RILA" version="v1_0_3_681" format-version="20" description="">
   <options>
     <real-type>Single</real-type>
     <string-type>String</string-type>
@@ -11,14 +11,14 @@
   <datasources>
     <datasource name="params" file="data/params.npz">
       <dataset name="run" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('seed',\s'&lt;i4'),\s('npaths',\s'&lt;i4'),\s('shocksos',\s'|b1'),\s('use_antithetic_variates',\s'|b1'),\s('',\s'|V2'),\s('use_extended_outer_loop',\s'&lt;i4'),\s('run_deterministic_rate',\s'|b1'),\s('run_deterministic_df_only',\s'|b1'),\s('is_running_dac',\s'|b1'),\s('use_sofr',\s'|b1'),\s('run_deterministic_equity_vol_rate',\s'|b1'),\s('apply_inner_loop_vol',\s'|b1'),\s('',\s'|V2')],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
-      <dataset name="vol" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('x5_global_floor',\s'&lt;f8'),\s('x5_1y_otm_spread',\s'&lt;f8'),\s('x5_1y_part_rate',\s'&lt;f8'),\s('pimco_gem_corr',\s'&lt;f8'),\s('mseh_corr',\s'&lt;f8'),\s('aqr_ab_1y_otm_spread',\s'&lt;f8'),\s('structured_nav_put_strike',\s'&lt;f8'),\s('structured_nav_put_strike_20',\s'&lt;f8'),\s('structured_nav_risk_premia',\s'&lt;f8'),\s('structured_nav_track_error_vol',\s'&lt;f8'),\s('structured_nav_track_error_spx_corr',\s'&lt;f8'),\s('structured_nav_track_error_rate_corr',\s'&lt;f8'),\s('structured_nav_track_error_spx_vol_corr',\s'&lt;f8'),\s('afis_growth_spx_beta',\s'&lt;f8'),\s('afis_income_growth_spx_beta',\s'&lt;f8'),\s('afis_growth_spx_te',\s'&lt;f8'),\s('afis_income_growth_spx_te',\s'&lt;f8'),\s('afis_nav_put_strike_5',\s'&lt;f8'),\s('afis_nav_put_strike_20',\s'&lt;f8'),\s('alpha_otm_vol_adj',\s'&lt;f8'),\s('beta_otm_vol_adj',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
+      <dataset name="vol" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('x5_global_floor',\s'&lt;f8'),\s('x5_1y_otm_spread',\s'&lt;f8'),\s('x5_1y_part_rate',\s'&lt;f8'),\s('pimco_gem_corr',\s'&lt;f8'),\s('mseh_corr',\s'&lt;f8'),\s('aqr_ab_1y_otm_spread',\s'&lt;f8'),\s('structured_nav_put_strike',\s'&lt;f8'),\s('structured_nav_put_strike_20',\s'&lt;f8'),\s('structured_nav_risk_premia',\s'&lt;f8'),\s('structured_nav_track_error_vol',\s'&lt;f8'),\s('structured_nav_track_error_spx_corr',\s'&lt;f8'),\s('structured_nav_track_error_rate_corr',\s'&lt;f8'),\s('structured_nav_track_error_spx_vol_corr',\s'&lt;f8'),\s('afis_growth_spx_beta',\s'&lt;f8'),\s('afis_income_growth_spx_beta',\s'&lt;f8'),\s('afis_growth_spx_te',\s'&lt;f8'),\s('afis_income_growth_spx_te',\s'&lt;f8'),\s('afis_nav_put_strike_5',\s'&lt;f8'),\s('afis_nav_put_strike_20',\s'&lt;f8'),\s('alpha_otm_vol_adj',\s'&lt;f8'),\s('beta_otm_vol_adj',\s'&lt;f8'),\s('mlsb_drift',\s'&lt;f8'),\s('mlsb_vol',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
       <dataset name="bond_portfolios" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('target_duration',\s'&lt;f8'),\s('target_convexity',\s'&lt;f8'),\s('use_credit_spread',\s'|b1'),\s('',\s'|V7')],\s'fortran_order':\sFalse,\s'shape':\s(3,),\s}" />
       <dataset name="drift_and_volatility" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('index',\s'|S10'),\s('drift_atm_par_rate',\s'&lt;f8',\s(6,)),\s('drift_otm_par_rate',\s'&lt;f8',\s(6,)),\s('drift_spread',\s'&lt;f8',\s(6,)),\s('volatility_atm_par_rate',\s'&lt;f8',\s(6,)),\s('volatility_otm_par_rate',\s'&lt;f8',\s(6,)),\s('volatility_spread',\s'&lt;f8',\s(6,))],\s'fortran_order':\sFalse,\s'shape':\s(2,),\s}" />
       <dataset name="gaap_margin" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('npa_spread',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
     </datasource>
     <datasource name="products" file="data/products.npz">
       <dataset name="option" type="Inforce" size-type="DynamicSize" dtype="{'descr':\s[('t_0',\s'&lt;f8'),\s('shock',\s'&lt;i4'),\s('step',\s'&lt;i4'),\s('valuation_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('spot_spx',\s'&lt;f8'),\s('spot_sptr',\s'&lt;f8'),\s('spot_mlsb',\s'&lt;f8'),\s('spot_pimco',\s'&lt;f8'),\s('spot_mseh',\s'&lt;f8'),\s('spot_ab',\s'&lt;f8'),\s('spot_mxea',\s'&lt;f8'),\s('spot_rty',\s'&lt;f8'),\s('spot_pimco_gem',\s'&lt;f8'),\s('spot_spx_rc',\s'&lt;f8'),\s('spot_lm',\s'&lt;f8'),\s('spot_aqr',\s'&lt;f8'),\s('spot_nasdaq',\s'&lt;f8'),\s('spot_pimbap',\s'&lt;f8'),\s('spot_ab_global_allocator',\s'&lt;f8'),\s('spot_dfa',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(100,),\s}" />
-      <dataset name="cap_and_strike" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('ap2p_cap',\s'&lt;f8',\s(6,)),\s('mp2p_cap',\s'&lt;f8',\s(6,)),\s('strike',\s'&lt;f8',\s(8,)),\s('participation_rate',\s'&lt;f8',\s(6,)),\s('participation_rate_cliquet',\s'&lt;f8',\s(6,)),\s('spread_cliquet',\s'&lt;f8',\s(6,)),\s('x5_spread',\s'&lt;f8',\s(6,)),\s('participation_rate_aqr_ab',\s'&lt;f8',\s(6,)),\s('ig_strike',\s'&lt;f8',\s(16,)),\s('binary_call_strike_epsilon',\s'&lt;f8'),\s('put_strike',\s'&lt;f8',\s(5,)),\s('extended_strike_1y',\s'&lt;f8',\s(12,)),\s('extended_strike_3y',\s'&lt;f8',\s(10,)),\s('extended_strike_6y',\s'&lt;f8',\s(12,)),\s('sptr_strike_put_1y',\s'&lt;f8',\s(11,)),\s('sptr_strike_call_1y',\s'&lt;f8',\s(11,)),\s('binary_strike',\s'&lt;f8',\s(3,)),\s('binary_strike_spx_6y',\s'&lt;f8',\s(5,)),\s('barrier_level_3y',\s'&lt;f8',\s(3,)),\s('barrier_level_6y',\s'&lt;f8',\s(3,)),\s('secure_strike_6y',\s'&lt;f8',\s(10,)),\s('secure_rate_cap',\s'&lt;f8',\s(8,)),\s('gmab_cap',\s'&lt;f8',\s(5,))],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
+      <dataset name="cap_and_strike" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('ap2p_cap',\s'&lt;f8',\s(6,)),\s('mp2p_cap',\s'&lt;f8',\s(6,)),\s('strike',\s'&lt;f8',\s(8,)),\s('participation_rate',\s'&lt;f8',\s(6,)),\s('participation_rate_cliquet',\s'&lt;f8',\s(6,)),\s('spread_cliquet',\s'&lt;f8',\s(6,)),\s('x5_spread',\s'&lt;f8',\s(6,)),\s('participation_rate_aqr_ab',\s'&lt;f8',\s(6,)),\s('ig_strike',\s'&lt;f8',\s(16,)),\s('binary_call_strike_epsilon',\s'&lt;f8'),\s('put_strike',\s'&lt;f8',\s(5,)),\s('extended_strike_1y',\s'&lt;f8',\s(12,)),\s('extended_strike_3y',\s'&lt;f8',\s(10,)),\s('extended_strike_6y',\s'&lt;f8',\s(12,)),\s('sptr_strike_put_1y',\s'&lt;f8',\s(11,)),\s('sptr_strike_call_1y',\s'&lt;f8',\s(11,)),\s('binary_strike',\s'&lt;f8',\s(3,)),\s('binary_strike_3y',\s'&lt;f8',\s(5,)),\s('binary_strike_6y',\s'&lt;f8',\s(5,)),\s('barrier_level_3y',\s'&lt;f8',\s(3,)),\s('barrier_level_6y',\s'&lt;f8',\s(3,)),\s('secure_strike_6y',\s'&lt;f8',\s(10,)),\s('secure_rate_cap',\s'&lt;f8',\s(8,)),\s('gmab_cap',\s'&lt;f8',\s(5,)),\s('gmab_par_rate',\s'&lt;f8',\s(10,)),\s('gmab_5y_cap',\s'&lt;f8',\s(9,)),\s('autocall_trigger_rate',\s'&lt;f8',\s(1,))],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
       <dataset name="time_step_array" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('outer_loop',\s'&lt;i4',\s(1852L,)),\s('outer_loop_50_years',\s'&lt;i4',\s(3070L,)),\s('outer_loop_80_years',\s'&lt;i4',\s(4895L,)),\s('inner_loop',\s'&lt;i4',\s(122L,))],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
     </datasource>
     <datasource name="shocks" file="data/shocks.npz">
@@ -30,10 +30,10 @@
       <dataset name="shocksdata_esg_gen" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('spot',\s'&lt;f8',\s(250,)),\s('spot_sptr',\s'&lt;f8',\s(250,)),\s('spot_mlsb',\s'&lt;f8',\s(250,)),\s('spot_pimco',\s'&lt;f8',\s(250,)),\s('spot_mseh',\s'&lt;f8',\s(250,)),\s('spot_mxea',\s'&lt;f8',\s(250,)),\s('spot_rty',\s'&lt;f8',\s(250,)),\s('spot_ab',\s'&lt;f8',\s(250,)),\s('spot_pimco_gem',\s'&lt;f8',\s(250,)),\s('spot_spx_rc',\s'&lt;f8',\s(250,)),\s('spot_lm',\s'&lt;f8',\s(250,)),\s('spot_aqr',\s'&lt;f8',\s(250,)),\s('spot_pimbap',\s'&lt;f8',\s(250,)),\s('spot_ab_global_allocator',\s'&lt;f8',\s(250,)),\s('spot_dfa',\s'&lt;f8',\s(250,)),\s('equity_diffusion_variance_unclipped',\s'&lt;f8',\s(250,)),\s('equity_diffusion_variance_unclipped_mxea',\s'&lt;f8',\s(250,)),\s('equity_diffusion_variance_unclipped_rty',\s'&lt;f8',\s(250,)),\s('equity_diffusion_variance_unclipped_nasdaq',\s'&lt;f8',\s(250,)),\s('hw_factor',\s'&lt;f8',\s(250,)),\s('df_5yr',\s'&lt;f8',\s(250,)),\s('spot_nasdaq',\s'&lt;f8',\s(250,))],\s'fortran_order':\sFalse,\s'shape':\s(2,),\s}" />
     </datasource>
     <datasource name="calibrations" file="data/calibrations.npz">
-      <dataset name="inverse_gamma" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('v_0',\s'&lt;f8',\s(4,)),\s('gamma',\s'&lt;f8',\s(4,)),\s('vol_inf_bs_tenor',\s'&lt;f8',\s(12,1,)),\s('vol_inf_bs',\s'&lt;f8',\s(12,4,)),\s('reversion_tenor',\s'&lt;f8',\s(12,1,)),\s('reversion',\s'&lt;f8',\s(12,4,)),\s('vol_inf_tenor',\s'&lt;f8',\s(12,1,)),\s('vol_inf',\s'&lt;f8',\s(12,4,)),\s('vol_of_vol_tenor',\s'&lt;f8',\s(12,1,)),\s('vol_of_vol',\s'&lt;f8',\s(12,4,)),\s('equity_risk_premium_tenor',\s'&lt;f8',\s(12,1,)),\s('equity_risk_premium',\s'&lt;f8',\s(12,4,)),\s('div_tenor',\s'&lt;f8',\s(31,1,)),\s('div',\s'&lt;f8',\s(31,4,)),\s('funding_spread_tenor',\s'&lt;f8',\s(31,1,)),\s('funding_spread',\s'&lt;f8',\s(31,4,))],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
-      <dataset name="hull_white" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('a',\s'&lt;f8'),\s('sigma_t',\s'&lt;f8',\s(12,2,)),\s('rate_risk_premium',\s'&lt;f8'),\s('correlation',\s'&lt;f8',\s(5,5,)),\s('correlation_new',\s'&lt;f8',\s(9,9,))],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
-      <dataset name="interest_curves" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('swap_rate_spot',\s'&lt;f8',\s(12,2,)),\s('swap_spread_spot',\s'&lt;f8',\s(12,2,)),\s('credit_spread_spot',\s'&lt;f8',\s(12,2,)),\s('npa_spread_spot',\s'&lt;f8',\s(12,2,)),\s('libor_spot_proxy',\s'&lt;f8',\s(12,2,)),\s('libor_sofr_spread',\s'&lt;f8'),\s('credit_spread_spot_crbg',\s'&lt;f8',\s(12,2,))],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
-      <dataset name="hybrid_index" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('index_name',\s'|S20'),\s('algorithm_type',\s'&lt;i4'),\s('equity_betas',\s'&lt;f8',\s(3,)),\s('bond_betas',\s'&lt;f8',\s(3,)),\s('equity_sigma',\s'&lt;f8'),\s('bond_sigma',\s'&lt;f8'),\s('index_fee',\s'&lt;f8'),\s('equity_fee',\s'&lt;f8'),\s('bond_fee',\s'&lt;f8'),\s('equity_has_dividend',\s'|b1'),\s('fixed_bond_constraint',\s'|b1'),\s('is_excess_return',\s'|b1'),\s('',\s'|V5'),\s(('-999\smeans\sno\ssharp\sratio\srules.','equity_sharp_ratio'),\s'&lt;f8'),\s(('-999\smeans\sno\ssharp\sratio\srules','bond_sharp_ratio'),\s'&lt;f8'),\s('target_vol',\s'&lt;f8'),\s('lower_target_vol',\s'&lt;f8'),\s('upper_target_vol',\s'&lt;f8'),\s('scale_factor',\s'&lt;f8'),\s('scale_factor_bid',\s'&lt;f8'),\s('equity_weight_min',\s'&lt;f8'),\s('equity_weight_max',\s'&lt;f8'),\s('bond_weight_min',\s'&lt;f8'),\s('bond_weight_max',\s'&lt;f8'),\s('leverage_min',\s'&lt;f8'),\s('leverage_max',\s'&lt;f8'),\s('dealer_spread',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(16,),\s}" />
+      <dataset name="inverse_gamma" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('v_0',\s'&lt;f8',\s(4,)),\s('gamma',\s'&lt;f8',\s(4,)),\s('vol_inf_bs_tenor',\s'&lt;f8',\s(12,\s1)),\s('vol_inf_bs',\s'&lt;f8',\s(12,\s4)),\s('reversion_tenor',\s'&lt;f8',\s(12,\s1)),\s('reversion',\s'&lt;f8',\s(12,\s4)),\s('vol_inf_tenor',\s'&lt;f8',\s(12,\s1)),\s('vol_inf',\s'&lt;f8',\s(12,\s4)),\s('vol_of_vol_tenor',\s'&lt;f8',\s(12,\s1)),\s('vol_of_vol',\s'&lt;f8',\s(12,\s4)),\s('equity_risk_premium_tenor',\s'&lt;f8',\s(12,\s1)),\s('equity_risk_premium',\s'&lt;f8',\s(12,\s4)),\s('div_tenor',\s'&lt;f8',\s(31,\s1)),\s('div',\s'&lt;f8',\s(31,\s4)),\s('funding_spread_tenor',\s'&lt;f8',\s(31,\s1)),\s('funding_spread',\s'&lt;f8',\s(31,\s4))],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
+      <dataset name="hull_white" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('a',\s'&lt;f8'),\s('sigma_t',\s'&lt;f8',\s(12,\s2)),\s('rate_risk_premium',\s'&lt;f8'),\s('correlation',\s'&lt;f8',\s(5,\s5)),\s('correlation_new',\s'&lt;f8',\s(9,\s9))],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
+      <dataset name="interest_curves" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('swap_rate_spot',\s'&lt;f8',\s(12,\s2)),\s('swap_spread_spot',\s'&lt;f8',\s(12,\s2)),\s('credit_spread_spot',\s'&lt;f8',\s(12,\s2)),\s('npa_spread_spot',\s'&lt;f8',\s(12,\s2)),\s('libor_spot_proxy',\s'&lt;f8',\s(12,\s2)),\s('libor_sofr_spread',\s'&lt;f8'),\s('credit_spread_spot_crbg',\s'&lt;f8',\s(12,\s2))],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
+      <dataset name="hybrid_index" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('index_name',\s'|S20'),\s('algorithm_type',\s'&lt;i4'),\s('equity_betas',\s'&lt;f8',\s(3,)),\s('bond_betas',\s'&lt;f8',\s(3,)),\s('equity_sigma',\s'&lt;f8'),\s('bond_sigma',\s'&lt;f8'),\s('index_fee',\s'&lt;f8'),\s('equity_fee',\s'&lt;f8'),\s('bond_fee',\s'&lt;f8'),\s('equity_has_dividend',\s'|b1'),\s('fixed_bond_constraint',\s'|b1'),\s('is_excess_return',\s'|b1'),\s('',\s'|V5'),\s(('-999\smeans\sno\ssharp\sratio\srules.','equity_sharp_ratio'),\s'&lt;f8'),\s(('-999\smeans\sno\ssharp\sratio\srules','bond_sharp_ratio'),\s'&lt;f8'),\s('target_vol',\s'&lt;f8'),\s('lower_target_vol',\s'&lt;f8'),\s('upper_target_vol',\s'&lt;f8'),\s('scale_factor',\s'&lt;f8'),\s('scale_factor_bid',\s'&lt;f8'),\s('equity_weight_min',\s'&lt;f8'),\s('equity_weight_max',\s'&lt;f8'),\s('bond_weight_min',\s'&lt;f8'),\s('bond_weight_max',\s'&lt;f8'),\s('leverage_min',\s'&lt;f8'),\s('leverage_max',\s'&lt;f8'),\s('dealer_spread',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(18,),\s}" />
     </datasource>
   </datasources>
   <UserUDFs>
@@ -368,7 +368,8 @@ end</udf>
         <param name="swap_rate_3y">=InterestRate.swap_rate_3y</param>
         <param name="spx_spot_1y">=cashflow.spx_spot_1y</param>
         <param name="binary_strike">=cap_and_strike.binary_strike</param>
-        <param name="binary_strike_spx_6y">=cap_and_strike.binary_strike_spx_6y</param>
+        <param name="binary_strike_3y">=cap_and_strike.binary_strike_3y</param>
+        <param name="binary_strike_6y">=cap_and_strike.binary_strike_6y</param>
         <param name="barrier_level_3y">=cap_and_strike.barrier_level_3y</param>
         <param name="barrier_level_6y">=cap_and_strike.barrier_level_6y</param>
         <param name="secure_strike_6y">=cap_and_strike.secure_strike_6y</param>
@@ -386,7 +387,6 @@ end</udf>
         <param name="zcb_5y_hdv">=InterestRate.zcb_5y_hdv</param>
         <param name="run_deterministic_equity_vol_rate">=run.run_deterministic_equity_vol_rate</param>
         <param name="apply_inner_loop_vol">=run.apply_inner_loop_vol</param>
-        <param name="is_5th_anniversary">=TimeStepLogic.is_5th_anniversary</param>
         <param name="is_7th_anniversary">=TimeStepLogic.is_7th_anniversary</param>
         <param name="secure_rate_cap">=cap_and_strike.secure_rate_cap</param>
         <param name="gmab_cap">=cap_and_strike.gmab_cap</param>
@@ -396,6 +396,9 @@ end</udf>
         <param name="zcb_7y_price">=InterestRate.zcb_7y_price</param>
         <param name="option_5y_ttm">=TimeStepLogic.option_5y_ttm</param>
         <param name="option_7y_ttm">=TimeStepLogic.option_7y_ttm</param>
+        <param name="gmab_par_rate">=cap_and_strike.gmab_par_rate</param>
+        <param name="gmab_5y_cap">=cap_and_strike.gmab_5y_cap</param>
+        <param name="is_5th_anniversary">=TimeStepLogic.is_5th_anniversary</param>
         <convert-result name="diffusion_variance" ref="=Projection.equity_variance" />
         <convert-result name="spx" ref="=Projection.spx" />
         <convert-result name="diffusion_variance_unclipped" ref="=Projection.equity_variance" />
@@ -509,24 +512,44 @@ end</udf>
         <result-map model="mxea_puts_6y_seasoned" lib="mxea_puts_6y_seasoned" />
         <result-map model="rty_puts_6y_seasoned" lib="rty_puts_6y_seasoned" />
         <result-map model="ndx_puts_6y_seasoned" lib="ndx_puts_6y_seasoned" />
-        <result-map model="secure_rate_gmab_5y_spread_1pct" lib="secure_rate_gmab_5y_spread_1pct" />
         <result-map model="secure_rate_gmab_5y_spread_2pct" lib="secure_rate_gmab_5y_spread_2pct" />
         <result-map model="secure_rate_gmab_5y_spread_3pct" lib="secure_rate_gmab_5y_spread_3pct" />
         <result-map model="secure_rate_cliquet_5y" lib="secure_rate_cliquet_5y" />
-        <result-map model="gmab_5y_spread_1pct" lib="gmab_5y_spread_1pct" />
         <result-map model="gmab_5y_spread_2pct" lib="gmab_5y_spread_2pct" />
         <result-map model="gmab_5y_spread_3pct" lib="gmab_5y_spread_3pct" />
-        <result-map model="secure_rate_gmab_7y_spread_1pct" lib="secure_rate_gmab_7y_spread_1pct" />
         <result-map model="secure_rate_gmab_7y_spread_2pct" lib="secure_rate_gmab_7y_spread_2pct" />
         <result-map model="secure_rate_gmab_7y_spread_3pct" lib="secure_rate_gmab_7y_spread_3pct" />
         <result-map model="secure_rate_cliquet_7y" lib="secure_rate_cliquet_7y" />
-        <result-map model="gmab_7y_spread_1pct" lib="gmab_7y_spread_1pct" />
         <result-map model="gmab_7y_spread_2pct" lib="gmab_7y_spread_2pct" />
         <result-map model="gmab_7y_spread_3pct" lib="gmab_7y_spread_3pct" />
-        <result-map model="vol_bs_1y" lib="vol_bs_1y" />
-        <result-map model="vol_bs_5y" lib="vol_bs_5y" />
-        <result-map model="p_curr" lib="p_curr" />
-        <result-map model="p_next" lib="p_next" />
+        <result-map model="gmab_5y_spread_4pct" lib="gmab_5y_spread_4pct" />
+        <result-map model="gmab_7y_spread_4pct" lib="gmab_7y_spread_4pct" />
+        <result-map model="secure_rate_gmab_5y_spread_4pct" lib="secure_rate_gmab_5y_spread_4pct" />
+        <result-map model="secure_rate_gmab_7y_spread_4pct" lib="secure_rate_gmab_7y_spread_4pct" />
+        <result-map model="spx_trigger_gmab_5y_spread_2pct" lib="spx_trigger_gmab_5y_spread_2pct" />
+        <result-map model="spx_trigger_gmab_5y_spread_3pct" lib="spx_trigger_gmab_5y_spread_3pct" />
+        <result-map model="spx_trigger_gmab_5y_spread_4pct" lib="spx_trigger_gmab_5y_spread_4pct" />
+        <result-map model="spx_trigger_gmab_7y_spread_2pct" lib="spx_trigger_gmab_7y_spread_2pct" />
+        <result-map model="spx_trigger_gmab_7y_spread_3pct" lib="spx_trigger_gmab_7y_spread_3pct" />
+        <result-map model="spx_trigger_gmab_7y_spread_4pct" lib="spx_trigger_gmab_7y_spread_4pct" />
+        <result-map model="spx_par_gmab_5y_spread_2pct" lib="spx_par_gmab_5y_spread_2pct" />
+        <result-map model="spx_par_gmab_5y_spread_3pct" lib="spx_par_gmab_5y_spread_3pct" />
+        <result-map model="spx_par_gmab_5y_spread_4pct" lib="spx_par_gmab_5y_spread_4pct" />
+        <result-map model="spx_par_gmab_7y_spread_2pct" lib="spx_par_gmab_7y_spread_2pct" />
+        <result-map model="spx_par_gmab_7y_spread_3pct" lib="spx_par_gmab_7y_spread_3pct" />
+        <result-map model="spx_par_gmab_7y_spread_4pct" lib="spx_par_gmab_7y_spread_4pct" />
+        <result-map model="mxea_puts_3y_seasoned" lib="mxea_puts_3y_seasoned" />
+        <result-map model="rty_puts_3y_seasoned" lib="rty_puts_3y_seasoned" />
+        <result-map model="adj_mxea_calls_3y_seasoned" lib="adj_mxea_calls_3y_seasoned" />
+        <result-map model="adj_rty_calls_3y_seasoned" lib="adj_rty_calls_3y_seasoned" />
+        <result-map model="spx_5y_calls_with_gmab_2pct_seasoned" lib="spx_5y_calls_with_gmab_2pct_seasoned" />
+        <result-map model="spx_5y_calls_with_gmab_3pct_seasoned" lib="spx_5y_calls_with_gmab_3pct_seasoned" />
+        <result-map model="spx_5y_calls_with_gmab_4pct_seasoned" lib="spx_5y_calls_with_gmab_4pct_seasoned" />
+        <result-map model="spx_trigger_calls_3y_seasoned" lib="spx_trigger_calls_3y_seasoned" />
+        <result-map model="mxea_trigger_calls_3y_seasoned" lib="mxea_trigger_calls_3y_seasoned" />
+        <result-map model="mxea_trigger_calls_6y_seasoned" lib="mxea_trigger_calls_6y_seasoned" />
+        <result-map model="rty_trigger_calls_3y_seasoned" lib="rty_trigger_calls_3y_seasoned" />
+        <result-map model="nasdaq_trigger_calls_3y_seasoned" lib="nasdaq_trigger_calls_3y_seasoned" />
         <projection lib="Projection" main="Cashflow" />
       </ImportCompLib>
       <ImportCompLib ref="libraries\InverseGamma\InverseGamma_noaoa.complib.xml" refID="R2">
@@ -652,26 +675,25 @@ end</udf>
         <result-map model="diffusion_variance_unclipped_nasdaq" lib="diffusion_variance_unclipped_nasdaq" />
         <result-map model="SPX_6monthversary" lib="SPX_6monthversary" />
         <result-map model="spx_funding_spread" lib="spx_funding_spread" />
-        <result-map model="vol_average" lib="vol_average" />
         <result-map model="sptr_driftless" lib="sptr_driftless" />
-        <result-map model="S_anniversary" lib="S_anniversary" />
         <result-map model="S_6th_anniversary" lib="S_6th_anniversary" />
-        <result-map model="ig_theta" lib="ig_theta" />
+        <result-map model="S_anniversary" lib="S_anniversary" />
         <result-map model="ig_kappa" lib="ig_kappa" />
+        <result-map model="ig_theta" lib="ig_theta" />
         <result-map model="ig_lambda" lib="ig_lambda" />
         <result-map model="ig_xi" lib="ig_xi" />
         <result-map model="ig_q" lib="ig_q" />
         <result-map model="ig_vol" lib="ig_vol" />
         <result-map model="ig_rho" lib="ig_rho" />
         <result-map model="ig_funding_spread" lib="ig_funding_spread" />
-        <result-map model="spx_trigger_calls_6y_seasoned" lib="spx_trigger_calls_6y_seasoned" />
-        <result-map model="spx_puts_3y_seasoned" lib="spx_puts_3y_seasoned" />
+        <result-map model="spx_puts_6y_seasoned" lib="spx_puts_6y_seasoned" />
         <result-map model="spx_puts_1y_seasoned" lib="spx_puts_1y_seasoned" />
-        <result-map model="adj_spx_calls_3y_seasoned" lib="adj_spx_calls_3y_seasoned" />
+        <result-map model="adj_spx_calls_6y_seasoned" lib="adj_spx_calls_6y_seasoned" />
         <result-map model="adj_spx_calls_1y_seasoned" lib="adj_spx_calls_1y_seasoned" />
         <result-map model="sptr_puts_1y_seasoned" lib="sptr_puts_1y_seasoned" />
         <result-map model="adj_sptr_calls_1y_seasoned" lib="adj_sptr_calls_1y_seasoned" />
         <result-map model="spx_trigger_calls_1y_seasoned" lib="spx_trigger_calls_1y_seasoned" />
+        <result-map model="spx_trigger_calls_6y_seasoned" lib="spx_trigger_calls_6y_seasoned" />
         <result-map model="nasdaq_puts_1y_seasoned" lib="nasdaq_puts_1y_seasoned" />
         <result-map model="adj_nasdaq_calls_1y_seasoned" lib="adj_nasdaq_calls_1y_seasoned" />
         <result-map model="nasdaq_trigger_calls_1y_seasoned" lib="nasdaq_trigger_calls_1y_seasoned" />
@@ -683,35 +705,52 @@ end</udf>
         <result-map model="spx_up_out_10pct_otm_puts_6y_seasoned" lib="spx_up_out_10pct_otm_puts_6y_seasoned" />
         <result-map model="spx_up_out_15pct_otm_puts_6y_seasoned" lib="spx_up_out_15pct_otm_puts_6y_seasoned" />
         <result-map model="spx_up_out_20pct_otm_puts_6y_seasoned" lib="spx_up_out_20pct_otm_puts_6y_seasoned" />
-        <result-map model="spx_15pct_buffer_secure_cap_cliquet_6y_seasoned" lib="spx_15pct_buffer_secure_cap_cliquet_6y_seasoned" />
-        <result-map model="spx_10pct_buffer_secure_cap_cliquet_6y_seasoned" lib="spx_10pct_buffer_secure_cap_cliquet_6y_seasoned" />
         <result-map model="spx_up_out_5pct_otm_puts_6y_seasoned" lib="spx_up_out_5pct_otm_puts_6y_seasoned" />
-        <result-map model="spx_step_digital_hdv_6y_seasoned" lib="spx_step_digital_hdv_6y_seasoned" />
+        <result-map model="spx_10pct_buffer_secure_cap_cliquet_6y_seasoned" lib="spx_10pct_buffer_secure_cap_cliquet_6y_seasoned" />
+        <result-map model="spx_15pct_buffer_secure_cap_cliquet_6y_seasoned" lib="spx_15pct_buffer_secure_cap_cliquet_6y_seasoned" />
         <result-map model="spx_step_digital_hdv_3y_seasoned" lib="spx_step_digital_hdv_3y_seasoned" />
-        <result-map model="adj_ndx_calls_3y_seasoned" lib="adj_ndx_calls_3y_seasoned" />
-        <result-map model="adj_spx_calls_6y_seasoned" lib="adj_spx_calls_6y_seasoned" />
+        <result-map model="spx_step_digital_hdv_6y_seasoned" lib="spx_step_digital_hdv_6y_seasoned" />
         <result-map model="adj_mxea_calls_6y_seasoned" lib="adj_mxea_calls_6y_seasoned" />
         <result-map model="adj_rty_calls_6y_seasoned" lib="adj_rty_calls_6y_seasoned" />
         <result-map model="adj_ndx_calls_6y_seasoned" lib="adj_ndx_calls_6y_seasoned" />
+        <result-map model="adj_spx_calls_3y_seasoned" lib="adj_spx_calls_3y_seasoned" />
+        <result-map model="adj_ndx_calls_3y_seasoned" lib="adj_ndx_calls_3y_seasoned" />
+        <result-map model="spx_puts_3y_seasoned" lib="spx_puts_3y_seasoned" />
         <result-map model="ndx_puts_3y_seasoned" lib="ndx_puts_3y_seasoned" />
-        <result-map model="spx_puts_6y_seasoned" lib="spx_puts_6y_seasoned" />
         <result-map model="mxea_puts_6y_seasoned" lib="mxea_puts_6y_seasoned" />
         <result-map model="rty_puts_6y_seasoned" lib="rty_puts_6y_seasoned" />
         <result-map model="ndx_puts_6y_seasoned" lib="ndx_puts_6y_seasoned" />
-        <result-map model="secure_rate_gmab_5y_spread_1pct" lib="secure_rate_gmab_5y_spread_1pct" />
         <result-map model="secure_rate_gmab_5y_spread_2pct" lib="secure_rate_gmab_5y_spread_2pct" />
         <result-map model="secure_rate_gmab_5y_spread_3pct" lib="secure_rate_gmab_5y_spread_3pct" />
         <result-map model="secure_rate_cliquet_5y" lib="secure_rate_cliquet_5y" />
-        <result-map model="gmab_5y_spread_1pct" lib="gmab_5y_spread_1pct" />
         <result-map model="gmab_5y_spread_2pct" lib="gmab_5y_spread_2pct" />
         <result-map model="gmab_5y_spread_3pct" lib="gmab_5y_spread_3pct" />
-        <result-map model="secure_rate_gmab_7y_spread_1pct" lib="secure_rate_gmab_7y_spread_1pct" />
         <result-map model="secure_rate_gmab_7y_spread_2pct" lib="secure_rate_gmab_7y_spread_2pct" />
         <result-map model="secure_rate_gmab_7y_spread_3pct" lib="secure_rate_gmab_7y_spread_3pct" />
         <result-map model="secure_rate_cliquet_7y" lib="secure_rate_cliquet_7y" />
-        <result-map model="gmab_7y_spread_1pct" lib="gmab_7y_spread_1pct" />
         <result-map model="gmab_7y_spread_2pct" lib="gmab_7y_spread_2pct" />
         <result-map model="gmab_7y_spread_3pct" lib="gmab_7y_spread_3pct" />
+        <result-map model="gmab_5y_spread_4pct" lib="gmab_5y_spread_4pct" />
+        <result-map model="gmab_7y_spread_4pct" lib="gmab_7y_spread_4pct" />
+        <result-map model="secure_rate_gmab_5y_spread_4pct" lib="secure_rate_gmab_5y_spread_4pct" />
+        <result-map model="secure_rate_gmab_7y_spread_4pct" lib="secure_rate_gmab_7y_spread_4pct" />
+        <result-map model="spx_trigger_gmab_5y_spread_2pct" lib="" />
+        <result-map model="spx_trigger_gmab_5y_spread_3pct" lib="" />
+        <result-map model="spx_trigger_gmab_5y_spread_4pct" lib="" />
+        <result-map model="spx_trigger_gmab_7y_spread_2pct" lib="" />
+        <result-map model="spx_trigger_gmab_7y_spread_3pct" lib="" />
+        <result-map model="spx_trigger_gmab_7y_spread_4pct" lib="" />
+        <result-map model="spx_par_gmab_5y_spread_2pct" lib="" />
+        <result-map model="spx_par_gmab_5y_spread_3pct" lib="" />
+        <result-map model="spx_par_gmab_5y_spread_4pct" lib="" />
+        <result-map model="spx_par_gmab_7y_spread_2pct" lib="" />
+        <result-map model="spx_par_gmab_7y_spread_3pct" lib="" />
+        <result-map model="spx_par_gmab_7y_spread_4pct" lib="" />
+        <result-map model="spx_trigger_calls_3y_seasoned" lib="spx_trigger_calls_3y_seasoned" />
+        <result-map model="mxea_trigger_calls_3y_seasoned" lib="mxea_trigger_calls_3y_seasoned" />
+        <result-map model="mxea_trigger_calls_6y_seasoned" lib="mxea_trigger_calls_6y_seasoned" />
+        <result-map model="rty_trigger_calls_3y_seasoned" lib="rty_trigger_calls_3y_seasoned" />
+        <result-map model="nasdaq_trigger_calls_3y_seasoned" lib="nasdaq_trigger_calls_3y_seasoned" />
         <projection lib="Projection" main="Cashflow" />
       </ImportCompLib>
     </Category>
@@ -928,7 +967,7 @@ end</udf>
         <result-map model="r2k" lib="r2k" />
         <result-map model="r2k_vol" lib="r2k_vol" />
         <result-map model="sa_tracking" lib="sa_tracking" />
-        <result-map model="hybrid_taget_vol" lib="hybrid_taget_vol" />
+        <result-map model="hybrid_taget_vol" lib="hybrid_target_vol" />
         <projection lib="Projection" main="Cashflow" />
       </ImportCompLib>
     </Category>
@@ -977,6 +1016,13 @@ end</udf>
         <param name="secure_rate_cap">=cap_and_strike.secure_rate_cap</param>
         <param name="gmab_cap">=cap_and_strike.gmab_cap</param>
         <param name="is_5th_anniversary">=TimeStepLogic.is_5th_anniversary</param>
+        <param name="mlsb_drift">=vol.mlsb_drift</param>
+        <param name="mlsb_vol">=vol.mlsb_vol</param>
+        <param name="is_7th_anniversary">=TimeStepLogic.is_7th_anniversary</param>
+        <param name="option_7y_ttm">=TimeStepLogic.option_7y_ttm</param>
+        <param name="zcb_7y_price">=InterestRate.zcb_7y_price</param>
+        <param name="gmab_par_rate">=cap_and_strike.gmab_par_rate</param>
+        <param name="autocall_trigger_rate">=cap_and_strike.autocall_trigger_rate</param>
         <convert-result name="mlsb_index" ref="=Projection.mlsb_index" />
         <convert-result name="pimco_gem" ref="=Projection.pimco_gem_index" />
         <convert-result name="spx_rc" ref="=Projection.spx_rc_index" />
@@ -1010,24 +1056,40 @@ end</udf>
         <result-map model="jpm_mom_secure_rate_value" lib="jpm_mom_secure_rate_value" />
         <result-map model="jpm_qua_secure_rate_value" lib="jpm_qua_secure_rate_value" />
         <result-map model="jpm_asc_secure_rate_value" lib="jpm_asc_secure_rate_value" />
-        <result-map model="jpm_mom_gmab_value_1pct" lib="jpm_mom_gmab_value_1pct" />
+        <result-map model="jpm_qua_secure_rate_gmab_spread_4pct" lib="jpm_qua_secure_rate_gmab_spread_4pct" />
         <result-map model="jpm_mom_gmab_value_2pct" lib="jpm_mom_gmab_value_2pct" />
         <result-map model="jpm_mom_gmab_value_3pct" lib="jpm_mom_gmab_value_3pct" />
-        <result-map model="jpm_qua_gmab_value_1pct" lib="jpm_qua_gmab_value_1pct" />
+        <result-map model="jpm_qua_gmab_value_spread_4pct" lib="jpm_qua_gmab_value_spread_4pct" />
         <result-map model="jpm_qua_gmab_value_2pct" lib="jpm_qua_gmab_value_2pct" />
         <result-map model="jpm_qua_gmab_value_3pct" lib="jpm_qua_gmab_value_3pct" />
-        <result-map model="jpm_asc_gmab_value_1pct" lib="jpm_asc_gmab_value_1pct" />
+        <result-map model="jpm_mom_secure_rate_gmab_spread_4pct" lib="jpm_mom_secure_rate_gmab_spread_4pct" />
         <result-map model="jpm_asc_gmab_value_2pct" lib="jpm_asc_gmab_value_2pct" />
         <result-map model="jpm_asc_gmab_value_3pct" lib="jpm_asc_gmab_value_3pct" />
-        <result-map model="jpm_mom_secure_rate_gmab_value_1pct" lib="jpm_mom_secure_rate_gmab_value_1pct" />
+        <result-map model="jpm_mom_gmab_value_spread_4pct" lib="jpm_mom_gmab_value_spread_4pct" />
         <result-map model="jpm_mom_secure_rate_gmab_value_2pct" lib="jpm_mom_secure_rate_gmab_value_2pct" />
         <result-map model="jpm_mom_secure_rate_gmab_value_3pct" lib="jpm_mom_secure_rate_gmab_value_3pct" />
-        <result-map model="jpm_qua_secure_rate_gmab_value_1pct" lib="jpm_qua_secure_rate_gmab_value_1pct" />
+        <result-map model="jpm_asc_secure_rate_gmab_spread_4pct" lib="jpm_asc_secure_rate_gmab_spread_4pct" />
         <result-map model="jpm_qua_secure_rate_gmab_value_2pct" lib="jpm_qua_secure_rate_gmab_value_2pct" />
         <result-map model="jpm_qua_secure_rate_gmab_value_3pct" lib="jpm_qua_secure_rate_gmab_value_3pct" />
-        <result-map model="jpm_asc_secure_rate_gmab_value_1pct" lib="jpm_asc_secure_rate_gmab_value_1pct" />
+        <result-map model="jpm_asc_gmab_value_spread_4pct" lib="jpm_asc_gmab_value_spread_4pct" />
         <result-map model="jpm_asc_secure_rate_gmab_value_2pct" lib="jpm_asc_secure_rate_gmab_value_2pct" />
         <result-map model="jpm_asc_secure_rate_gmab_value_3pct" lib="jpm_asc_secure_rate_gmab_value_3pct" />
+        <result-map model="mlsb_cap_gmab_5y_spread_2pct" lib="mlsb_cap_gmab_5y_spread_2pct" />
+        <result-map model="mlsb_cap_gmab_5y_spread_3pct" lib="mlsb_cap_gmab_5y_spread_3pct" />
+        <result-map model="mlsb_cap_gmab_5y_spread_4pct" lib="mlsb_cap_gmab_5y_spread_4pct" />
+        <result-map model="mlsb_cap_gmab_7y_spread_2pct" lib="mlsb_cap_gmab_7y_spread_2pct" />
+        <result-map model="mlsb_cap_gmab_7y_spread_3pct" lib="mlsb_cap_gmab_7y_spread_3pct" />
+        <result-map model="mlsb_cap_gmab_7y_spread_4pct" lib="mlsb_cap_gmab_7y_spread_4pct" />
+        <result-map model="mlsb_par_gmab_5y_spread_2pct" lib="mlsb_par_gmab_5y_spread_2pct" />
+        <result-map model="mlsb_par_gmab_5y_spread_3pct" lib="mlsb_par_gmab_5y_spread_3pct" />
+        <result-map model="mlsb_par_gmab_5y_spread_4pct" lib="mlsb_par_gmab_5y_spread_4pct" />
+        <result-map model="mlsb_par_gmab_7y_spread_2pct" lib="mlsb_par_gmab_7y_spread_2pct" />
+        <result-map model="mlsb_par_gmab_7y_spread_3pct" lib="mlsb_par_gmab_7y_spread_3pct" />
+        <result-map model="mlsb_par_gmab_7y_spread_4pct" lib="mlsb_par_gmab_7y_spread_4pct" />
+        <result-map model="dfa_autocall_trigger_call_5y_seasoned" lib="dfa_autocall_trigger_call_5y_seasoned" />
+        <result-map model="spx_autocall_trigger_call_5y_seasoned" lib="spx_autocall_trigger_call_5y_seasoned" />
+        <result-map model="spx_vc" lib="spx_vc_index" />
+        <result-map model="new_dfa_index" lib="new_dfa_index" />
         <projection lib="Projection" main="Cashflow" />
       </ImportCompLib>
     </Category>
@@ -1082,12 +1144,13 @@ end</udf>
         <g name="g1">=Constants.BOND_PORTFOLIO_TENORS_LEN</g>
       </column-groups>
       <c name="N_CORR" datatype="int">//\sThe\ssize\sof\sthe\smain\scorrelation\smatrix.\r\n
-58</c>
+62</c>
       <c name="N_CORR_NOAOA" datatype="int">41</c>
       <c name="BOND_PORTFOLIO_TENORS_LEN" datatype="int">3</c>
       <c name="N_HYBRID_INDEX" datatype="int">//\sThe\snumber\sof\shybrid\sindex.\r\n
 //\s0.\sMLSB,\s1.\sPIMCO,\s2.\sMSEH,\s3.\sPIMCO_GEM,\s4.\sAB,\s5.\sAQR,\s6.\sLM,\s7.\sSPX_RC,\s8.\sdap,\s9.\sPIMBAP,\s10.\sAB\sGlobal\sAllcoator,\s11.\sDFA\s\s12.INVESCO\sNEW\s13.\sJPM\sADT\sMOM,\s14.\sJPM\sADT\sQUA\s15.\sJPM\sASC\r\n
-16</c>
+//\s16.\sSPX\svol\scontrol\sfor\sauto-callable,\s17.\sNEW_DFA\r\n
+18</c>
       <c name="MLSB_BOND_T" datatype="real">7</c>
       <c name="BOND_PORTFOLIO_TENORS" datatype="real" group="g1">if\s$index\s==\s0\sthen\r\n
 \s\s\s\sreturn\s0.5\r\n
@@ -2509,21 +2572,78 @@ where\s$r$\sis\sthe\sriskless\sshort\srate,\s$\\tau$\sthe\sfixing\sinterval\ssiz
         <c name="Equity.ig_vol" />
         <c name="Equity.ig_rho" />
         <c name="Equity.ig_funding_spread" />
+        <c name="Equity.spx_puts_6y_seasoned" agg="None" />
+        <c name="Equity.spx_puts_1y_seasoned" agg="None" />
+        <c name="Equity.adj_spx_calls_6y_seasoned" agg="None" />
+        <c name="Equity.adj_spx_calls_1y_seasoned" agg="None" />
+        <c name="Equity.sptr_puts_1y_seasoned" agg="None" />
+        <c name="Equity.adj_sptr_calls_1y_seasoned" agg="None" />
         <c name="Equity.spx_trigger_calls_1y_seasoned" agg="None" />
-        <c name="Equity.secure_rate_gmab_5y_spread_1pct" agg="None" />
+        <c name="Equity.spx_trigger_calls_6y_seasoned" agg="None" />
+        <c name="Equity.nasdaq_puts_1y_seasoned" agg="None" />
+        <c name="Equity.adj_nasdaq_calls_1y_seasoned" agg="None" />
+        <c name="Equity.nasdaq_trigger_calls_1y_seasoned" agg="None" />
+        <c name="Equity.spx_up_out_atm_calls_3y_seasoned" agg="None" />
+        <c name="Equity.spx_up_out_atm_calls_6y_seasoned" agg="None" />
+        <c name="Equity.spx_up_out_5pct_otm_puts_3y_seasoned" agg="None" />
+        <c name="Equity.spx_up_out_10pct_otm_puts_3y_seasoned" agg="None" />
+        <c name="Equity.spx_up_out_15pct_otm_puts_3y_seasoned" agg="None" />
+        <c name="Equity.spx_up_out_10pct_otm_puts_6y_seasoned" agg="None" />
+        <c name="Equity.spx_up_out_15pct_otm_puts_6y_seasoned" agg="None" />
+        <c name="Equity.spx_up_out_20pct_otm_puts_6y_seasoned" agg="None" />
+        <c name="Equity.spx_up_out_5pct_otm_puts_6y_seasoned" agg="None" />
+        <c name="Equity.spx_10pct_buffer_secure_cap_cliquet_6y_seasoned" agg="None" />
+        <c name="Equity.spx_15pct_buffer_secure_cap_cliquet_6y_seasoned" agg="None" />
+        <c name="Equity.spx_step_digital_hdv_3y_seasoned" agg="None" />
+        <c name="Equity.spx_step_digital_hdv_6y_seasoned" agg="None" />
+        <c name="Equity.adj_mxea_calls_6y_seasoned" agg="None" />
+        <c name="Equity.adj_rty_calls_6y_seasoned" agg="None" />
+        <c name="Equity.adj_ndx_calls_6y_seasoned" agg="None" />
+        <c name="Equity.adj_spx_calls_3y_seasoned" agg="None" />
+        <c name="Equity.adj_ndx_calls_3y_seasoned" agg="None" />
+        <c name="Equity.spx_puts_3y_seasoned" agg="None" />
+        <c name="Equity.ndx_puts_3y_seasoned" agg="None" />
+        <c name="Equity.mxea_puts_6y_seasoned" agg="None" />
+        <c name="Equity.rty_puts_6y_seasoned" agg="None" />
+        <c name="Equity.ndx_puts_6y_seasoned" agg="None" />
         <c name="Equity.secure_rate_gmab_5y_spread_2pct" agg="None" />
         <c name="Equity.secure_rate_gmab_5y_spread_3pct" agg="None" />
         <c name="Equity.secure_rate_cliquet_5y" agg="None" />
-        <c name="Equity.gmab_5y_spread_1pct" agg="None" />
         <c name="Equity.gmab_5y_spread_2pct" agg="None" />
         <c name="Equity.gmab_5y_spread_3pct" agg="None" />
-        <c name="Equity.secure_rate_gmab_7y_spread_1pct" agg="None" />
         <c name="Equity.secure_rate_gmab_7y_spread_2pct" agg="None" />
         <c name="Equity.secure_rate_gmab_7y_spread_3pct" agg="None" />
         <c name="Equity.secure_rate_cliquet_7y" agg="None" />
-        <c name="Equity.gmab_7y_spread_1pct" agg="None" />
         <c name="Equity.gmab_7y_spread_2pct" agg="None" />
         <c name="Equity.gmab_7y_spread_3pct" agg="None" />
+        <c name="Equity.gmab_5y_spread_4pct" agg="None" />
+        <c name="Equity.gmab_7y_spread_4pct" agg="None" />
+        <c name="Equity.secure_rate_gmab_5y_spread_4pct" agg="None" />
+        <c name="Equity.secure_rate_gmab_7y_spread_4pct" agg="None" />
+        <c name="Equity.spx_trigger_gmab_5y_spread_2pct" agg="None" />
+        <c name="Equity.spx_trigger_gmab_5y_spread_3pct" agg="None" />
+        <c name="Equity.spx_trigger_gmab_5y_spread_4pct" agg="None" />
+        <c name="Equity.spx_trigger_gmab_7y_spread_2pct" agg="None" />
+        <c name="Equity.spx_trigger_gmab_7y_spread_3pct" agg="None" />
+        <c name="Equity.spx_trigger_gmab_7y_spread_4pct" agg="None" />
+        <c name="Equity.spx_par_gmab_5y_spread_2pct" agg="None" />
+        <c name="Equity.spx_par_gmab_5y_spread_3pct" agg="None" />
+        <c name="Equity.spx_par_gmab_5y_spread_4pct" agg="None" />
+        <c name="Equity.spx_par_gmab_7y_spread_2pct" agg="None" />
+        <c name="Equity.spx_par_gmab_7y_spread_3pct" agg="None" />
+        <c name="Equity.spx_par_gmab_7y_spread_4pct" agg="None" />
+        <c name="Equity.mxea_puts_3y_seasoned" agg="None" />
+        <c name="Equity.rty_puts_3y_seasoned" agg="None" />
+        <c name="Equity.adj_mxea_calls_3y_seasoned" agg="None" />
+        <c name="Equity.adj_rty_calls_3y_seasoned" agg="None" />
+        <c name="Equity.spx_5y_calls_with_gmab_2pct_seasoned" agg="None" />
+        <c name="Equity.spx_5y_calls_with_gmab_3pct_seasoned" agg="None" />
+        <c name="Equity.spx_5y_calls_with_gmab_4pct_seasoned" agg="None" />
+        <c name="Equity.spx_trigger_calls_3y_seasoned" agg="None" />
+        <c name="Equity.mxea_trigger_calls_3y_seasoned" agg="None" />
+        <c name="Equity.mxea_trigger_calls_6y_seasoned" agg="None" />
+        <c name="Equity.rty_trigger_calls_3y_seasoned" agg="None" />
+        <c name="Equity.nasdaq_trigger_calls_3y_seasoned" agg="None" />
         <c name="InterestRate.money_market" />
         <c name="InterestRate.factor" />
         <c name="InterestRate.swap_curve_spot" />
@@ -2566,24 +2686,40 @@ where\s$r$\sis\sthe\sriskless\sshort\srate,\s$\\tau$\sthe\sfixing\sinterval\ssiz
         <c name="HybridIndex.jpm_mom_secure_rate_value" agg="None" />
         <c name="HybridIndex.jpm_qua_secure_rate_value" agg="None" />
         <c name="HybridIndex.jpm_asc_secure_rate_value" agg="None" />
-        <c name="HybridIndex.jpm_mom_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_qua_secure_rate_gmab_spread_4pct" agg="None" />
         <c name="HybridIndex.jpm_mom_gmab_value_2pct" agg="None" />
         <c name="HybridIndex.jpm_mom_gmab_value_3pct" agg="None" />
-        <c name="HybridIndex.jpm_qua_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_qua_gmab_value_spread_4pct" agg="None" />
         <c name="HybridIndex.jpm_qua_gmab_value_2pct" agg="None" />
         <c name="HybridIndex.jpm_qua_gmab_value_3pct" agg="None" />
-        <c name="HybridIndex.jpm_asc_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_mom_secure_rate_gmab_spread_4pct" agg="None" />
         <c name="HybridIndex.jpm_asc_gmab_value_2pct" agg="None" />
         <c name="HybridIndex.jpm_asc_gmab_value_3pct" agg="None" />
-        <c name="HybridIndex.jpm_mom_secure_rate_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_mom_gmab_value_spread_4pct" agg="None" />
         <c name="HybridIndex.jpm_mom_secure_rate_gmab_value_2pct" agg="None" />
         <c name="HybridIndex.jpm_mom_secure_rate_gmab_value_3pct" agg="None" />
-        <c name="HybridIndex.jpm_qua_secure_rate_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_asc_secure_rate_gmab_spread_4pct" agg="None" />
         <c name="HybridIndex.jpm_qua_secure_rate_gmab_value_2pct" agg="None" />
         <c name="HybridIndex.jpm_qua_secure_rate_gmab_value_3pct" agg="None" />
-        <c name="HybridIndex.jpm_asc_secure_rate_gmab_value_1pct" agg="None" />
+        <c name="HybridIndex.jpm_asc_gmab_value_spread_4pct" agg="None" />
         <c name="HybridIndex.jpm_asc_secure_rate_gmab_value_2pct" agg="None" />
         <c name="HybridIndex.jpm_asc_secure_rate_gmab_value_3pct" agg="None" />
+        <c name="HybridIndex.mlsb_cap_gmab_5y_spread_2pct" agg="None" />
+        <c name="HybridIndex.mlsb_cap_gmab_5y_spread_3pct" agg="None" />
+        <c name="HybridIndex.mlsb_cap_gmab_5y_spread_4pct" agg="None" />
+        <c name="HybridIndex.mlsb_cap_gmab_7y_spread_2pct" agg="None" />
+        <c name="HybridIndex.mlsb_cap_gmab_7y_spread_3pct" agg="None" />
+        <c name="HybridIndex.mlsb_cap_gmab_7y_spread_4pct" agg="None" />
+        <c name="HybridIndex.mlsb_par_gmab_5y_spread_2pct" agg="None" />
+        <c name="HybridIndex.mlsb_par_gmab_5y_spread_3pct" agg="None" />
+        <c name="HybridIndex.mlsb_par_gmab_5y_spread_4pct" agg="None" />
+        <c name="HybridIndex.mlsb_par_gmab_7y_spread_2pct" agg="None" />
+        <c name="HybridIndex.mlsb_par_gmab_7y_spread_3pct" agg="None" />
+        <c name="HybridIndex.mlsb_par_gmab_7y_spread_4pct" agg="None" />
+        <c name="HybridIndex.dfa_autocall_trigger_call_5y_seasoned" agg="None" />
+        <c name="HybridIndex.spx_autocall_trigger_call_5y_seasoned" agg="None" />
+        <c name="HybridIndex.spx_vc" agg="None" />
+        <c name="HybridIndex.new_dfa_index" agg="None" />
       </set>
     </result>
   </results2>

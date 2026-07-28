@@ -249,6 +249,26 @@ end</udf>
 \s\s\send\r\n
 \s\s\s$result\s=\sc\r\n
 end</udf>
+    <udf name="second_moment_call_square">real\ssecond_moment_call_square(real\sf,\sreal\sK,\sreal\ssigma,\sreal\st)\r\n
+\s\s\sreal\stotal_vol\r\n
+\s\s\sreal\sd1\r\n
+\s\s\sreal\sd2\r\n
+\s\s\sreal\sd3\r\n
+\s\s\sif\scompare(t\s&lt;=\s0,\s1e-8)\sthen\r\n
+\s\s\s\s\s\s\s$result\s=\smax(f\s-\sK,\s0)^2\r\n
+\s\s\send\r\n
+\s\s\sif\scompare(sigma\s&lt;=\s0,\s1e-8)\sthen\r\n
+\s\s\s\s\s\s\s$result\s=\smax(f\s-\sK,\s0)^2\r\n
+\s\s\send\r\n
+\s\s\stotal_vol\s=\ssigma\s*\ssqrt(t)\r\n
+\s\s\sd1\s=\s(log(f\s/\sK)\s+\s0.5\s*\ssigma\s*\ssigma\s*\st)\s/\stotal_vol\r\n
+\s\s\sd2\s=\sd1\s-\stotal_vol\r\n
+\s\s\sd3\s=\sd1\s+\stotal_vol\r\n
+\s\s\s$result\s=\r\n
+\s\s\s\s\s\s\sf\s*\sf\s*\sexp(sigma\s*\ssigma\s*\st)\s*\snormal_cdf(d3)\r\n
+\s\s\s\s\s\s\s-\s2.0\s*\sK\s*\sf\s*\snormal_cdf(d1)\r\n
+\s\s\s\s\s\s\s+\sK\s*\sK\s*\snormal_cdf(d2)\r\n
+end</udf>
   </UserUDFs>
   <inputs>
     <input name="money_market" type="real" modifier="Cashflow" />
@@ -318,6 +338,13 @@ end</udf>
     <input name="secure_rate_cap" type="real" shape="*" />
     <input name="gmab_cap" type="real" shape="*" />
     <input name="is_5th_anniversary" type="bool" shape="*" />
+    <input name="mlsb_drift" type="real" />
+    <input name="mlsb_vol" type="real" />
+    <input name="is_7th_anniversary" type="bool" shape="*" />
+    <input name="option_7y_ttm" type="real" shape="*" />
+    <input name="zcb_7y_price" type="real" modifier="Cashflow" />
+    <input name="gmab_par_rate" type="real" shape="*" />
+    <input name="autocall_trigger_rate" type="real" shape="*" />
   </inputs>
   <results>
     <result name="mlsb_index" ref="=Projection.mlsb_index" />
@@ -338,27 +365,43 @@ end</udf>
     <result name="jpm_mom_index" ref="=Projection.jpm_mom_index" />
     <result name="jpm_qua_index" ref="=Projection.jpm_qua_index" />
     <result name="jpm_asc_index" ref="=Projection.jpm_asc_index" />
+    <result name="spx_vc_index" ref="=Projection.spx_vc_index" />
+    <result name="new_dfa_index" ref="=Projection.new_dfa_index" />
     <result name="jpm_mom_secure_rate_value" ref="=Projection.jpm_mom_secure_rate_value" />
     <result name="jpm_qua_secure_rate_value" ref="=Projection.jpm_qua_secure_rate_value" />
     <result name="jpm_asc_secure_rate_value" ref="=Projection.jpm_asc_secure_rate_value" />
-    <result name="jpm_mom_gmab_value_1pct" ref="=Projection.jpm_mom_gmab_value_spread_1pct" />
     <result name="jpm_mom_gmab_value_2pct" ref="=Projection.jpm_mom_gmab_value_spread_2pct" />
     <result name="jpm_mom_gmab_value_3pct" ref="=Projection.jpm_mom_gmab_value_spread_3pct" />
-    <result name="jpm_qua_gmab_value_1pct" ref="=Projection.jpm_qua_gmab_value_spread_1pct" />
     <result name="jpm_qua_gmab_value_2pct" ref="=Projection.jpm_qua_gmab_value_spread_2pct" />
     <result name="jpm_qua_gmab_value_3pct" ref="=Projection.jpm_qua_gmab_value_spread_3pct" />
-    <result name="jpm_asc_gmab_value_1pct" ref="=Projection.jpm_asc_gmab_value_spread_1pct" />
     <result name="jpm_asc_gmab_value_2pct" ref="=Projection.jpm_asc_gmab_value_spread_2pct" />
     <result name="jpm_asc_gmab_value_3pct" ref="=Projection.jpm_asc_gmab_value_spread_3pct" />
-    <result name="jpm_mom_secure_rate_gmab_value_1pct" ref="=Projection.jpm_mom_secure_rate_gmab_spread_1pct" />
     <result name="jpm_mom_secure_rate_gmab_value_2pct" ref="=Projection.jpm_mom_secure_rate_gmab_spread_2pct" />
     <result name="jpm_mom_secure_rate_gmab_value_3pct" ref="=Projection.jpm_mom_secure_rate_gmab_spread_3pct" />
-    <result name="jpm_qua_secure_rate_gmab_value_1pct" ref="=Projection.jpm_qua_secure_rate_gmab_spread_1pct" />
     <result name="jpm_qua_secure_rate_gmab_value_2pct" ref="=Projection.jpm_qua_secure_rate_gmab_spread_2pct" />
     <result name="jpm_qua_secure_rate_gmab_value_3pct" ref="=Projection.jpm_qua_secure_rate_gmab_spread_3pct" />
-    <result name="jpm_asc_secure_rate_gmab_value_1pct" ref="=Projection.jpm_asc_secure_rate_gmab_spread_1pct" />
     <result name="jpm_asc_secure_rate_gmab_value_2pct" ref="=Projection.jpm_asc_secure_rate_gmab_spread_2pct" />
     <result name="jpm_asc_secure_rate_gmab_value_3pct" ref="=Projection.jpm_asc_secure_rate_gmab_spread_3pct" />
+    <result name="jpm_asc_gmab_value_spread_4pct" ref="=Projection.jpm_asc_gmab_value_spread_4pct" />
+    <result name="jpm_asc_secure_rate_gmab_spread_4pct" ref="=Projection.jpm_asc_secure_rate_gmab_spread_4pct" />
+    <result name="jpm_mom_gmab_value_spread_4pct" ref="=Projection.jpm_mom_gmab_value_spread_4pct" />
+    <result name="jpm_mom_secure_rate_gmab_spread_4pct" ref="=Projection.jpm_mom_secure_rate_gmab_spread_4pct" />
+    <result name="jpm_qua_gmab_value_spread_4pct" ref="=Projection.jpm_qua_gmab_value_spread_4pct" />
+    <result name="jpm_qua_secure_rate_gmab_spread_4pct" ref="=Projection.jpm_qua_secure_rate_gmab_spread_4pct" />
+    <result name="mlsb_cap_gmab_5y_spread_2pct" ref="=Projection.mlsb_cap_gmab_5y_spread_2pct" />
+    <result name="mlsb_cap_gmab_5y_spread_3pct" ref="=Projection.mlsb_cap_gmab_5y_spread_3pct" />
+    <result name="mlsb_cap_gmab_5y_spread_4pct" ref="=Projection.mlsb_cap_gmab_5y_spread_4pct" />
+    <result name="mlsb_cap_gmab_7y_spread_2pct" ref="=Projection.mlsb_cap_gmab_7y_spread_2pct" />
+    <result name="mlsb_cap_gmab_7y_spread_3pct" ref="=Projection.mlsb_cap_gmab_7y_spread_3pct" />
+    <result name="mlsb_cap_gmab_7y_spread_4pct" ref="=Projection.mlsb_cap_gmab_7y_spread_4pct" />
+    <result name="mlsb_par_gmab_5y_spread_2pct" ref="=Projection.mlsb_par_gmab_5y_spread_2pct" />
+    <result name="mlsb_par_gmab_5y_spread_3pct" ref="=Projection.mlsb_par_gmab_5y_spread_3pct" />
+    <result name="mlsb_par_gmab_5y_spread_4pct" ref="=Projection.mlsb_par_gmab_5y_spread_4pct" />
+    <result name="mlsb_par_gmab_7y_spread_2pct" ref="=Projection.mlsb_par_gmab_7y_spread_2pct" />
+    <result name="mlsb_par_gmab_7y_spread_3pct" ref="=Projection.mlsb_par_gmab_7y_spread_3pct" />
+    <result name="mlsb_par_gmab_7y_spread_4pct" ref="=Projection.mlsb_par_gmab_7y_spread_4pct" />
+    <result name="dfa_autocall_trigger_call_5y_seasoned" ref="=Projection.dfa_autocall_trigger_call_5y_seasoned" />
+    <result name="spx_autocall_trigger_call_5y_seasoned" ref="=Projection.spx_autocall_trigger_call_5y_seasoned" />
   </results>
   <calculations>
     <table name="Projection" type="CashFlow">
@@ -399,6 +442,28 @@ end</udf>
         <g name="g31" repeat-count="8" />
         <g name="g32" repeat-count="8" />
         <g name="g33" repeat-count="8" />
+        <g name="g34" repeat-count="5" />
+        <g name="g35" repeat-count="5" />
+        <g name="g36" repeat-count="5" />
+        <g name="g37" repeat-count="5" />
+        <g name="g38" repeat-count="5" />
+        <g name="g39" repeat-count="5" />
+        <g name="g40" repeat-count="5" />
+        <g name="g41" repeat-count="5" />
+        <g name="g42" repeat-count="5" />
+        <g name="g43" repeat-count="5" />
+        <g name="g44" repeat-count="10" />
+        <g name="g45" repeat-count="10" />
+        <g name="g46" repeat-count="10" />
+        <g name="g47" repeat-count="10" />
+        <g name="g48" repeat-count="10" />
+        <g name="g49" repeat-count="10" />
+        <g name="g50" repeat-count="10" />
+        <g name="g51" repeat-count="10" />
+        <g name="g52" repeat-count="10" />
+        <g name="g53" repeat-count="10" />
+        <g name="g54" repeat-count="10" />
+        <g name="g55" repeat-count="10" />
       </column-groups>
       <columns>
         <c name="step" datatype="int" />
@@ -449,6 +514,8 @@ end</udf>
         <c name="jpm_mom_index" datatype="real" />
         <c name="jpm_qua_index" datatype="real" />
         <c name="jpm_asc_index" datatype="real" />
+        <c name="spx_vc_index" datatype="real" />
+        <c name="new_dfa_index" datatype="real" />
         <c name="is_anniversary" datatype="bool" />
         <c name="JPM_S" datatype="real" group="g3" />
         <c name="JPM_S_anniversary" datatype="real" group="g3" />
@@ -468,24 +535,51 @@ end</udf>
         <c name="jpm_mom_secure_rate_value" datatype="real" group="g13" />
         <c name="jpm_qua_secure_rate_value" datatype="real" group="g14" />
         <c name="jpm_asc_secure_rate_value" datatype="real" group="g15" />
-        <c name="jpm_mom_gmab_value_spread_1pct" datatype="real" group="g16" />
+        <c name="jpm_mom_gmab_value_spread_4pct" datatype="real" group="g16" />
         <c name="jpm_mom_gmab_value_spread_2pct" datatype="real" group="g19" />
         <c name="jpm_mom_gmab_value_spread_3pct" datatype="real" group="g20" />
-        <c name="jpm_qua_gmab_value_spread_1pct" datatype="real" group="g17" />
+        <c name="jpm_qua_gmab_value_spread_4pct" datatype="real" group="g17" />
         <c name="jpm_qua_gmab_value_spread_2pct" datatype="real" group="g21" />
         <c name="jpm_qua_gmab_value_spread_3pct" datatype="real" group="g22" />
-        <c name="jpm_asc_gmab_value_spread_1pct" datatype="real" group="g18" />
+        <c name="jpm_asc_gmab_value_spread_4pct" datatype="real" group="g18" />
         <c name="jpm_asc_gmab_value_spread_2pct" datatype="real" group="g23" />
         <c name="jpm_asc_gmab_value_spread_3pct" datatype="real" group="g24" />
-        <c name="jpm_mom_secure_rate_gmab_spread_1pct" datatype="real" group="g25" />
+        <c name="jpm_mom_secure_rate_gmab_spread_4pct" datatype="real" group="g25" />
         <c name="jpm_mom_secure_rate_gmab_spread_2pct" datatype="real" group="g26" />
         <c name="jpm_mom_secure_rate_gmab_spread_3pct" datatype="real" group="g27" />
-        <c name="jpm_qua_secure_rate_gmab_spread_1pct" datatype="real" group="g28" />
+        <c name="jpm_qua_secure_rate_gmab_spread_4pct" datatype="real" group="g28" />
         <c name="jpm_qua_secure_rate_gmab_spread_2pct" datatype="real" group="g29" />
         <c name="jpm_qua_secure_rate_gmab_spread_3pct" datatype="real" group="g30" />
-        <c name="jpm_asc_secure_rate_gmab_spread_1pct" datatype="real" group="g31" />
+        <c name="jpm_asc_secure_rate_gmab_spread_4pct" datatype="real" group="g31" />
         <c name="jpm_asc_secure_rate_gmab_spread_2pct" datatype="real" group="g32" />
         <c name="jpm_asc_secure_rate_gmab_spread_3pct" datatype="real" group="g33" />
+        <c name="mlsb_anniversary" datatype="real" />
+        <c name="p_curr_mlsb" datatype="real" />
+        <c name="p_next_mlsb" datatype="real" />
+        <c name="mlsb_undisc_call_spread_curr" datatype="real" group="g34" />
+        <c name="mlsb_undisc_call_spread_next" datatype="real" group="g35" />
+        <c name="mlsb_account_val_5y" datatype="real" group="g36" />
+        <c name="mlsb_cap_gmab_5y_spread_2pct" datatype="real" group="g37" />
+        <c name="mlsb_cap_gmab_5y_spread_3pct" datatype="real" group="g38" />
+        <c name="mlsb_cap_gmab_5y_spread_4pct" datatype="real" group="g39" />
+        <c name="mlsb_account_val_7y" datatype="real" group="g40" />
+        <c name="mlsb_cap_gmab_7y_spread_2pct" datatype="real" group="g41" />
+        <c name="mlsb_cap_gmab_7y_spread_3pct" datatype="real" group="g42" />
+        <c name="mlsb_cap_gmab_7y_spread_4pct" datatype="real" group="g43" />
+        <c name="mlsb_account_val_par_5y" datatype="real" group="g44" />
+        <c name="mlsb_par_m_curr" datatype="real" group="g45" />
+        <c name="mlsb_par_m_next" datatype="real" group="g46" />
+        <c name="mlsb_par_q_curr" datatype="real" group="g47" />
+        <c name="mlsb_par_q_next" datatype="real" group="g48" />
+        <c name="mlsb_par_gmab_5y_spread_2pct" datatype="real" group="g49" />
+        <c name="mlsb_par_gmab_5y_spread_3pct" datatype="real" group="g50" />
+        <c name="mlsb_par_gmab_5y_spread_4pct" datatype="real" group="g51" />
+        <c name="mlsb_account_val_par_7y" datatype="real" group="g55" />
+        <c name="mlsb_par_gmab_7y_spread_2pct" datatype="real" group="g52" />
+        <c name="mlsb_par_gmab_7y_spread_3pct" datatype="real" group="g53" />
+        <c name="mlsb_par_gmab_7y_spread_4pct" datatype="real" group="g54" />
+        <c name="dfa_autocall_trigger_call_5y_seasoned" datatype="real" />
+        <c name="spx_autocall_trigger_call_5y_seasoned" datatype="real" />
       </columns>
       <data>
         <row-group name="rg1">
@@ -598,6 +692,8 @@ end</c>
             <c name="jpm_mom_index">=100</c>
             <c name="jpm_qua_index">=100</c>
             <c name="jpm_asc_index">=100</c>
+            <c name="spx_vc_index">=100</c>
+            <c name="new_dfa_index">=100</c>
             <c name="is_anniversary">=\sis_anniversary_now[step]</c>
             <c name="JPM_S">if\s$index\s=\s0\sthen\r\n
 \s\s\s\sreturn\sjpm_mom_index\r\n
@@ -700,7 +796,7 @@ return\s(jpm_qua_account_value[$index]\s*\s(1\s+\sjpm_qua_undisc_call_spread_cur
 n\s=\s\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 return\s(jpm_asc_account_value[$index]\s*\s(1\s+\sjpm_asc_undisc_call_spread_curr[$index])\s*\s(1\s+\sjpm_asc_undisc_call_spread_next[$index])\s^\sn\s-\s1)\s*\szcb_5y_price\r\n
 </c>
-            <c name="jpm_mom_gmab_value_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_mom_gmab_value_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -772,7 +868,7 @@ if\sn\s==\s0\sthen\r\n
 else\r\n
 \s\s\s\sreturn\sgmab_binomial(n,\sp_curr[0],\sp_next_5y[0],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end</c>
-            <c name="jpm_qua_gmab_value_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_qua_gmab_value_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -844,7 +940,7 @@ if\sn\s==\s0\sthen\r\n
 else\r\n
 \s\s\s\sreturn\sgmab_binomial(n,\sp_curr[1],\sp_next_5y[1],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end</c>
-            <c name="jpm_asc_gmab_value_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_asc_gmab_value_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -916,7 +1012,7 @@ if\sn\s==\s0\sthen\r\n
 else\r\n
 \s\s\s\sreturn\sgmab_binomial(n,\sp_curr[2],\sp_next_5y[2],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end</c>
-            <c name="jpm_mom_secure_rate_gmab_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_mom_secure_rate_gmab_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -991,7 +1087,7 @@ else\r\n
 \s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr[0],\sp_next_5y[0],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end\r\n
 return\spv_gmab\s+\sjpm_mom_secure_rate_value[$index]</c>
-            <c name="jpm_qua_secure_rate_gmab_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_qua_secure_rate_gmab_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -1066,7 +1162,7 @@ else\r\n
 \s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr[1],\sp_next_5y[1],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end\r\n
 return\spv_gmab\s+\sjpm_qua_secure_rate_value[$index]</c>
-            <c name="jpm_asc_secure_rate_gmab_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_asc_secure_rate_gmab_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -1141,6 +1237,360 @@ else\r\n
 \s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr[2],\sp_next_5y[2],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end\r\n
 return\spv_gmab\s+\sjpm_asc_secure_rate_value[$index]</c>
+            <c name="mlsb_anniversary">=\siif(is_anniversary,\smlsb_index,\sprev(mlsb_anniversary))</c>
+            <c name="p_curr_mlsb">//probability\sof\sgetting\sa\spayoff\r\n
+//undiscouted\sprice\sof\sa\sdigital\soption\sN(d2)\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+S_return\s=\slog(safeDivide(mlsb_index,\smlsb_anniversary,\s1e-8))\r\n
+d2\s=\ssafeDivide(S_return\s+\s(r\s-\s0.5\s*\svol\s*\svol)*option_1y_ttm[step],\svol\s*\ssqrt(option_1y_ttm[step]),\s0)\r\n
+\r\n
+return\smax(1e-8,\smin(1.0,\snormal_cdf(d2)))</c>
+            <c name="p_next_mlsb">//probability\sof\sgetting\sa\spayoff\sfrom\sNext\sanniversary\sto\sT\r\n
+//undiscouted\sprice\sof\sa\sdigital\soption\sN(d2)\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+d2\s=\ssafeDivide((r\s-\s0.5\s*\svol\s*\svol),\svol,\s0)\r\n
+\r\n
+return\smax(1e-8,\smin(1.0,\snormal_cdf(d2)))</c>
+            <c name="mlsb_undisc_call_spread_curr">//Call\sspread\sfor\sCap\sStratey\sfor\scurrent\sterm\s"IC(m)"\r\n
+S\s=\ssafeDivide(mlsb_index,mlsb_anniversary,\s1.0)\r\n
+S0\s=\s1.0\r\n
+K\s=\s1\s+\sgmab_cap[$index]\r\n
+T\s=\soption_1y_ttm[step]\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+call_atm\s=\sundiscounted_black_scholes(S,\sS0,\sr,\sT,\svol,\s0,\sTrue)\r\n
+call_otm\s=\sundiscounted_black_scholes(S,\sK,\sr,\sT,\svol,\s0,\sTrue)\r\n
+\r\n
+return\scall_atm\s-\scall_otm</c>
+            <c name="mlsb_undisc_call_spread_next">//Call\sspread\sfor\sCap\sStratey\sfor\snext\sterm\s"IC(m+1)"\r\n
+S0\s=\s1.0\r\n
+K\s=\s1\s+\sgmab_cap[$index]\r\n
+T\s=\s1\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+otm_call\s=\sundiscounted_black_scholes(S0,\sK,\sr,\sT,\svol,\s0,\sTrue)\r\n
+atm_call\s=\sundiscounted_black_scholes(S0,\sS0,r,\sT,\svol,\s0,\sTrue)\r\n
+\r\n
+return\satm_call\s-\sotm_call</c>
+            <c name="mlsb_account_val_5y">1.0</c>
+            <c name="mlsb_cap_gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_5y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_5y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_5y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_5y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+end</c>
+            <c name="mlsb_account_val_7y">1.0</c>
+            <c name="mlsb_cap_gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_7y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_7y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_7y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+end</c>
+            <c name="mlsb_account_val_par_5y">1.0</c>
+            <c name="mlsb_par_m_curr">part\s=\sgmab_par_rate[$index]\r\n
+S\s=safeDivide(mlsb_index,mlsb_anniversary,\s1.0)\r\n
+K\s=\s1.0\r\n
+T\s=\soption_1y_ttm[step]\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+call_atm\s=\sundiscounted_black_scholes(S,\sK,\sr,\sT,\svol,\s0,\sTrue)\r\n
+return\spart\s*\scall_atm\s//par\srate*\sundiscounted\sATM\scall</c>
+            <c name="mlsb_par_m_next">part\s=\sgmab_par_rate[$index]\r\n
+S\s=1.0\r\n
+K\s=\s1.0\r\n
+T\s=\s1.0\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+call_atm\s=\sundiscounted_black_scholes(S,\sK,\sr,\sT,\svol,\s0,\sTrue)\r\n
+return\spart\s*\scall_atm\s//par\srate*\sundiscounted\sATM\scall</c>
+            <c name="mlsb_par_q_curr">part\s=\sgmab_par_rate[$index]\r\n
+//current\syear\sseasoned\r\n
+tau\s=\soption_1y_ttm[step]\r\n
+sigma\s=\smlsb_vol\r\n
+spot_ratio\s=\sSafeDivide(mlsb_index,\smlsb_anniversary,\s1.0)\r\n
+K\s=\sSafeDivide(1.0,\sspot_ratio,\s1.0)\r\n
+f\s=\sexp(mlsb_drift\s*\stau)\r\n
+return\spart\s*\spart\s*\sspot_ratio\s*\sspot_ratio\s*\ssecond_moment_call_square(f,\sK,\ssigma,\stau)</c>
+            <c name="mlsb_par_q_next">part\s=\sgmab_par_rate[$index]\r\n
+sigma\s=\smlsb_vol\r\n
+f\s=\sexp(mlsb_drift)\r\n
+return\spart\s*\spart\s*\ssecond_moment_call_square(f,\s1.0,\ssigma,\s1.0)</c>
+            <c name="mlsb_par_gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_5y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="mlsb_par_gmab_5y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_5y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="mlsb_par_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_5y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="mlsb_account_val_par_7y">1.0</c>
+            <c name="mlsb_par_gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_7y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="mlsb_par_gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_7y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="mlsb_par_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_7y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="dfa_autocall_trigger_call_5y_seasoned">=autocall_trigger_rate[0]\r\n
+</c>
+            <c name="spx_autocall_trigger_call_5y_seasoned">=autocall_trigger_rate[0]</c>
           </columns>
         </row-group>
         <row-group name="rg2">
@@ -1298,6 +1748,8 @@ end</c>
             <c name="jpm_mom_index">=\sprev(jpm_mom_index)\s*\s(1\s+\sindex_return[13])</c>
             <c name="jpm_qua_index">=\sprev(jpm_qua_index)\s*\s(1\s+\sindex_return[14])</c>
             <c name="jpm_asc_index">=\sprev(jpm_asc_index)\s*\s(1\s+\sindex_return[15])</c>
+            <c name="spx_vc_index">=\sprev(spx_vc_index)\s*\s(1\s+\sindex_return[16])</c>
+            <c name="new_dfa_index">=\sprev(new_dfa_index)\s*\s(1\s+\sindex_return[17])</c>
             <c name="is_anniversary">=\sis_anniversary_now[step]</c>
             <c name="JPM_S">if\s$index\s=\s0\sthen\r\n
 \s\s\s\sreturn\sjpm_mom_index\r\n
@@ -1431,7 +1883,7 @@ return\s(jpm_qua_account_value[$index]\s*\s(1\s+\sjpm_qua_undisc_call_spread_cur
 n\s=\s\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 return\s(jpm_asc_account_value[$index]\s*\s(1\s+\sjpm_asc_undisc_call_spread_curr[$index])\s*\s(1\s+\sjpm_asc_undisc_call_spread_next[$index])\s^\sn\s-\s1)\s*\szcb_5y_price\r\n
 </c>
-            <c name="jpm_mom_gmab_value_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_mom_gmab_value_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -1503,7 +1955,7 @@ if\sn\s==\s0\sthen\r\n
 else\r\n
 \s\s\s\sreturn\sgmab_binomial(n,\sp_curr[0],\sp_next_5y[0],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end</c>
-            <c name="jpm_qua_gmab_value_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_qua_gmab_value_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -1575,7 +2027,7 @@ if\sn\s==\s0\sthen\r\n
 else\r\n
 \s\s\s\sreturn\sgmab_binomial(n,\sp_curr[1],\sp_next_5y[1],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end</c>
-            <c name="jpm_asc_gmab_value_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_asc_gmab_value_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -1647,7 +2099,7 @@ if\sn\s==\s0\sthen\r\n
 else\r\n
 \s\s\s\sreturn\sgmab_binomial(n,\sp_curr[2],\sp_next_5y[2],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end</c>
-            <c name="jpm_mom_secure_rate_gmab_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_mom_secure_rate_gmab_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -1722,7 +2174,7 @@ else\r\n
 \s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr[0],\sp_next_5y[0],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end\r\n
 return\spv_gmab\s+\sjpm_mom_secure_rate_value[$index]</c>
-            <c name="jpm_qua_secure_rate_gmab_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_qua_secure_rate_gmab_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -1797,7 +2249,7 @@ else\r\n
 \s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr[1],\sp_next_5y[1],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end\r\n
 return\spv_gmab\s+\sjpm_qua_secure_rate_value[$index]</c>
-            <c name="jpm_asc_secure_rate_gmab_spread_1pct">gmab_min_credit\s=\s0.01\r\n
+            <c name="jpm_asc_secure_rate_gmab_spread_4pct">gmab_min_credit\s=\s0.04\r\n
 //\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
 n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
 //\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
@@ -1872,6 +2324,400 @@ else\r\n
 \s\s\s\spv_gmab\s=\sgmab_binomial(n,\sp_curr[2],\sp_next_5y[2],\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
 end\r\n
 return\spv_gmab\s+\sjpm_asc_secure_rate_value[$index]</c>
+            <c name="mlsb_anniversary">=\siif(is_anniversary,\smlsb_index,\sprev(mlsb_anniversary))</c>
+            <c name="p_curr_mlsb">//probability\sof\sgetting\sa\spayoff\r\n
+//undiscouted\sprice\sof\sa\sdigital\soption\sN(d2)\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+S_return\s=\slog(safeDivide(mlsb_index,\smlsb_anniversary,\s1e-8))\r\n
+d2\s=\ssafeDivide(S_return\s+\s(r\s-\s0.5\s*\svol\s*\svol)*option_1y_ttm[step],\svol\s*\ssqrt(option_1y_ttm[step]),\s0)\r\n
+\r\n
+return\smax(1e-8,\smin(1.0,\snormal_cdf(d2)))</c>
+            <c name="p_next_mlsb">//probability\sof\sgetting\sa\spayoff\sfrom\sNext\sanniversary\sto\sT\r\n
+//undiscouted\sprice\sof\sa\sdigital\soption\sN(d2)\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+d2\s=\ssafeDivide((r\s-\s0.5\s*\svol\s*\svol),\svol,\s0)\r\n
+\r\n
+return\smax(1e-8,\smin(1.0,\snormal_cdf(d2)))</c>
+            <c name="mlsb_undisc_call_spread_curr">//Call\sspread\sfor\sCap\sStratey\sfor\scurrent\sterm\s"IC(m)"\r\n
+S\s=\ssafeDivide(mlsb_index,mlsb_anniversary,\s1.0)\r\n
+S0\s=\s1.0\r\n
+K\s=\s1\s+\sgmab_cap[$index]\r\n
+T\s=\soption_1y_ttm[step]\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+\r\n
+call_atm\s=\sundiscounted_black_scholes(S,\sS0,\sr,\sT,\svol,\s0,\sTrue)\r\n
+call_otm\s=\sundiscounted_black_scholes(S,\sK,\sr,\sT,\svol,\s0,\sTrue)\r\n
+\r\n
+return\scall_atm\s-\scall_otm</c>
+            <c name="mlsb_undisc_call_spread_next">//Call\sspread\sfor\sCap\sStratey\sfor\snext\sterm\s"IC(m+1)"\r\n
+S0\s=\s1.0\r\n
+K\s=\s1\s+\sgmab_cap[$index]\r\n
+T\s=\s1\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+otm_call\s=\sundiscounted_black_scholes(S0,\sK,\sr,\sT,\svol,\s0,\sTrue)\r\n
+atm_call\s=\sundiscounted_black_scholes(S0,\sS0,r,\sT,\svol,\s0,\sTrue)\r\n
+\r\n
+return\satm_call\s-\sotm_call</c>
+            <c name="mlsb_account_val_5y">//\saccount\svalue\sat\slast\sanniversary\sfor\sgmab\scap\r\n
+//\sA(t)\sin\sthe\sdocument\r\n
+\r\n
+if\sis_5th_anniversary[step]\sthen\r\n
+\s\s\s\sreturn\s1.0\r\n
+elif\sis_anniversary\sthen\r\n
+\s\s\s\scap\s=\sgmab_cap[$index]\r\n
+\s\s\s\s//annual\sreturn\sfloored\sat\s0\sand\scapped\sat\ssecure\scap\r\n
+\s\s\s\sreturn\sprev(mlsb_account_val_5y)\s*\s(1\s+\smin(cap,\smax(SafeDivide(mlsb_index,\sprev(mlsb_anniversary),\s1.0)\s-\s1,\s0)))\r\n
+else\r\n
+\s\s\s\sreturn\sprev(mlsb_account_val_5y)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_5y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_5y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_5y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s5Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_5y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_5y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_5y_price)\r\n
+end</c>
+            <c name="mlsb_account_val_7y">//\saccount\svalue\sat\slast\sanniversary\sfor\sgmab\scap\r\n
+//\sA(t)\sin\sthe\sdocument\r\n
+\r\n
+if\sis_7th_anniversary[step]\sthen\r\n
+\s\s\s\sreturn\s1.0\r\n
+elif\sis_anniversary\sthen\r\n
+\s\s\s\scap\s=\sgmab_cap[$index]\r\n
+\s\s\s\s//annual\sreturn\sfloored\sat\s0\sand\scapped\sat\ssecure\scap\r\n
+\s\s\s\sreturn\sprev(mlsb_account_val_7y)\s*\s(1\s+\smin(cap,\smax(SafeDivide(mlsb_index,\sprev(mlsb_anniversary),\s1.0)\s-\s1,\s0)))\r\n
+else\r\n
+\s\s\s\sreturn\sprev(mlsb_account_val_7y)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_7y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_7y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+end</c>
+            <c name="mlsb_cap_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+//\sn\s=\snumber\sof\sfuture\syears\safter\scurrent\sterm\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+//\s7Y\ssimple\sminimum\sguaranteed\sreturn\r\n
+K\s=\s1\s+\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_7y[$index]\r\n
+undis_call_spread\s=\smlsb_undisc_call_spread_curr[$index]\r\n
+undis_call_spread_next\s=\smlsb_undisc_call_spread_next[$index]\r\n
+\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s1:\scurrent\sterm\sis\sthe\slast\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+if\sn\s==\s0\sthen\r\n
+\s\s\sX\s=\sundis_call_spread\s/\sp_curr_mlsb\r\n
+\s\s\sgmab_value\s=\sp_curr_mlsb\s*\smax(K\s-\sAV_curr\s*\s(1\s+\sX),\s0)\s+\s(1\s-\sp_curr_mlsb)\s*\smax(K\s-\sAV_curr,\s0)\r\n
+\s\s\sreturn\szcb_7y_price\s*\sgmab_value\r\n
+//\s--------------------------------------------------\r\n
+//\sCase\s2:\smore\sthan\sone\sremaining\syear\r\n
+//\s--------------------------------------------------\r\n
+else\r\n
+\s\s\s\sreturn\sgmab_binomial(n,\sp_curr_mlsb,\sp_next_mlsb,\sundis_call_spread,\sundis_call_spread_next,\sK,\sAV_curr,\szcb_7y_price)\r\n
+end</c>
+            <c name="mlsb_account_val_par_5y">part\s=\sgmab_par_rate[$index]\s//\sparticipation\srate\r\n
+if\sis_5th_anniversary[step]\sthen\r\n
+\s\s\sreturn\s1.0\r\n
+elif\sis_anniversary\sthen\r\n
+\s\s\srtn\s=\sSafeDivide(mlsb_index,\sprev(mlsb_anniversary),\s1.0)\s-\s1\r\n
+\s\s\scredit\s=\spart\s*\smax(rtn,\s0)\r\n
+\s\s\sreturn\sprev(mlsb_account_val_par_5y)\s*\s(1\s+\scredit)\r\n
+else\r\n
+\s\s\sreturn\sprev(mlsb_account_val_par_5y)\r\n
+end</c>
+            <c name="mlsb_par_m_curr">part\s=\sgmab_par_rate[$index]\r\n
+S\s=safeDivide(mlsb_index,mlsb_anniversary,\s1.0)\r\n
+K\s=\s1.0\r\n
+T\s=\soption_1y_ttm[step]\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+call_atm\s=\sundiscounted_black_scholes(S,\sK,\sr,\sT,\svol,\s0,\sTrue)\r\n
+return\spart\s*\scall_atm\s//par\srate*\sundiscounted\sATM\scall</c>
+            <c name="mlsb_par_m_next">part\s=\sgmab_par_rate[$index]\r\n
+S\s=1.0\r\n
+K\s=\s1.0\r\n
+T\s=\s1.0\r\n
+vol\s=\smlsb_vol\r\n
+r\s=\smlsb_drift\r\n
+call_atm\s=\sundiscounted_black_scholes(S,\sK,\sr,\sT,\svol,\s0,\sTrue)\r\n
+return\spart\s*\scall_atm\s//par\srate*\sundiscounted\sATM\scall</c>
+            <c name="mlsb_par_q_curr">part\s=\sgmab_par_rate[$index]\r\n
+//current\syear\sseasoned\r\n
+tau\s=\soption_1y_ttm[step]\r\n
+sigma\s=\smlsb_vol\r\n
+spot_ratio\s=\sSafeDivide(mlsb_index,\smlsb_anniversary,\s1.0)\r\n
+K\s=\sSafeDivide(1.0,\sspot_ratio,\s1.0)\r\n
+f\s=\sexp(mlsb_drift\s*\stau)\r\n
+return\spart\s*\spart\s*\sspot_ratio\s*\sspot_ratio\s*\ssecond_moment_call_square(f,\sK,\ssigma,\stau)</c>
+            <c name="mlsb_par_q_next">part\s=\sgmab_par_rate[$index]\r\n
+sigma\s=\smlsb_vol\r\n
+f\s=\sexp(mlsb_drift)\r\n
+return\spart\s*\spart\s*\ssecond_moment_call_square(f,\s1.0,\ssigma,\s1.0)</c>
+            <c name="mlsb_par_gmab_5y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_5y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="mlsb_par_gmab_5y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_5y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="mlsb_par_gmab_5y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+n\s=\sround(option_5y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_5y_ttm[step]\r\n
+K\s=\s5\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_5y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_5y_price\s*\sput</c>
+            <c name="mlsb_account_val_par_7y">part\s=\sgmab_par_rate[$index]\s//\sparticipation\srate\r\n
+if\sis_7th_anniversary[step]\sthen\r\n
+\s\s\sreturn\s1.0\r\n
+elif\sis_anniversary\sthen\r\n
+\s\s\srtn\s=\sSafeDivide(mlsb_index,\sprev(mlsb_anniversary),\s1.0)\s-\s1\r\n
+\s\s\scredit\s=\spart\s*\smax(rtn,\s0)\r\n
+\s\s\sreturn\sprev(mlsb_account_val_par_7y)\s*\s(1\s+\scredit)\r\n
+else\r\n
+\s\s\sreturn\sprev(mlsb_account_val_par_7y)\r\n
+end</c>
+            <c name="mlsb_par_gmab_7y_spread_2pct">gmab_min_credit\s=\s0.02\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_7y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="mlsb_par_gmab_7y_spread_3pct">gmab_min_credit\s=\s0.03\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_7y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="mlsb_par_gmab_7y_spread_4pct">gmab_min_credit\s=\s0.04\r\n
+n\s=\sround(option_7y_ttm[step]\s-\soption_1y_ttm[step])\r\n
+tau\s=\soption_7y_ttm[step]\r\n
+K\s=\s7\s*\sgmab_min_credit\r\n
+AV_curr\s=\smlsb_account_val_par_7y[$index]\r\n
+m_curr\s=\smlsb_par_m_curr[$index]\r\n
+q_curr\s=\smlsb_par_q_curr[$index]\r\n
+m_next\s=\smlsb_par_m_next[$index]\r\n
+q_next\s=\smlsb_par_q_next[$index]\r\n
+M1\s=\sAV_curr\s*\s(1\s+\sm_curr)\s*\s(1\s+\sm_next)^n\r\n
+M2\s=\sAV_curr^2\s*\s(1\s+\s2\s*\sm_curr\s+\sq_curr)\s*\s(1\s+\s2\s*\sm_next\s+\sq_next)^n\r\n
+F\s=\sM1\s-\s1\r\n
+ratio\s=\sSafeDivide(M2\s-\s2\s*\sF\s-\s1,\sF\s*\sF,\s1.0)\r\n
+sigma2\s=\slog(max(ratio,\s1.0))\s/\stau\r\n
+sigma\s=\ssqrt(sigma2)\r\n
+put\s=\sundiscounted_black_scholes(\r\n
+\s\s\sF,\r\n
+\s\s\sK,\r\n
+\s\s\s0.0,\r\n
+\s\s\stau,\r\n
+\s\s\ssigma,\r\n
+\s\s\s0.0,\r\n
+\s\s\sFalse\r\n
+)\r\n
+return\szcb_7y_price\s*\sput</c>
+            <c name="dfa_autocall_trigger_call_5y_seasoned">=autocall_trigger_rate[0]</c>
+            <c name="spx_autocall_trigger_call_5y_seasoned">=autocall_trigger_rate[0]</c>
           </columns>
         </row-group>
       </data>
@@ -1891,6 +2737,7 @@ return\spv_gmab\s+\sjpm_asc_secure_rate_value[$index]</c>
       <c name="bond_sharp_ratio[0]" formattype="General" width="80" />
       <c name="bond_variance[0]" formattype="General" width="80" />
       <c name="dap_index" formattype="General" width="80" />
+      <c name="dfa_autocall_trigger_call_5y_seasoned" formattype="General" width="80" />
       <c name="dfa_index" formattype="General" width="80" />
       <c name="equity_bond_covariance[0]" formattype="General" width="80" />
       <c name="equity_bond_covariance_30y" formattype="General" width="80" />
@@ -1908,36 +2755,36 @@ return\spv_gmab\s+\sjpm_asc_secure_rate_value[$index]</c>
       <c name="invesco_new_index" formattype="General" width="80" />
       <c name="is_anniversary" formattype="General" width="80" />
       <c name="jpm_asc_account_value[0]" formattype="General" width="80" />
-      <c name="jpm_asc_gmab_value_spread_1pct[0]" formattype="General" width="80" />
       <c name="jpm_asc_gmab_value_spread_2pct[0]" formattype="General" width="80" />
       <c name="jpm_asc_gmab_value_spread_3pct[0]" formattype="General" width="80" />
-      <c name="jpm_asc_index" formattype="General" width="80" />
-      <c name="jpm_asc_secure_rate_gmab_spread_1pct[0]" formattype="General" width="80" />
+      <c name="jpm_asc_gmab_value_spread_4pct[0]" formattype="General" width="80" />
+      <c name="jpm_asc_index" formattype="General" width="67" />
       <c name="jpm_asc_secure_rate_gmab_spread_2pct[0]" formattype="General" width="80" />
       <c name="jpm_asc_secure_rate_gmab_spread_3pct[0]" formattype="General" width="80" />
+      <c name="jpm_asc_secure_rate_gmab_spread_4pct[0]" formattype="General" width="80" />
       <c name="jpm_asc_secure_rate_value[0]" formattype="General" width="80" />
       <c name="jpm_asc_undisc_call_spread_curr[0]" formattype="General" width="80" />
       <c name="jpm_asc_undisc_call_spread_next[0]" formattype="General" width="80" />
       <c name="jpm_mom_account_value[0]" formattype="General" width="84" />
-      <c name="jpm_mom_gmab_value_spread_1pct[0]" formattype="General" width="80" />
       <c name="jpm_mom_gmab_value_spread_2pct[0]" formattype="General" width="80" />
       <c name="jpm_mom_gmab_value_spread_3pct[0]" formattype="General" width="80" />
+      <c name="jpm_mom_gmab_value_spread_4pct[0]" formattype="General" width="80" />
       <c name="jpm_mom_index" formattype="General" width="80" />
-      <c name="jpm_mom_secure_rate_gmab_spread_1pct[0]" formattype="General" width="80" />
       <c name="jpm_mom_secure_rate_gmab_spread_2pct[0]" formattype="General" width="80" />
       <c name="jpm_mom_secure_rate_gmab_spread_3pct[0]" formattype="General" width="80" />
+      <c name="jpm_mom_secure_rate_gmab_spread_4pct[0]" formattype="General" width="80" />
       <c name="jpm_mom_secure_rate_value[0]" formattype="General" width="80" />
       <c name="jpm_mom_undisc_call_spread_curr[0]" formattype="General" width="80" />
       <c name="jpm_mom_undisc_call_spread_next[0]" formattype="General" width="80" />
       <c name="jpm_qua_account_value[0]" formattype="General" width="80" />
-      <c name="jpm_qua_gmab_value_spread_1pct[0]" formattype="General" width="80" />
       <c name="jpm_qua_gmab_value_spread_2pct" formattype="General" width="80" />
       <c name="jpm_qua_gmab_value_spread_2pct[0]" formattype="General" width="80" />
       <c name="jpm_qua_gmab_value_spread_3pct[0]" formattype="General" width="80" />
+      <c name="jpm_qua_gmab_value_spread_4pct[0]" formattype="General" width="80" />
       <c name="jpm_qua_index" formattype="General" width="80" />
-      <c name="jpm_qua_secure_rate_gmab_spread_1pct[0]" formattype="General" width="80" />
       <c name="jpm_qua_secure_rate_gmab_spread_2pct[0]" formattype="General" width="80" />
       <c name="jpm_qua_secure_rate_gmab_spread_3pct[0]" formattype="General" width="80" />
+      <c name="jpm_qua_secure_rate_gmab_spread_4pct[0]" formattype="General" width="80" />
       <c name="jpm_qua_secure_rate_value[0]" formattype="General" width="80" />
       <c name="jpm_qua_undisc_call_spread_curr[0]" formattype="General" width="80" />
       <c name="jpm_qua_undisc_call_spread_next[0]" formattype="General" width="80" />
@@ -1945,23 +2792,54 @@ return\spv_gmab\s+\sjpm_asc_secure_rate_value[$index]</c>
       <c name="JPM_S_anniversary[0]" formattype="General" width="80" />
       <c name="JPM_vol[0]" formattype="General" width="80" />
       <c name="lm_index" formattype="General" width="80" />
+      <c name="mlsb_account_val_5y" formattype="General" width="80" />
+      <c name="mlsb_account_val_5y[0]" formattype="General" width="80" />
+      <c name="mlsb_account_val_7y[0]" formattype="General" width="80" />
+      <c name="mlsb_account_val_par_5y[0]" formattype="General" width="80" />
+      <c name="mlsb_account_val_par_7y[0]" formattype="General" width="80" />
+      <c name="mlsb_anniversary" formattype="General" width="80" />
+      <c name="mlsb_cap_gmab_5y_spread_2pct[0]" formattype="General" width="80" />
+      <c name="mlsb_cap_gmab_5y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="mlsb_cap_gmab_5y_spread_4pct[0]" formattype="General" width="80" />
+      <c name="mlsb_cap_gmab_7y_spread_2pct[0]" formattype="General" width="80" />
+      <c name="mlsb_cap_gmab_7y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="mlsb_cap_gmab_7y_spread_4pct[0]" formattype="General" width="80" />
       <c name="mlsb_index" formattype="General" width="80" />
       <c name="mlsb_index_bid" formattype="General" width="80" />
+      <c name="mlsb_par_gmab_5y_spread_2pct[0]" formattype="General" width="80" />
+      <c name="mlsb_par_gmab_5y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="mlsb_par_gmab_5y_spread_4pct[0]" formattype="General" width="80" />
+      <c name="mlsb_par_gmab_7y_spread_2pct[0]" formattype="General" width="80" />
+      <c name="mlsb_par_gmab_7y_spread_3pct[0]" formattype="General" width="80" />
+      <c name="mlsb_par_gmab_7y_spread_4pct[0]" formattype="General" width="80" />
+      <c name="mlsb_par_m_curr[0]" formattype="General" width="80" />
+      <c name="mlsb_par_m_next[0]" formattype="General" width="80" />
+      <c name="mlsb_par_q_curr[0]" formattype="General" width="80" />
+      <c name="mlsb_par_q_next[0]" formattype="General" width="80" />
+      <c name="mlsb_undisc_call_spread_curr" formattype="General" width="80" />
+      <c name="mlsb_undisc_call_spread_curr[0]" formattype="General" width="80" />
+      <c name="mlsb_undisc_call_spread_next" formattype="General" width="80" />
+      <c name="mlsb_undisc_call_spread_next[0]" formattype="General" width="80" />
       <c name="money_market_return" formattype="General" width="80" />
       <c name="money_market_return[0]" formattype="General" width="80" />
       <c name="mseh_index" formattype="General" width="80" />
+      <c name="new_dfa_index" formattype="General" width="80" />
       <c name="pimbap_index" formattype="General" width="80" />
       <c name="pimco_gem_index" formattype="General" width="80" />
       <c name="pimco_index" formattype="General" width="80" />
       <c name="pimco_index_bid" formattype="General" width="80" />
       <c name="p_curr[0]" formattype="General" width="80" />
+      <c name="p_curr_mlsb" formattype="General" width="80" />
       <c name="p_next_5y[0]" formattype="General" width="80" />
+      <c name="p_next_mlsb" formattype="General" width="80" />
       <c name="scale_fac_t[0]" formattype="General" width="80" />
       <c name="scale_fac_t_bid[0]" formattype="General" width="161" />
       <c name="sptr_return[0]" formattype="General" width="80" />
+      <c name="spx_autocall_trigger_call_5y_seasoned" formattype="General" width="80" />
       <c name="spx_rc_index" formattype="General" width="80" />
       <c name="spx_return" formattype="General" width="80" />
       <c name="spx_return[0]" formattype="General" width="80" />
+      <c name="spx_vc_index" formattype="General" width="80" />
       <c name="step" formattype="General" width="80" />
       <c name="target_vol[0]" formattype="General" width="80" />
       <c name="weight_bond[0]" formattype="General" width="80" />
