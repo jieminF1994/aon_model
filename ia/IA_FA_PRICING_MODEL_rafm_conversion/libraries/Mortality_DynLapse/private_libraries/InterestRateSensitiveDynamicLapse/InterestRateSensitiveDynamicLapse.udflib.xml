@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pathwise-udf-lib name="InterestRateSensitiveDynamicLapse" format-version="20">
+  <UDFs>
+    <udf name="ExcessLapseNMROverCR">/*\r\n
+Excess\slapse\srate\sfunction\swhen\s:\r\n
+$$\sExcessLapseRate=\\max(0,200\\times\s(NMR-CR)^2\s-CDSC\\%)-MVA\\%\s$$\r\n
+where\s\r\n
+\\(NMR\\)\sis\snew\smoney\srate\s(assumed\scompetitor\srate)\r\n
+\\(CR\\)\sis\scurrent\scredited\srate\s(expressed\sas\sthe\sfixed\scredited\srate\sor\shedge\sbudget\sequivalent)\r\n
+\\(CDSC\\%\\)\sis\ssurrender\scharge\r\n
+\\(MVA\\%\\)\sis\s+/-\seffective\sMVA\spercentage\s(positive\sMVA\sis\ssubtracted\sfrom\sAV)\r\n
+*/\r\n
+\r\n
+real\sExcessLapseNMROverCR(real\sNMR,\sreal\sCR,\sreal\sCDSC_perc,\sreal\sMVA_perc,\sreal\sRT,\sreal\sM)\r\n
+\s\s\s\s$result\s=\smax(max(RT,\sM)\s*\s(NMR\s-\sCR)\s-\sCDSC_perc\s-\sMVA_perc,\s0)\r\n
+end</udf>
+    <udf name="ExcessLapseNMRunderCR">/*\r\n
+Excess\slapse\srate\sfunction\swhen\s:\r\n
+$$\sExcessLapseRate=5\\times\s(NMR-CR)-MVA\\%\s$$\r\n
+where\s\r\n
+\\(NMR\\)\sis\snew\smoney\srate\s(assumed\scompetitor\srate)\r\n
+\\(CR\\)\sis\scurrent\scredited\srate\s(expressed\sas\sthe\sfixed\scredited\srate\sor\shedge\sbudget\sequivalent)\r\n
+\\(MVA\\%\\)\sis\s+/-\seffective\sMVA\spercentage\s(positive\sMVA\sis\ssubtracted\sfrom\sAV)\r\n
+*/\r\n
+\r\n
+real\sExcessLapseNMRunderCR(real\sNMR,\sreal\sCR,\sreal\sMVA_perc,\sreal\sM)\r\n
+\s\s\s\s$result\s=\sM\s*\s(NMR\s-\sCR)\s-\sMVA_perc\r\n
+end</udf>
+    <udf name="ExcessLapseRate">/*\r\n
+The\sfunction\sof\sinterest\srate\ssensitive\sexcess\slapse\srate,\r\n
+used\sin\sfull\ssurrender\srate\scalculation\swithout\sliving\sbenefit.\r\n
+\r\n
+Dynamic\sbehaviors\son\sthe\sbase\sproduct\swithout\sGMWB\sfeature\sare\sassumed\sto\sbe\sdriven\sby\sinterest\srate\schanges.\r\n
+As\senvironments\schange,\sthe\spolicyholder\smight\sview\sother\sIndex\sAnnuity\sofferings\sin\sthe\smarketplace\r\n
+as\sproviding\sbetter\svalue\sthan\swhat\sthey\scurrently\shave.\r\n
+\r\n
+Renewal\srate\ssetting\spractices,\sthough,\scan\shelp\sto\sprevent\sthese\spolicyholder\sdecisions.\s\r\n
+\r\n
+Current\spenalties\sthe\spolicyholder\swould\sbe\ssubject\sto\r\n
+(plus\sthe\snew\spenalties\sin\sthe\salternative)\swill\salso\shave\sinfluence.\s\r\n
+\r\n
+The\spresence\sof\sMarket\sValue\sAdjustment\s(MVA)\swill\seffectively\smodify\sthe\samount\sof\ssurrender\scharge\s\r\n
+incurred\sduring\sinterest\srate\schanges,\r\n
+thereby\smodifying\sthe\simpact\sof\sinterest\srate\ssensitive\sdynamic\slapse.\r\n
+\r\n
+Annual\sFull\sSurrender\srate\sis\scalculated\sas:\r\n
+$$\sL\s=\s\\max(0.01,\\min(0.8,\\text{Base\sSurrender\sRate}+\\text{Excess\sLapse\sRate}))\s$$\r\n
+where\sBase\sSurrender\sRate\sis\sset\sto\sthe\sfull\ssurrender\srate\sthat\sis\sexpected\sfrom\sneutral\sdynamic\sinfluences.\r\n
+\r\n
+Standard\sinfluences\sare\sexpected\sfrom\ssurrender\scharges,\spolicy\sfees,\strail\scommissions,\setc…\r\n
+Excess\slapse\srate\scan\sbe\sa\spositive\sor\snegative\snumber,\r\n
+and\sis\sdefined\sin\sfunctions\sExcessLapseNMROverCR\sand\sExcessLapseNMRUnderCR.\r\n
+*/\r\n
+\r\n
+real\sExcessLapseRate(real\sNMR,\sreal\sCR,\sreal\sCDSC_perc,\sreal\sMVA_perc,\sreal\sRT,\sreal\sM1,\sreal\sM2,\sreal\sThreshold)\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(NMR\s&gt;\sCR\s+\sThreshold,\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sExcessLapseNMROverCR(NMR,\sCR,\sCDSC_perc,\sMVA_perc,\sRT,\sM1)\r\n
+\s\s\s\selif\scompare(NMR\s&lt;\sCR\s-\sThreshold,\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sExcessLapseNMRUnderCR(NMR,\sCR,\sMVA_perc,\sM2)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\send\r\n
+\r\n
+end</udf>
+  </UDFs>
+</pathwise-udf-lib>

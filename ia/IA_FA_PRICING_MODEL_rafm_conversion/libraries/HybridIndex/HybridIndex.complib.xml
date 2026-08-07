@@ -1,0 +1,1196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="HybridIndex" version="master" format-version="20">
+  <UserUDFs>
+    <udf name="compute_weight">real\scompute_weight(real\sequity_variance,\sreal\sbond_variance,\sreal\sbond_equity_covariance,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sint\salgorithm_type,\sreal\svol_target,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sequity_sharp_ratio,\sreal\sbond_sharp_ratio,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sequity_weight_min,\sreal\sequity_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sbond_weight_min,\sreal\sbond_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sleverage_min,\sreal\sleverage_max,\sbool\sis_equity,\sbool\sfixed_bond_constraints)\r\n
+\s\s\s\s\r\n
+\s\s\s\s//\stype\s1,\sequal\ssharp\sratio,\sposition\s&gt;\sleverage\s&gt;\svol\r\n
+\s\s\s\sif\salgorithm_type\s=\s1\sthen\r\n
+\s\s\s\s\s\s\s\s//\sCompute\sthe\smaximum\sSharpe\sRatio\sPortfolio\sweights\r\n
+\s\s\s\s\s\s\s\sreal\sw_equity\s=\s0\r\n
+\s\s\s\s\s\s\s\sreal\sw_bond\s=\s0\r\n
+\s\s\s\s\s\s\s\sif\scompare(bond_variance\s=\s0,\s1e-08)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\svol_target\s/\smax(sqrt(equity_variance),\s1e-06)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\s0\r\n
+\s\s\s\s\s\s\s\selif\scompare(equity_variance\s=\s0,\s1e-08)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\svol_target\s/\smax(sqrt(bond_variance),\s1e-06)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\s0\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\smu_equity\s=\sequity_sharp_ratio\s*\ssqrt(equity_variance)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\smu_bond\s=\sbond_sharp_ratio\s*\ssqrt(bond_variance)\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\s(bond_variance\s*\smu_equity\s-\sbond_equity_covariance\s*\smu_bond)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s/\s(equity_variance\s*\sbond_variance\s-\sbond_equity_covariance\s^\s2)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\s(equity_variance\s*\smu_bond\s-\sbond_equity_covariance\s*\smu_equity)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s/\s(equity_variance\s*\sbond_variance\s-\sbond_equity_covariance\s^\s2)\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//\srescale\sthe\sweights\sto\smatch\starget\svol\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\sportfolio_variance\s=\sw_equity\s*\smu_equity\s+\sw_bond\s*\smu_bond\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\sw_equity\s*\svol_target\s/\ssqrt(max(1e-08,\sportfolio_variance))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\sw_bond\s*\svol_target\s/\ssqrt(max(1e-08,\sportfolio_variance))\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\s\s\s\s\s//\srescale\sthe\sweights\sto\smeet\srisky\sbasket\sleverage\r\n
+\s\s\s\s\s\s\s\sif\scompare(w_equity\s+\sw_bond\s&gt;\sleverage_max,\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\sw_equity\s*\sleverage_max\s/\s(w_equity\s+\sw_bond)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\sw_bond\s*\sleverage_max\s/\s(w_equity\s+\sw_bond)\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\s\s\s\s\s//\smake\sthe\sweights\sin\stheir\sconstraint\srange\r\n
+\s\s\s\s\s\s\s\sw_equity\s=\smin(equity_weight_max,\smax(equity_weight_min,\sw_equity))\r\n
+\s\s\s\s\s\s\s\sw_bond\s=\smin(bond_weight_max,\smax(bond_weight_min,\sw_bond))\r\n
+\s\s\s\s\s\s\s\s$result\s=\siif(is_equity,\sw_equity,\sw_bond)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s//\stype\s2,\sno\ssharp\sratio\srule,\slow\svol:\sposition\s&gt;\sleverage\s&gt;\svol,\shigh\svol:\sposition\s&gt;\svol\s&gt;\sleverage\r\n
+\s\s\s\selif\salgorithm_type\s=\s2\sthen\r\n
+\s\s\s\s\s\s\s\sreal\sa\s=\sequity_variance\s+\sbond_variance\s-\s2\s*\sbond_equity_covariance\r\n
+\s\s\s\s\s\s\s\sreal\sb\s=\sleverage_max\s*\s(bond_equity_covariance\s-\sbond_variance)\r\n
+\s\s\s\s\s\s\s\sreal\sc\s=\sleverage_max\s^\s2\s*\sbond_variance\s-\svol_target\s^\s2\r\n
+\s\s\s\s\s\s\s\sreal\sdiscrim\s=\s(b\s^\s2)\s-\sa\s*\sc\r\n
+\s\s\s\s\s\s\s\sbool\shas_solution\s=\scompare(discrim\s&gt;=\s0,\s1e-6)\sand\scompare(-b\s+\ssqrt(max(discrim,\s0))\s&gt;=\s0,\s1e-6)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sreal\sw_equity\s=\siif(has_solution,\smax(equity_weight_min,\smin((-b\s+\ssqrt(max(discrim,\s0)))\s/\sa,\sleverage_max)),\s0)\r\n
+\s\s\s\s\s\s\s\sreal\sw_bond\s=\siif(has_solution,\sleverage_max\s-\sw_equity,\svol_target\s/\ssqrt(max(1e-08,\sbond_variance)))\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sw_equity\s=\smin(equity_weight_max,\smax(equity_weight_min,\sw_equity))\r\n
+\s\s\s\s\s\s\s\sw_bond\s=\smin(bond_weight_max,\smax(bond_weight_min,\sw_bond))\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s$result\s=\siif(is_equity,\sw_equity,\sw_bond)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s//\stype\s3,\sno\ssharp\sratio\srule\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sif\sfixed_bond_constraints\sthen\s//fixed\sbond\sconstraints,\sas\sfor\sPIMGEM\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//\sbond\sweights\swithin\sleverage\slimits\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\sw_bond\s=\svol_target\s/\ssqrt(bond_variance)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\sw_equity\s=\s0\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\sa\s=\sequity_variance\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\sb\s=\sbond_equity_covariance\s*\sw_bond\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\sc\s=\sbond_variance\s*\sw_bond\s^\s2\s-\svol_target\s^\s2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\sdiscrim\s=\s(b\s^\s2)\s-\sa\s*\sc\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\sw_equity_plus\s=\s(-b\s+\ssqrt(max(discrim,\s0)))\s/\sa\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\sw_equity_minus\s=\s(-b\s-\ssqrt(max(discrim,\s0)))\s/\sa\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(leverage_max\s-\sw_bond\s&gt;=\sw_equity_plus,\s1e-6)\s\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\sw_equity_plus\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selif\scompare(leverage_max\s-\sw_bond\s&gt;=\sw_equity_minus,\s1e-6)\s\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\sw_equity_minus\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//\sbond\sweights\slarger\sthan\sleverage\slimits,\suse\salgorithm\sfor\stype\sII\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sd\s=\sequity_variance\s+\sbond_variance\s-\s2\s*\sbond_equity_covariance\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\se\s=\sleverage_max\s*\s(bond_equity_covariance\s-\sbond_variance)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sf\s=\sleverage_max\s^\s2\s*\sbond_variance\s-\svol_target\s^\s2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sdiscrim_2\s=\s(e\s^\s2)\s-\sd\s*\sf\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sbool\shas_solution\s=\scompare(discrim_2\s&gt;=\s0,\s1e-6)\s\sand\scompare(-b\s+\ssqrt(max(discrim_2,\s0))\s&gt;=\s0,\s1e-6)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\siif(has_solution,\smax(equity_weight_min,min((-e\s+\ssqrt(max(discrim_2,\s0)))\s/\sd,leverage_max)),\s0)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\siif(has_solution,\sleverage_max\s-\sw_equity,\svol_target\s/\ssqrt(max(1e-08,\sbond_variance)))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\smin(equity_weight_max,\smax(equity_weight_min,\sw_equity))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\smin(bond_weight_max,\smax(bond_weight_min,\sw_bond))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\siif(is_equity,\sw_equity,\sw_bond)\r\n
+\s\s\s\s\s\s\s\selse\s//fixed\sequity\sconstraints,\sas\sfor\sAB\sglobal\sallocator\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sw_equity\s=\smin(equity_weight_max,vol_target\s/\ssqrt(equity_variance))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sw_bond\s=\s0\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sa\s=\sbond_variance\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sb\s=\sbond_equity_covariance\s*\sw_equity\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sc\s=\sequity_variance\s*\sw_equity\s^\s2\s-\svol_target\s^\s2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sdiscrim\s=\s(b\s^\s2)\s-\sa\s*\sc\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sw_bond_plus\s=\s(-b\s+\ssqrt(max(discrim,\s0)))\s/\sa\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sw_bond_minus\s=\s(-b\s-\ssqrt(max(discrim,\s0)))\s/\sa\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(bond_weight_max\s&gt;=\sw_bond_plus,\s1e-6)\s\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\sw_bond_plus\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\selif\scompare(bond_weight_max\s&gt;=\sw_bond_minus,\s1e-6)\s\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\sw_bond_minus\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\sbond_weight_max\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sw_equity\s=\smin(equity_weight_max,\smax(equity_weight_min,\sw_equity))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\sw_bond\s=\smin(bond_weight_max,\smax(bond_weight_min,\sw_bond))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\siif(is_equity,\sw_equity,\sw_bond)\r\n
+\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\s\sendif\r\n
+end</udf>
+    <udf name="black_model">real\sblack_model(real\sS,\sreal\sK,\sreal\szcb,\sreal\sT,\sreal\svol,\sreal\sF)\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sd1\s=\s1/(vol*sqrt(T))*(log(F/K)\s+\s(0.5*vol^2)*T)\r\n
+\s\s\s\sreal\sd2\s=\s1/(vol*sqrt(T))*(log(F/K)\s-\s(0.5*vol^2)*T)\r\n
+\s\s\s\sreal\sN_d1\s=\s(1+erf(d1/sqrt(2)))/2\r\n
+\s\s\s\sreal\sN_d2\s=\s(1+erf(d2/sqrt(2)))/2\r\n
+\s\s\s\sreal\sCall_BS\s=\szcb*(F*N_d1\s-\sK*N_d2)\r\n
+\s\s\s\s$result\s=\sCall_BS/S\r\n
+end</udf>
+    <udf name="index_forward">real\sindex_forward(real\sS,\sreal\szcb,\sreal\sd,\sreal\sf,\sreal\sT,\sbool\sis_excess,\sbool\sis_mlsb,\sreal\sweight_equity,\sreal\sweight_bond,\sreal\sdiv)\r\n
+\s\s\s\sif\sis_mlsb\sthen\s//\sFees\sdepend\son\sleverage,\sdealer\sspreads\sdo\snot.\r\n
+\s\s\s\s\s\s\s\s$result\s=\sS\s*\sexp((d\s-\s(weight_equity+weight_bond)*f\s-\sweight_equity*div)\s*\sT)\s*\s1/zcb\r\n
+\s\s\s\selse\s//\sFees\sand\sdealer\sspreads\sare\sindependent\sof\sleverage\r\n
+\s\s\s\s\s\s\s\s$result\s=\sS\s*\sexp((d-f)\s*\sT)\s*\siif(is_excess,\s1,\s1/zcb)\r\n
+\s\s\s\sendif\r\n
+end</udf>
+    <udf name="long_dated_forward">real\slong_dated_forward(real\sindex_drift,\sreal\sindex_vol,\sreal\stime,\sreal\scorrelation,\sreal\srate_sigma,\sreal\srate_a)\r\n
+\s\s\s\s$result\s=\sexp(index_drift\s*\stime\s-\s(correlation\s*\sindex_vol\s*\srate_sigma)/(rate_a^2)*(rate_a\s*\stime\s-\s(1-exp(-rate_a*time))))\r\n
+end</udf>
+    <udf name="x5_cliquet_option">real\sx5_cliquet_option(real\sarg)\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="money_market" type="real" modifier="Cashflow" />
+    <input name="spx" type="real" modifier="Cashflow" />
+    <input name="spx_variance" type="real" modifier="Cashflow" />
+    <input name="rho" type="real" />
+    <input name="sptr" type="real" modifier="Cashflow" />
+    <input name="is_projection_start" type="bool" shape="*" />
+    <input name="is_shock_step" type="bool" shape="*" />
+    <input name="roll_foward_index" type="int" shape="*" />
+    <input name="market_base" type="composite">
+      <field name="spot_mlsb" type="real" />
+      <field name="spot_pimco" type="real" />
+      <field name="spot_ab" type="real" />
+      <field name="spot_pimco_gem" type="real" />
+      <field name="spot_spx_rc" type="real" />
+      <field name="spot_lm" type="real" />
+      <field name="spot_aqr" type="real" />
+      <field name="spot_pimbap" type="real" />
+      <field name="spot_ab_global_allocator" type="real" />
+      <field name="spot_mseh" type="real" />
+      <field name="spot_dap" type="real" />
+      <field name="spot_dfa" type="real" />
+      <field name="libor_sofr_spread" type="real" />
+      <field name="spot_invesco" type="real" />
+      <field name="spot_jpm_mom" type="real" />
+      <field name="spot_jpm_qua" type="real" />
+      <field name="spot_jpm_asc" type="real" />
+    </input>
+    <input name="market_shocks" type="composite">
+      <field name="spot_mlsb" type="real" />
+      <field name="spot_pimco" type="real" />
+      <field name="spot_ab" type="real" />
+      <field name="spot_pimco_gem" type="real" />
+      <field name="spot_spx_rc" type="real" />
+      <field name="spot_lm" type="real" />
+      <field name="spot_aqr" type="real" />
+      <field name="spot_pimbap" type="real" />
+      <field name="spot_ab_global_allocator" type="real" />
+      <field name="spot_mseh" type="real" />
+      <field name="spot_dap" type="real" />
+      <field name="spot_dfa" type="real" />
+      <field name="libor_sofr_spread" type="real" />
+      <field name="spot_invesco" type="real" />
+      <field name="spot_jpm_mom" type="real" />
+      <field name="spot_jpm_qua" type="real" />
+      <field name="spot_jpm_asc" type="real" />
+    </input>
+    <input name="market_roll_foward" type="composite" shape="*">
+      <field name="spot_mlsb" type="real" />
+      <field name="spot_pimco" type="real" />
+      <field name="spot_ab" type="real" />
+      <field name="spot_pimco_gem" type="real" />
+      <field name="spot_spx_rc" type="real" />
+      <field name="spot_lm" type="real" />
+      <field name="spot_aqr" type="real" />
+      <field name="spot_pimbap" type="real" />
+      <field name="spot_ab_global_allocator" type="real" />
+      <field name="spot_mseh" type="real" />
+      <field name="spot_dap" type="real" />
+      <field name="spot_dfa" type="real" />
+      <field name="spot_invesco" type="real" />
+      <field name="spot_jpm_mom" type="real" />
+      <field name="spot_jpm_qua" type="real" />
+      <field name="spot_jpm_asc" type="real" />
+    </input>
+    <input name="params" type="composite" shape="*">
+      <field name="algorithm_type" type="int" />
+      <field name="equity_has_dividend" type="bool" />
+      <field name="is_excess_return" type="bool" />
+      <field name="equity_sharp_ratio" type="real" />
+      <field name="bond_sharp_ratio" type="real" />
+      <field name="target_vol" type="real" />
+      <field name="equity_weight_min" type="real" />
+      <field name="equity_weight_max" type="real" />
+      <field name="bond_weight_min" type="real" />
+      <field name="bond_weight_max" type="real" />
+      <field name="leverage_min" type="real" />
+      <field name="leverage_max" type="real" />
+      <field name="equity_betas" type="real" shape="3" />
+      <field name="bond_betas" type="real" shape="3" />
+      <field name="equity_sigma" type="real" />
+      <field name="bond_sigma" type="real" />
+      <field name="index_cost" type="real" />
+      <field name="equity_fee" type="real" />
+      <field name="bond_fee" type="real" />
+      <field name="scale_factor" type="real" />
+      <field name="fixed_bond_constraint" type="bool" />
+      <field name="dealer_spread" type="real" />
+      <field name="lower_target_vol" type="real" />
+      <field name="upper_target_vol" type="real" />
+    </input>
+    <input name="equity_basis" type="real" shape="*" modifier="Cashflow" />
+    <input name="bond_price_5y" type="real" modifier="Cashflow" />
+    <input name="bond_variance_5y" type="real" modifier="Cashflow" />
+    <input name="bond_price_30y" type="real" modifier="Cashflow" />
+    <input name="bond_variance_30y" type="real" modifier="Cashflow" />
+    <input name="bond_covariance_5y_30y" type="real" modifier="Cashflow" />
+    <input name="bond_basis" type="real" shape="*" modifier="Cashflow" />
+    <input name="N_HYBRID_INDEX" type="int" modifier="Constant" />
+    <input name="dt" type="real" shape="*" />
+    <input name="use_sofr" type="bool" />
+    <input name="spx_funding_spread" type="real" modifier="Cashflow" />
+    <input name="hybrid_index" type="int" />
+    <input name="crediting_term_post_ratesetting" type="int" />
+    <input name="zcb" type="real" shape="*" modifier="Cashflow" />
+    <input name="otm_strike" type="real" shape="*" />
+    <input name="spx_div" type="real" shape="*" />
+    <input name="is_annexus_5yr" type="bool" />
+    <input name="pimco_gem_corr" type="real" />
+    <input name="mseh_corr" type="real" />
+    <input name="drift_and_volatility" type="composite" shape="*">
+      <field name="drift_atm_par_rate" type="real" shape="*" />
+      <field name="volatility_atm_par_rate" type="real" shape="*" />
+    </input>
+    <input name="hull_white_params" type="composite">
+      <field name="a" type="real" />
+      <field name="sigma_t" type="real" shape="*,*" />
+    </input>
+    <input name="df_5yr" type="real" modifier="Cashflow" />
+    <input name="participation_rates_aqr_ab" type="real" shape="*" />
+    <input name="participation_rates" type="real" shape="*" />
+    <input name="participation_rates_cliquet" type="real" shape="*" />
+    <input name="declared_parameter" type="real" modifier="Cashflow" />
+    <input name="reset_rate_now" type="bool" shape="*" />
+    <input name="zcb_libor" type="real" shape="*" modifier="Cashflow" />
+    <input name="target_vol_normal" type="real" shape="*" modifier="Cashflow" />
+  </inputs>
+  <results>
+    <result name="mlsb_index" ref="=Projection.mlsb_index " />
+    <result name="pimbap_index" ref="=Projection.pimbap_index " />
+    <result name="aqr_index" ref="=Projection.aqr_index " />
+    <result name="dap" ref="=Projection.dap_index " />
+    <result name="lm_index" ref="=Projection.lm_index " />
+    <result name="pimco_gem" ref="=Projection.pimco_gem_index " />
+    <result name="ab_index" ref="=Projection.ab_index " />
+    <result name="mseh_index" ref="=Projection.mseh_index " />
+    <result name="spx_rc" ref="=Projection.spx_rc_index " />
+    <result name="pimco_index" ref="=Projection.pimco_index " />
+    <result name="ab_global_allocator_index" ref="=Projection.ab_global_allocator_index " />
+    <result name="dfa_index" ref="=Projection.dfa_index" />
+    <result name="atm_call" ref="=Projection.atm_call" />
+    <result name="otm_calls" ref="=Projection.otm_calls" />
+    <result name="index_spot" ref="=Projection.index_spot" />
+    <result name="x5_5yr_atm_par_cliquet" ref="=Projection.x5_5yr_atm_par_cliquet" />
+    <result name="atm_calls_par_rate" ref="=Projection.atm_calls_par_rate" />
+    <result name="renewed_otm_call" ref="=Projection.renewed_otm_call" />
+    <result name="index_forward_1y_mlsb" ref="=Projection.index_forward_1y_mlsb" />
+    <result name="index_forward_1y_pimco" ref="=Projection.index_forward_1y_pimco" />
+    <result name="index_forward_1y_ab" ref="=Projection.index_forward_1y_ab" />
+    <result name="index_forward_1y_pimco_gem" ref="=Projection.index_forward_1y_pimco_gem" />
+    <result name="index_forward_1y_mseh" ref="=Projection.index_forward_1y_mseh" />
+    <result name="index_forward_1y_lm" ref="=Projection.index_forward_1y_lm" />
+    <result name="index_forward_1y_dfa" ref="=Projection.index_forward_1y_dfa" />
+    <result name="index_forward_1y_aqr" ref="=Projection.index_forward_1y_aqr" />
+    <result name="index_forward_1y_ab_global" ref="=Projection.index_forward_1y_ab_global" />
+    <result name="index_forward_1y_spx_rc" ref="=Projection.index_forward_1y_spx_rc" />
+    <result name="index_forward_1y_pimbap" ref="=Projection.index_forward_1y_pimbap" />
+    <result name="index_forward_2y_mlsb" ref="=Projection.index_forward_2y_mlsb" />
+    <result name="index_forward_2y_pimco" ref="=Projection.index_forward_2y_pimco" />
+    <result name="index_forward_2y_ab" ref="=Projection.index_forward_2y_ab" />
+    <result name="index_forward_2y_pimco_gem" ref="=Projection.index_forward_2y_pimco_gem" />
+    <result name="index_forward_2y_mseh" ref="=Projection.index_forward_2y_mseh" />
+    <result name="index_forward_2y_lm" ref="=Projection.index_forward_2y_lm" />
+    <result name="index_forward_2y_dfa" ref="=Projection.index_forward_2y_dfa" />
+    <result name="index_forward_2y_aqr" ref="=Projection.index_forward_2y_aqr" />
+    <result name="index_forward_2y_ab_global" ref="=Projection.index_forward_2y_ab_global" />
+    <result name="index_forward_2y_spx_rc" ref="=Projection.index_forward_2y_spx_rc" />
+    <result name="index_forward_2y_pimbap" ref="=Projection.index_forward_2y_pimbap" />
+    <result name="jpm_asc_index" ref="=Projection.jpm_asc_index" />
+    <result name="invesco_index" ref="=Projection.invesco_index" />
+    <result name="jpm_qua_index" ref="=Projection.jpm_qua_index" />
+    <result name="jpm_mom_index" ref="=Projection.jpm_mom_index" />
+  </results>
+  <calculations>
+    <table name="Projection" type="CashFlow">
+      <column-groups>
+        <g name="g1">=N_HYBRID_INDEX</g>
+        <g name="g2" repeat-count="6" />
+        <g name="g3" repeat-count="6" />
+        <g name="g4" repeat-count="6" />
+        <g name="g5" repeat-count="6" />
+      </column-groups>
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="bond_return_5y" datatype="real" />
+        <c name="bond_return_30y" datatype="real" />
+        <c name="equity_bond_covariance_5y" datatype="real" />
+        <c name="equity_bond_covariance_30y" datatype="real" />
+        <c name="money_market_return" datatype="real" />
+        <c name="spx_return" datatype="real" />
+        <c name="sptr_return" datatype="real" />
+        <c name="equity_return" datatype="real" group="g1" />
+        <c name="bond_return" datatype="real" group="g1" />
+        <c name="equity_variance" datatype="real" group="g1" />
+        <c name="bond_variance" datatype="real" group="g1" />
+        <c name="equity_bond_covariance" datatype="real" group="g1" />
+        <c name="equity_sharp_ratio" datatype="real" group="g1" />
+        <c name="bond_sharp_ratio" datatype="real" group="g1" />
+        <c name="target_vol" datatype="real" group="g1" />
+        <c name="weight_equity" datatype="real" group="g1" />
+        <c name="weight_bond" datatype="real" group="g1" />
+        <c name="weight_cash" datatype="real" group="g1" />
+        <c name="forecast_vol" datatype="real" group="g1" />
+        <c name="scale_fac_t" datatype="real" group="g1" />
+        <c name="index_return" datatype="real" group="g1" />
+        <c name="mlsb_index" datatype="real" />
+        <c name="pimco_index" datatype="real" />
+        <c name="mseh_index" datatype="real" />
+        <c name="pimco_gem_index" datatype="real" />
+        <c name="ab_index" datatype="real" />
+        <c name="aqr_index" datatype="real" />
+        <c name="lm_index" datatype="real" />
+        <c name="spx_rc_index" datatype="real" />
+        <c name="dap_index" datatype="real" />
+        <c name="pimbap_index" datatype="real" />
+        <c name="ab_global_allocator_index" datatype="real" />
+        <c name="dfa_index" datatype="real" />
+        <c name="invesco_index" datatype="real" />
+        <c name="jpm_mom_index" datatype="real" />
+        <c name="jpm_qua_index" datatype="real" />
+        <c name="jpm_asc_index" datatype="real" />
+        <c name="index_spot" datatype="real" />
+        <c name="index_forward" datatype="real" />
+        <c name="index_forward_1y_mlsb" datatype="real" />
+        <c name="index_forward_1y_pimco" datatype="real" />
+        <c name="index_forward_1y_ab" datatype="real" />
+        <c name="index_forward_1y_mseh" datatype="real" />
+        <c name="index_forward_1y_pimco_gem" datatype="real" />
+        <c name="index_forward_1y_spx_rc" datatype="real" />
+        <c name="index_forward_1y_lm" datatype="real" />
+        <c name="index_forward_1y_aqr" datatype="real" />
+        <c name="index_forward_1y_ab_global" datatype="real" />
+        <c name="index_forward_1y_pimbap" datatype="real" />
+        <c name="index_forward_1y_dfa" datatype="real" />
+        <c name="index_forward_2y_mlsb" datatype="real" />
+        <c name="index_forward_2y_pimco" datatype="real" />
+        <c name="index_forward_2y_ab" datatype="real" />
+        <c name="index_forward_2y_mseh" datatype="real" />
+        <c name="index_forward_2y_pimco_gem" datatype="real" />
+        <c name="index_forward_2y_spx_rc" datatype="real" />
+        <c name="index_forward_2y_lm" datatype="real" />
+        <c name="index_forward_2y_aqr" datatype="real" />
+        <c name="index_forward_2y_ab_global" datatype="real" />
+        <c name="index_forward_2y_pimbap" datatype="real" />
+        <c name="index_forward_2y_dfa" datatype="real" />
+        <c name="atm_call" datatype="real" />
+        <c name="atm_calls_par_rate" datatype="real" group="g5" />
+        <c name="otm_calls" datatype="real" group="g2" />
+        <c name="forward_5yr_atm_par" datatype="real" group="g4" />
+        <c name="x5_5yr_atm_par_cliquet" datatype="real" group="g3" />
+        <c name="renewed_otm_call" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">0</c>
+            <c name="bond_return_5y"></c>
+            <c name="bond_return_30y"></c>
+            <c name="equity_bond_covariance_5y">=\s-rho\s*\ssqrt(spx_variance)\s*\ssqrt(bond_variance_5y)</c>
+            <c name="equity_bond_covariance_30y">=\s-rho\s*\ssqrt(spx_variance)\s*\ssqrt(bond_variance_30y)</c>
+            <c name="money_market_return"></c>
+            <c name="spx_return"></c>
+            <c name="sptr_return"></c>
+            <c name="equity_return"></c>
+            <c name="bond_return"></c>
+            <c name="equity_variance">=\sparams[$index].equity_betas[0]\s^\s2\s*\sspx_variance\r\n
+\s\s\s\s+\sparams[$index].equity_betas[1]\s^\s2\s*\sbond_variance_5y\r\n
+\s\s\s\s+\sparams[$index].equity_betas[2]\s^\s2\s*\sbond_variance_30y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].equity_betas[0]\s*\sparams[$index].equity_betas[1]\s*\sequity_bond_covariance_5y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].equity_betas[0]\s*\sparams[$index].equity_betas[2]\s*\sequity_bond_covariance_30y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].equity_betas[1]\s*\sparams[$index].equity_betas[2]\s*\sbond_covariance_5y_30y\r\n
+\s\s\s\s+\s(params[$index].equity_sigma)\s^\s2</c>
+            <c name="bond_variance">=\sparams[$index].bond_betas[0]\s^\s2\s*\sspx_variance\r\n
+\s\s\s\s+\sparams[$index].bond_betas[1]\s^\s2\s*\sbond_variance_5y\r\n
+\s\s\s\s+\sparams[$index].bond_betas[2]\s^\s2\s*\sbond_variance_30y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].bond_betas[0]\s*\sparams[$index].bond_betas[1]\s*\sequity_bond_covariance_5y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].bond_betas[0]\s*\sparams[$index].bond_betas[2]\s*\sequity_bond_covariance_30y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].bond_betas[1]\s*\sparams[$index].bond_betas[2]\s*\sbond_covariance_5y_30y\r\n
+\s\s\s\s+\s(params[$index].bond_sigma)\s^\s2</c>
+            <c name="equity_bond_covariance">=\sparams[$index].equity_betas[0]\s*\sparams[$index].bond_betas[0]\s*\sspx_variance\r\n
+\s\s\s\s+\sparams[$index].equity_betas[1]\s*\sparams[$index].bond_betas[1]\s*\sbond_variance_5y\r\n
+\s\s\s\s+\sparams[$index].equity_betas[2]\s*\sparams[$index].bond_betas[2]\s*\sbond_variance_30y\r\n
+\s\s\s\s+\s(params[$index].equity_betas[0]\s*\sparams[$index].bond_betas[1]\r\n
+\s\s\s\s+\sparams[$index].equity_betas[1]\s*\sparams[$index].bond_betas[0])\s*\sequity_bond_covariance_5y\r\n
+\s\s\s\s+\s(params[$index].equity_betas[0]\s*\sparams[$index].bond_betas[2]\r\n
+\s\s\s\s+\sparams[$index].equity_betas[2]\s*\sparams[$index].bond_betas[0])\s*\sequity_bond_covariance_30y\r\n
+\s\s\s\s+\s(params[$index].equity_betas[1]\s*\sparams[$index].bond_betas[2]\r\n
+\s\s\s\s+\sparams[$index].equity_betas[2]\s*\sparams[$index].bond_betas[1])\s*\sbond_covariance_5y_30y</c>
+            <c name="equity_sharp_ratio">=\siif($index\s=\s5,\ssqrt(equity_variance)\s+\s1.5\s*\sequity_bond_covariance\s/\ssqrt(equity_variance),\r\n
+\s\s\s\sparams[$index].equity_sharp_ratio)</c>
+            <c name="bond_sharp_ratio">=\siif($index\s=\s5,\sequity_bond_covariance\s/\ssqrt(bond_variance)\s+\s1.5\s*\ssqrt(bond_variance),\r\n
+\s\s\s\sparams[$index].bond_sharp_ratio)</c>
+            <c name="target_vol">if\s$index\s=\s13\sor\s$index\s=\s14\sthen\s\s\s//\sFor\sJPM\sadpative\sindex\s(JPM\sMOM,\sJPM\sQUA)\s\r\n
+\s\s\s\srand\s=\s0.5*(1+erf(target_vol_normal[$index-13]/sqrt(2)))\r\n
+\s\s\s\sif\scompare(rand\s&lt;\s0.20,\s1e-10)\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\sparams[$index].lower_target_vol\r\n
+\s\s\s\selif\scompare(rand\s&lt;0.55,\s1e-10)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sparams[$index].target_vol\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sparams[$index].upper_target_vol\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\sparams[$index].target_vol\s\s\r\n
+end</c>
+            <c name="weight_equity">=\scompute_weight(equity_variance,\sbond_variance,\sequity_bond_covariance,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].algorithm_type,\sparams[$index].target_vol,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sequity_sharp_ratio,\sbond_sharp_ratio,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].equity_weight_min,\sparams[$index].equity_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].bond_weight_min,\sparams[$index].bond_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].leverage_min,\sparams[$index].leverage_max,\sTrue,\sparams[$index].fixed_bond_constraint)</c>
+            <c name="weight_bond">=\scompute_weight(equity_variance,\sbond_variance,\sequity_bond_covariance,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].algorithm_type,\sparams[$index].target_vol,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sequity_sharp_ratio,\sbond_sharp_ratio,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].equity_weight_min,\sparams[$index].equity_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].bond_weight_min,\sparams[$index].bond_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].leverage_min,\sparams[$index].leverage_max,\sFalse,params[$index].fixed_bond_constraint)</c>
+            <c name="weight_cash">=\s1\s-\sweight_equity\s-\sweight_bond</c>
+            <c name="forecast_vol">=\ssqrt(equity_variance\s*\sweight_equity\s^\s2\s+\sbond_variance\s*\sweight_bond\s^\s2\r\n
+\s\s\s\s+\s2\s*\sequity_bond_covariance\s*\sweight_equity\s*\sweight_bond)</c>
+            <c name="scale_fac_t">//cap\sthe\sscale\sfactor\sto\s2\sto\savoid\slarge\sscale\sfactor\r\n
+=min(2,params[$index].scale_factor*params[$index].target_vol/forecast_vol)</c>
+            <c name="index_return"></c>
+            <c name="mlsb_index">=\smarket_roll_foward[roll_foward_index[step]].spot_mlsb</c>
+            <c name="pimco_index">=\smarket_roll_foward[roll_foward_index[step]].spot_pimco</c>
+            <c name="mseh_index">=\smarket_roll_foward[roll_foward_index[step]].spot_mseh</c>
+            <c name="pimco_gem_index">=\smarket_roll_foward[roll_foward_index[step]].spot_pimco_gem</c>
+            <c name="ab_index">=\smarket_roll_foward[roll_foward_index[step]].spot_ab</c>
+            <c name="aqr_index">=\smarket_roll_foward[roll_foward_index[step]].spot_aqr</c>
+            <c name="lm_index">=\smarket_roll_foward[roll_foward_index[step]].spot_lm</c>
+            <c name="spx_rc_index">=\smarket_roll_foward[roll_foward_index[step]].spot_spx_rc</c>
+            <c name="dap_index">=\smarket_roll_foward[roll_foward_index[step]].spot_pimco</c>
+            <c name="pimbap_index">=market_roll_foward[roll_foward_index[step]].spot_pimbap</c>
+            <c name="ab_global_allocator_index">=market_roll_foward[roll_foward_index[step]].spot_ab_global_allocator</c>
+            <c name="dfa_index">=market_roll_foward[roll_foward_index[step]].spot_dfa</c>
+            <c name="invesco_index">=market_roll_foward[roll_foward_index[step]].spot_invesco</c>
+            <c name="jpm_mom_index">=market_roll_foward[roll_foward_index[step]].spot_jpm_mom</c>
+            <c name="jpm_qua_index">=market_roll_foward[roll_foward_index[step]].spot_jpm_qua</c>
+            <c name="jpm_asc_index">=market_roll_foward[roll_foward_index[step]].spot_jpm_asc</c>
+            <c name="index_spot">switch\shybrid_index\r\n
+\s\s\s\scase\s0:\s//\smlsb\r\n
+\s\s\s\s\s\s\s\sreturn\smlsb_index\r\n
+\s\s\s\scase\s1:\s//\spimco\r\n
+\s\s\s\s\s\s\s\sreturn\spimco_index\r\n
+\s\s\s\scase\s2:\s//\smseh\r\n
+\s\s\s\s\s\s\s\sreturn\smseh_index\r\n
+\s\s\s\scase\s3:\s//\spimco_gem\r\n
+\s\s\s\s\s\s\s\sreturn\spimco_gem_index\r\n
+\s\s\s\scase\s4:\s//\sab\r\n
+\s\s\s\s\s\s\s\sreturn\sab_index\r\n
+\s\s\s\scase\s5:\s//\saqr\r\n
+\s\s\s\s\s\s\s\sreturn\saqr_index\r\n
+\s\s\s\scase\s6:\s//\slegg\smason\r\n
+\s\s\s\s\s\s\s\sreturn\slm_index\r\n
+\s\s\s\scase\s7:\s//\sspx_rc\r\n
+\s\s\s\s\s\s\s\sreturn\sspx_rc_index\r\n
+\s\s\s\scase\s9:\r\n
+\s\s\s\s\s\s\s\sreturn\spimbap_index\r\n
+\s\s\s\scase\s10:\r\n
+\s\s\s\s\s\s\s\sreturn\sab_global_allocator_index\r\n
+\s\s\s\scase\s11:\r\n
+\s\s\s\s\s\s\s\sreturn\sdfa_index\r\n
+\s\s\s\scase\s12:\r\n
+\s\s\s\s\s\s\s\sreturn\sinvesco_index\r\n
+\s\s\s\scase\s13:\r\n
+\s\s\s\s\s\s\s\sreturn\sjpm_mom_index\r\n
+\s\s\s\scase\s14:\r\n
+\s\s\s\s\s\s\s\sreturn\sjpm_qua_index\r\n
+\s\s\s\scase\s15:\r\n
+\s\s\s\s\s\s\s\sreturn\sjpm_asc_index\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="index_forward">if\shybrid_index=-1\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb_libor[1],zcb_libor[2])\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\sreturn\sindex_forward(index_spot,\szcb_price,\sparams[hybrid_index].dealer_spread,\sparams[hybrid_index].index_cost,\sT,\sparams[hybrid_index].is_excess_return,\r\n
+\s\s\s\s\s\s\s\shybrid_index=0,\sweight_equity[hybrid_index],\sweight_bond[hybrid_index],\sspx_div[step])\s//\sfor\sMLSB\sforward\r\n
+end</c>
+            <c name="index_forward_1y_mlsb">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(mlsb_index,\szcb_price,\sparams[0].dealer_spread,\sparams[0].index_cost,\sT,\sparams[0].is_excess_return,\r\n
+\s\s\s\s\s\s\s\strue,\sweight_equity[0],\sweight_bond[0],\sspx_div[step])\s//\sfor\sMLSB\sforward</c>
+            <c name="index_forward_1y_pimco">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(pimco_index,\szcb_price,\sparams[1].dealer_spread,\sparams[1].index_cost,\sT,\sparams[1].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[1],\sweight_bond[1],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_ab">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(ab_index,\szcb_price,\sparams[4].dealer_spread,\sparams[4].index_cost,\sT,\sparams[4].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[4],\sweight_bond[4],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_mseh">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(mseh_index,\szcb_price,\sparams[2].dealer_spread,\sparams[2].index_cost,\sT,\sparams[2].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[2],\sweight_bond[2],\sspx_div[step])\s//\sfor\sMLSB\sforward</c>
+            <c name="index_forward_1y_pimco_gem">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(pimco_gem_index,\szcb_price,\sparams[3].dealer_spread,\sparams[3].index_cost,\sT,\sparams[3].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[3],\sweight_bond[3],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_spx_rc">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(spx_rc_index,\szcb_price,\sparams[7].dealer_spread,\sparams[7].index_cost,\sT,\sparams[7].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[7],\sweight_bond[7],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_lm">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(lm_index,\szcb_price,\sparams[6].dealer_spread,\sparams[6].index_cost,\sT,\sparams[6].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[6],\sweight_bond[6],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_aqr">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(aqr_index,\szcb_price,\sparams[5].dealer_spread,\sparams[5].index_cost,\sT,\sparams[5].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[5],\sweight_bond[5],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_ab_global">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(ab_global_allocator_index,\szcb_price,\sparams[10].dealer_spread,\sparams[10].index_cost,\sT,\sparams[10].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[10],\sweight_bond[10],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_pimbap">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(pimbap_index,\szcb_price,\sparams[9].dealer_spread,\sparams[9].index_cost,\sT,\sparams[9].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[9],\sweight_bond[9],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_dfa">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(dfa_index,\szcb_price,\sparams[11].dealer_spread,\sparams[11].index_cost,\sT,\sparams[11].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[11],\sweight_bond[11],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_mlsb">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(mlsb_index,\szcb_price,\sparams[0].dealer_spread,\sparams[0].index_cost,\sT,\sparams[0].is_excess_return,\r\n
+\s\s\s\s\s\s\s\strue,\sweight_equity[0],\sweight_bond[0],\sspx_div[step])\s//\sfor\sMLSB\sforward</c>
+            <c name="index_forward_2y_pimco">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(pimco_index,\szcb_price,\sparams[1].dealer_spread,\sparams[1].index_cost,\sT,\sparams[1].is_excess_return,\r\n
+\s\s\s\s\s\s\s\strue,\sweight_equity[1],\sweight_bond[1],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_ab">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(ab_index,\szcb_price,\sparams[4].dealer_spread,\sparams[4].index_cost,\sT,\sparams[4].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[4],\sweight_bond[4],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_mseh">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(mseh_index,\szcb_price,\sparams[2].dealer_spread,\sparams[2].index_cost,\sT,\sparams[2].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[2],\sweight_bond[2],\sspx_div[step])\s//\sfor\sMLSB\sforward</c>
+            <c name="index_forward_2y_pimco_gem">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(pimco_gem_index,\szcb_price,\sparams[3].dealer_spread,\sparams[3].index_cost,\sT,\sparams[3].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[3],\sweight_bond[3],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_spx_rc">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(spx_rc_index,\szcb_price,\sparams[7].dealer_spread,\sparams[7].index_cost,\sT,\sparams[7].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[7],\sweight_bond[7],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_lm">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(lm_index,\szcb_price,\sparams[6].dealer_spread,\sparams[6].index_cost,\sT,\sparams[6].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[6],\sweight_bond[6],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_aqr">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(aqr_index,\szcb_price,\sparams[5].dealer_spread,\sparams[5].index_cost,\sT,\sparams[5].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[5],\sweight_bond[5],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_ab_global">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(ab_global_allocator_index,\szcb_price,\sparams[10].dealer_spread,\sparams[10].index_cost,\sT,\sparams[10].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[10],\sweight_bond[10],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_pimbap">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(pimbap_index,\szcb_price,\sparams[9].dealer_spread,\sparams[9].index_cost,\sT,\sparams[9].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[9],\sweight_bond[9],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_dfa">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(dfa_index,\szcb_price,\sparams[11].dealer_spread,\sparams[11].index_cost,\sT,\sparams[11].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[11],\sweight_bond[11],\sspx_div[step])\s</c>
+            <c name="atm_call">if\shybrid_index=-1\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb[1],zcb[2])\r\n
+\s\s\s\sK=index_spot\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\svol\s=\sparams[hybrid_index].scale_factor\s*\sparams[hybrid_index].target_vol\r\n
+\s\s\s\sreturn\sblack_model(index_spot,\sK,\szcb_price,\sT,\svol,\sindex_forward)\r\n
+end</c>
+            <c name="atm_calls_par_rate">if\shybrid_index=-1\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb[1],zcb[2])\r\n
+\s\s\s\sK=index_spot\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\svol\s=\sparams[hybrid_index].scale_factor\s*\sparams[hybrid_index].target_vol\r\n
+\s\s\s\spar\s=\siif(hybrid_index=5\sor\shybrid_index=10,\sparticipation_rates_aqr_ab[$index],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\siif(hybrid_index=11,\sparticipation_rates_cliquet[$index],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparticipation_rates[$index]))\r\n
+\s\s\s\sreturn\sblack_model(index_spot,\sK,\szcb_price,\sT,\svol,\sindex_forward)*par\r\n
+end</c>
+            <c name="otm_calls">if\shybrid_index=-1\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb[1],zcb[2])\r\n
+\s\s\s\sK\s=\sindex_spot\s*\s(1\s+\screditing_term_post_ratesetting\s*\sotm_strike[$index])\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\svol\s=\sparams[hybrid_index].scale_factor\s*\sparams[hybrid_index].target_vol\r\n
+\s\s\s\sreturn\sblack_model(index_spot,\sK,\szcb_price,\sT,\svol,\sindex_forward)\r\n
+end</c>
+            <c name="forward_5yr_atm_par">if\s!is_annexus_5yr\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\sif\shybrid_index\s=\s2\sthen\r\n
+\s\s\s\s\s\s\s\sS\s=\smseh_index\r\n
+\s\s\s\s\s\s\s\sidx\s=\s0\r\n
+\s\s\s\s\s\s\s\scorr\s=\smseh_corr\r\n
+\s\s\s\selif\shybrid_index\s=\s3\sthen\r\n
+\s\s\s\s\s\s\s\sS\s=\spimco_gem_index\r\n
+\s\s\s\s\s\s\s\sidx\s=\s1\r\n
+\s\s\s\s\s\s\s\scorr\s=\spimco_gem_corr\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\sendif\r\n
+\s\s\s\sreturn\sS*long_dated_forward(drift_and_volatility[idx].drift_atm_par_rate[$index],\sdrift_and_volatility[idx].volatility_atm_par_rate[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\scorr,\shull_white_params.sigma_t[4,1],\shull_white_params.a)\r\n
+end</c>
+            <c name="x5_5yr_atm_par_cliquet">if\s!is_annexus_5yr\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\sif\shybrid_index\s=\s2\sthen\r\n
+\s\s\s\s\s\s\s\sS\s=\smseh_index\r\n
+\s\s\s\s\s\s\s\sidx\s=\s0\r\n
+\s\s\s\selif\shybrid_index\s=\s3\sthen\r\n
+\s\s\s\s\s\s\s\sS\s=\spimco_gem_index\r\n
+\s\s\s\s\s\s\s\sidx\s=\s1\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\sendif\r\n
+\s\s\s\sK\s=\sS\r\n
+\s\s\s\sT\s=\s5\r\n
+\s\s\s\svol\s=\sdrift_and_volatility[idx].volatility_atm_par_rate[$index]\r\n
+\s\s\s\sforward\s=\sforward_5yr_atm_par[$index]\r\n
+\s\s\s\sreturn\sblack_model(S,\sK,\sdf_5yr,\sT,\svol,\sforward)\r\n
+end</c>
+            <c name="renewed_otm_call">if\shybrid_index=-1\sor\s!reset_rate_now[step]\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb[1],zcb[2])\r\n
+\s\s\s\sK\s=\sindex_spot\s*\s(1\s+\screditing_term_post_ratesetting\s*\sdeclared_parameter)\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\svol\s=\sparams[hybrid_index].scale_factor\s*\sparams[hybrid_index].target_vol\r\n
+\s\s\s\sreturn\sblack_model(index_spot,\sK,\szcb_price,\sT,\svol,\sindex_forward)\r\n
+end</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=\sprev(step)\s+\s1</c>
+            <c name="bond_return_5y">=\sbond_price_5y\s/\sprev(bond_price_5y)\s-\s1</c>
+            <c name="bond_return_30y">=\sbond_price_30y\s/\sprev(bond_price_30y)\s-\s1</c>
+            <c name="equity_bond_covariance_5y">=\s-rho\s*\ssqrt(spx_variance)\s*\ssqrt(bond_variance_5y)</c>
+            <c name="equity_bond_covariance_30y">=\s-rho\s*\ssqrt(spx_variance)\s*\ssqrt(bond_variance_30y)</c>
+            <c name="money_market_return">=\smoney_market\s/\sprev(money_market)\s-\s1</c>
+            <c name="spx_return">=\sspx\s/\sprev(spx)\s-\s1</c>
+            <c name="sptr_return">=\ssptr\s/\sprev(sptr)\s-\s1</c>
+            <c name="equity_return">=\sscale_fac_t*(params[$index].equity_betas[0]\s*\s(sptr_return\s-\smoney_market_return\s-\siif(use_sofr,\sspx_funding_spread*dt[step],\s0))\r\n
+\s\s\s\s+\sparams[$index].equity_betas[1]\s*\s(bond_return_5y\s-\smoney_market_return)\r\n
+\s\s\s\s+\sparams[$index].equity_betas[2]\s*\s(bond_return_30y\s-\smoney_market_return)\r\n
+\s\s\s\s+\sparams[$index].equity_sigma\s*\sequity_basis[$index]*\ssqrt(dt[step]))\r\n
+\s\s\s\s-\sparams[$index].equity_fee\s*\sdt[step]\s\r\n
+\s\s\s\s+\siif(params[$index].equity_has_dividend,\s1,\s0)*\sparams[$index].equity_betas[0]\s*(spx_return\s-\ssptr_return)\r\n
+\s\s\s\s+\smoney_market_return</c>
+            <c name="bond_return">=\sscale_fac_t*(params[$index].bond_betas[0]\s*\s(sptr_return\s-\smoney_market_return\s-\siif(use_sofr,\sspx_funding_spread*dt[step],\s0))\r\n
+\s\s\s\s+\sparams[$index].bond_betas[1]\s*\s(bond_return_5y\s-\smoney_market_return)\r\n
+\s\s\s\s+\sparams[$index].bond_betas[2]\s*\s(bond_return_30y\s-\smoney_market_return)\r\n
+\s\s\s\s+\sparams[$index].bond_sigma\s*\sbond_basis[$index]*\ssqrt(dt[step]))\r\n
+\s\s\s\s-\sparams[$index].bond_fee\s*\sdt[step]\s+\smoney_market_return</c>
+            <c name="equity_variance">=\sparams[$index].equity_betas[0]\s^\s2\s*\sspx_variance\r\n
+\s\s\s\s+\sparams[$index].equity_betas[1]\s^\s2\s*\sbond_variance_5y\r\n
+\s\s\s\s+\sparams[$index].equity_betas[2]\s^\s2\s*\sbond_variance_30y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].equity_betas[0]\s*\sparams[$index].equity_betas[1]\s*\sequity_bond_covariance_5y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].equity_betas[0]\s*\sparams[$index].equity_betas[2]\s*\sequity_bond_covariance_30y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].equity_betas[1]\s*\sparams[$index].equity_betas[2]\s*\sbond_covariance_5y_30y\r\n
+\s\s\s\s+\s(params[$index].equity_sigma)\s^\s2</c>
+            <c name="bond_variance">=\sparams[$index].bond_betas[0]\s^\s2\s*\sspx_variance\r\n
+\s\s\s\s+\sparams[$index].bond_betas[1]\s^\s2\s*\sbond_variance_5y\r\n
+\s\s\s\s+\sparams[$index].bond_betas[2]\s^\s2\s*\sbond_variance_30y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].bond_betas[0]\s*\sparams[$index].bond_betas[1]\s*\sequity_bond_covariance_5y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].bond_betas[0]\s*\sparams[$index].bond_betas[2]\s*\sequity_bond_covariance_30y\r\n
+\s\s\s\s+\s2\s*\sparams[$index].bond_betas[1]\s*\sparams[$index].bond_betas[2]\s*\sbond_covariance_5y_30y\r\n
+\s\s\s\s+\s(params[$index].bond_sigma)\s^\s2</c>
+            <c name="equity_bond_covariance">=\sparams[$index].equity_betas[0]\s*\sparams[$index].bond_betas[0]\s*\sspx_variance\r\n
+\s\s\s\s+\sparams[$index].equity_betas[1]\s*\sparams[$index].bond_betas[1]\s*\sbond_variance_5y\r\n
+\s\s\s\s+\sparams[$index].equity_betas[2]\s*\sparams[$index].bond_betas[2]\s*\sbond_variance_30y\r\n
+\s\s\s\s+\s(params[$index].equity_betas[0]\s*\sparams[$index].bond_betas[1]\r\n
+\s\s\s\s+\sparams[$index].equity_betas[1]\s*\sparams[$index].bond_betas[0])\s*\sequity_bond_covariance_5y\r\n
+\s\s\s\s+\s(params[$index].equity_betas[0]\s*\sparams[$index].bond_betas[2]\r\n
+\s\s\s\s+\sparams[$index].equity_betas[2]\s*\sparams[$index].bond_betas[0])\s*\sequity_bond_covariance_30y\r\n
+\s\s\s\s+\s(params[$index].equity_betas[1]\s*\sparams[$index].bond_betas[2]\r\n
+\s\s\s\s+\sparams[$index].equity_betas[2]\s*\sparams[$index].bond_betas[1])\s*\sbond_covariance_5y_30y</c>
+            <c name="equity_sharp_ratio">=\siif($index\s=\s5,\ssqrt(equity_variance)\s+\s1.5\s*\sequity_bond_covariance\s/\ssqrt(equity_variance),\r\n
+\s\s\s\sparams[$index].equity_sharp_ratio)</c>
+            <c name="bond_sharp_ratio">=\siif($index\s=\s5,\sequity_bond_covariance\s/\ssqrt(bond_variance)\s+\s1.5\s*\ssqrt(bond_variance),\r\n
+\s\s\s\sparams[$index].bond_sharp_ratio)</c>
+            <c name="target_vol">if\s$index\s=\s13\sor\s$index\s=\s14\sthen\r\n
+\s\s\s\srand\s=\s0.5*(1+erf(target_vol_normal[$index-13]/sqrt(2)))\r\n
+\s\s\s\sif\scompare(rand\s&lt;\s0.20,\s1e-10)\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\sparams[$index].lower_target_vol\r\n
+\s\s\s\selif\scompare(rand\s&lt;0.55,\s1e-10)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sparams[$index].target_vol\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sparams[$index].upper_target_vol\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\sparams[$index].target_vol\s\s\r\n
+end</c>
+            <c name="weight_equity">=\scompute_weight(equity_variance,\sbond_variance,\sequity_bond_covariance,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].algorithm_type,\sparams[$index].target_vol,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sequity_sharp_ratio,\sbond_sharp_ratio,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].equity_weight_min,\sparams[$index].equity_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].bond_weight_min,\sparams[$index].bond_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].leverage_min,\sparams[$index].leverage_max,\sTrue,params[$index].fixed_bond_constraint)</c>
+            <c name="weight_bond">=\scompute_weight(equity_variance,\sbond_variance,\sequity_bond_covariance,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].algorithm_type,\sparams[$index].target_vol,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sequity_sharp_ratio,\sbond_sharp_ratio,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].equity_weight_min,\sparams[$index].equity_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].bond_weight_min,\sparams[$index].bond_weight_max,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sparams[$index].leverage_min,\sparams[$index].leverage_max,\sFalse,params[$index].fixed_bond_constraint)</c>
+            <c name="weight_cash">=\s1\s-\sweight_equity\s-\sweight_bond</c>
+            <c name="forecast_vol">=\ssqrt(equity_variance\s*\sweight_equity\s^\s2\s+\sbond_variance\s*\sweight_bond\s^\s2\r\n
+\s\s\s\s+\s2\s*\sequity_bond_covariance\s*\sweight_equity\s*\sweight_bond)</c>
+            <c name="scale_fac_t">//cap\sthe\sscale\sfactor\sto\s2\sto\savoid\slarge\sscale\sfactor\r\n
+if\s$index\s=\s13\sor\s$index\s=\s14\sthen\r\n
+\s\s\s\sreturn\smin(2,params[$index].scale_factor)\r\n
+else\r\n
+\s\s\s\sreturn\smin(2,params[$index].scale_factor*target_vol/prev(forecast_vol))\r\n
+end</c>
+            <c name="index_return">//\sMLSB\sonly\shas\sindex\sfee\son\sequity/bond\sbasket\r\n
+=\sprev(weight_equity)\s*\sequity_return\s+\sprev(weight_bond)\s*\sbond_return\r\n
+\s\s\s\s+\s(prev(weight_cash)\s-\siif(params[$index].is_excess_return,\s1,\s0))\s*\smoney_market_return\r\n
+\s\s\s\s+\siif(params[$index].is_excess_return,\s0,\siif(use_sofr,\smarket_shocks.libor_sofr_spread*dt[step],\s0))\r\n
+\s\s\s\s-\s(\r\n
+\s\s\s\siif(params[$index].equity_has_dividend,\sprev(weight_equity)\s+\sprev(weight_bond),\s1)\r\n
+\s\s\s\s*\sparams[$index].index_cost\s-\sparams[$index].dealer_spread\r\n
+\s\s\s\s)\s*\sdt[step]</c>
+            <c name="mlsb_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(mlsb_index)\s*\s(1\s+\sindex_return[0])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_mlsb\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_mlsb\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_mlsb\r\n
+endif</c>
+            <c name="pimco_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(pimco_index)\s*\s(1\s+\sindex_return[1])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_pimco\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_pimco\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_pimco\r\n
+endif</c>
+            <c name="mseh_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(mseh_index)\s*\s(1\s+\sindex_return[2])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_mseh\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_mseh\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_mseh\r\n
+endif</c>
+            <c name="pimco_gem_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(pimco_gem_index)\s*\s(1\s+\sindex_return[3])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_pimco_gem\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_pimco_gem\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_pimco_gem\r\n
+endif</c>
+            <c name="ab_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(ab_index)\s*\s(1\s+\sindex_return[4])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_ab\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_ab\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_ab\r\n
+endif</c>
+            <c name="aqr_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(aqr_index)\s*\s(1\s+\sindex_return[5])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_aqr\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_aqr\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_aqr\r\n
+endif</c>
+            <c name="lm_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(lm_index)\s*\s(1\s+\sindex_return[6])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_lm\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_lm\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_lm\r\n
+endif</c>
+            <c name="spx_rc_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(spx_rc_index)\s*\s(1\s+\sindex_return[7])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_spx_rc\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_spx_rc\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_spx_rc\r\n
+endif</c>
+            <c name="dap_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(dap_index)\s*\s(1\s+\sindex_return[8])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_dap\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_dap\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_dap\r\n
+endif</c>
+            <c name="pimbap_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(pimbap_index)\s*\s(1\s+\sindex_return[9])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_pimbap\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_pimbap\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_pimbap\r\n
+endif</c>
+            <c name="ab_global_allocator_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(ab_global_allocator_index)\s*\s(1\s+\sindex_return[10])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_ab_global_allocator\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_ab_global_allocator\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_ab_global_allocator\r\n
+endif</c>
+            <c name="dfa_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(dfa_index)\s*\s(1\s+\sindex_return[11])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_dfa\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_dfa\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_dfa\r\n
+endif</c>
+            <c name="invesco_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(invesco_index)\s*\s(1\s+\sindex_return[12])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_invesco\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_invesco\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_invesco\r\n
+endif</c>
+            <c name="jpm_mom_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(jpm_mom_index)\s*\s(1\s+\sindex_return[13])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_jpm_mom\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_jpm_mom\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_jpm_mom\r\n
+endif</c>
+            <c name="jpm_qua_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(jpm_qua_index)\s*\s(1\s+\sindex_return[14])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_jpm_qua\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_jpm_qua\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_jpm_qua\r\n
+endif</c>
+            <c name="jpm_asc_index">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\sprev(jpm_asc_index)\s*\s(1\s+\sindex_return[15])\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_jpm_asc\r\n
+elif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_jpm_asc\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_jpm_asc\r\n
+endif</c>
+            <c name="index_spot">switch\shybrid_index\r\n
+\s\s\s\scase\s0:\s//\smlsb\r\n
+\s\s\s\s\s\s\s\sreturn\smlsb_index\r\n
+\s\s\s\scase\s1:\s//\spimco\r\n
+\s\s\s\s\s\s\s\sreturn\spimco_index\r\n
+\s\s\s\scase\s2:\s//\smseh\r\n
+\s\s\s\s\s\s\s\sreturn\smseh_index\r\n
+\s\s\s\scase\s3:\s//\spimco_gem\r\n
+\s\s\s\s\s\s\s\sreturn\spimco_gem_index\r\n
+\s\s\s\scase\s4:\s//\sab\r\n
+\s\s\s\s\s\s\s\sreturn\sab_index\r\n
+\s\s\s\scase\s5:\s//\saqr\r\n
+\s\s\s\s\s\s\s\sreturn\saqr_index\r\n
+\s\s\s\scase\s6:\s//\slegg\smason\r\n
+\s\s\s\s\s\s\s\sreturn\slm_index\r\n
+\s\s\s\scase\s7:\s//\sspx_rc\r\n
+\s\s\s\s\s\s\s\sreturn\sspx_rc_index\r\n
+\s\s\s\scase\s9:\r\n
+\s\s\s\s\s\s\s\sreturn\spimbap_index\r\n
+\s\s\s\scase\s10:\r\n
+\s\s\s\s\s\s\s\sreturn\sab_global_allocator_index\r\n
+\s\s\s\scase\s11:\r\n
+\s\s\s\s\s\s\s\sreturn\sdfa_index\r\n
+\s\s\s\scase\s12:\r\n
+\s\s\s\s\s\s\s\sreturn\sinvesco_index\r\n
+\s\s\s\scase\s13:\r\n
+\s\s\s\s\s\s\s\sreturn\sjpm_mom_index\r\n
+\s\s\s\scase\s14:\r\n
+\s\s\s\s\s\s\s\sreturn\sjpm_qua_index\r\n
+\s\s\s\scase\s15:\r\n
+\s\s\s\s\s\s\s\sreturn\sjpm_asc_index\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="index_forward">if\shybrid_index=-1\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb_libor[1],zcb_libor[2])\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\sreturn\sindex_forward(index_spot,\szcb_price,\sparams[hybrid_index].dealer_spread,\sparams[hybrid_index].index_cost,\sT,\sparams[hybrid_index].is_excess_return,\s\r\n
+\s\s\s\s\s\s\s\shybrid_index=0,\sweight_equity[hybrid_index],\sweight_bond[hybrid_index],\sspx_div[step])\s//\sfor\sMLSB\sforward\r\n
+end</c>
+            <c name="index_forward_1y_mlsb">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(mlsb_index,\szcb_price,\sparams[0].dealer_spread,\sparams[0].index_cost,\sT,\sparams[0].is_excess_return,\r\n
+\s\s\s\s\s\s\s\strue,\sweight_equity[0],\sweight_bond[0],\sspx_div[step])\s//\sfor\sMLSB\sforward</c>
+            <c name="index_forward_1y_pimco">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(pimco_index,\szcb_price,\sparams[1].dealer_spread,\sparams[1].index_cost,\sT,\sparams[1].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[1],\sweight_bond[1],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_ab">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(ab_index,\szcb_price,\sparams[4].dealer_spread,\sparams[4].index_cost,\sT,\sparams[4].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[4],\sweight_bond[4],\sspx_div[step])</c>
+            <c name="index_forward_1y_mseh">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(mseh_index,\szcb_price,\sparams[2].dealer_spread,\sparams[2].index_cost,\sT,\sparams[2].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[2],\sweight_bond[2],\sspx_div[step])\s//\sfor\sMLSB\sforward</c>
+            <c name="index_forward_1y_pimco_gem">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(pimco_gem_index,\szcb_price,\sparams[3].dealer_spread,\sparams[3].index_cost,\sT,\sparams[3].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[3],\sweight_bond[3],\sspx_div[step])\s//\sfor\sMLSB\sforward</c>
+            <c name="index_forward_1y_spx_rc">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(spx_rc_index,\szcb_price,\sparams[7].dealer_spread,\sparams[7].index_cost,\sT,\sparams[7].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[7],\sweight_bond[7],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_lm">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(lm_index,\szcb_price,\sparams[6].dealer_spread,\sparams[6].index_cost,\sT,\sparams[6].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[6],\sweight_bond[6],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_aqr">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(aqr_index,\szcb_price,\sparams[5].dealer_spread,\sparams[5].index_cost,\sT,\sparams[5].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[5],\sweight_bond[5],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_ab_global">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(ab_global_allocator_index,\szcb_price,\sparams[10].dealer_spread,\sparams[10].index_cost,\sT,\sparams[10].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[10],\sweight_bond[10],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_pimbap">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(pimbap_index,\szcb_price,\sparams[9].dealer_spread,\sparams[9].index_cost,\sT,\sparams[9].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[9],\sweight_bond[9],\sspx_div[step])\s</c>
+            <c name="index_forward_1y_dfa">zcb_price\s=\szcb_libor[1]\r\n
+\s\s\s\sT\s=\s1\r\n
+\s\s\s\sreturn\sindex_forward(dfa_index,\szcb_price,\sparams[11].dealer_spread,\sparams[11].index_cost,\sT,\sparams[11].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[11],\sweight_bond[11],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_mlsb">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(mlsb_index,\szcb_price,\sparams[0].dealer_spread,\sparams[0].index_cost,\sT,\sparams[0].is_excess_return,\r\n
+\s\s\s\s\s\s\s\strue,\sweight_equity[0],\sweight_bond[0],\sspx_div[step])\s//\sfor\sMLSB\sforward</c>
+            <c name="index_forward_2y_pimco">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(pimco_index,\szcb_price,\sparams[1].dealer_spread,\sparams[1].index_cost,\sT,\sparams[1].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[1],\sweight_bond[1],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_ab">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(ab_index,\szcb_price,\sparams[4].dealer_spread,\sparams[4].index_cost,\sT,\sparams[4].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[4],\sweight_bond[4],\sspx_div[step])</c>
+            <c name="index_forward_2y_mseh">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(mseh_index,\szcb_price,\sparams[2].dealer_spread,\sparams[2].index_cost,\sT,\sparams[2].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[2],\sweight_bond[2],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_pimco_gem">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(pimco_gem_index,\szcb_price,\sparams[3].dealer_spread,\sparams[3].index_cost,\sT,\sparams[3].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[3],\sweight_bond[3],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_spx_rc">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(spx_rc_index,\szcb_price,\sparams[7].dealer_spread,\sparams[7].index_cost,\sT,\sparams[7].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[7],\sweight_bond[7],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_lm">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(lm_index,\szcb_price,\sparams[6].dealer_spread,\sparams[6].index_cost,\sT,\sparams[6].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[6],\sweight_bond[6],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_aqr">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(aqr_index,\szcb_price,\sparams[5].dealer_spread,\sparams[5].index_cost,\sT,\sparams[5].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[5],\sweight_bond[5],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_ab_global">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(ab_global_allocator_index,\szcb_price,\sparams[10].dealer_spread,\sparams[10].index_cost,\sT,\sparams[10].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[10],\sweight_bond[10],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_pimbap">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(pimbap_index,\szcb_price,\sparams[9].dealer_spread,\sparams[9].index_cost,\sT,\sparams[9].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[9],\sweight_bond[9],\sspx_div[step])\s</c>
+            <c name="index_forward_2y_dfa">zcb_price\s=\szcb_libor[2]\r\n
+\s\s\s\sT\s=\s2\r\n
+\s\s\s\sreturn\sindex_forward(dfa_index,\szcb_price,\sparams[11].dealer_spread,\sparams[11].index_cost,\sT,\sparams[11].is_excess_return,\r\n
+\s\s\s\s\s\s\s\sfalse,\sweight_equity[11],\sweight_bond[11],\sspx_div[step])\s</c>
+            <c name="atm_call">if\shybrid_index=-1\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb[1],zcb[2])\r\n
+\s\s\s\sK=index_spot\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\svol\s=\sparams[hybrid_index].scale_factor\s*\sparams[hybrid_index].target_vol\r\n
+\s\s\s\sreturn\sblack_model(index_spot,\sK,\szcb_price,\sT,\svol,\sindex_forward)\r\n
+end</c>
+            <c name="atm_calls_par_rate">if\shybrid_index=-1\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb[1],zcb[2])\r\n
+\s\s\s\sK=index_spot\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\svol\s=\sparams[hybrid_index].scale_factor\s*\sparams[hybrid_index].target_vol\r\n
+\s\s\s\spar\s=\siif(hybrid_index=5\sor\shybrid_index=10,\sparticipation_rates_aqr_ab[$index],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\siif(hybrid_index=11,\sparticipation_rates_cliquet[$index],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparticipation_rates[$index]))\r\n
+\s\s\s\sreturn\sblack_model(index_spot,\sK,\szcb_price,\sT,\svol,\sindex_forward)*par\r\n
+end</c>
+            <c name="otm_calls">if\shybrid_index=-1\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb[1],zcb[2])\r\n
+\s\s\s\sK\s=\sindex_spot\s*\s(1\s+\screditing_term_post_ratesetting\s*\sotm_strike[$index])\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\svol\s=\sparams[hybrid_index].scale_factor\s*\sparams[hybrid_index].target_vol\r\n
+\s\s\s\sreturn\sblack_model(index_spot,\sK,\szcb_price,\sT,\svol,\sindex_forward)\r\n
+end</c>
+            <c name="forward_5yr_atm_par">if\s!is_annexus_5yr\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\sif\shybrid_index\s=\s2\sthen\r\n
+\s\s\s\s\s\s\s\sS\s=\smseh_index\r\n
+\s\s\s\s\s\s\s\sidx\s=\s0\r\n
+\s\s\s\s\s\s\s\scorr\s=\smseh_corr\r\n
+\s\s\s\selif\shybrid_index\s=\s3\sthen\r\n
+\s\s\s\s\s\s\s\sS\s=\spimco_gem_index\r\n
+\s\s\s\s\s\s\s\sidx\s=\s1\r\n
+\s\s\s\s\s\s\s\scorr\s=\spimco_gem_corr\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\sendif\r\n
+\s\s\s\sreturn\sS*long_dated_forward(drift_and_volatility[idx].drift_atm_par_rate[$index],\sdrift_and_volatility[idx].volatility_atm_par_rate[$index],\s5,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\scorr,\shull_white_params.sigma_t[4,1],\shull_white_params.a)\r\n
+end</c>
+            <c name="x5_5yr_atm_par_cliquet">if\s!is_annexus_5yr\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\sif\shybrid_index\s=\s2\sthen\r\n
+\s\s\s\s\s\s\s\sS\s=\smseh_index\r\n
+\s\s\s\s\s\s\s\sidx\s=\s0\r\n
+\s\s\s\selif\shybrid_index\s=\s3\sthen\r\n
+\s\s\s\s\s\s\s\sS\s=\spimco_gem_index\r\n
+\s\s\s\s\s\s\s\sidx\s=\s1\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\sendif\r\n
+\s\s\s\sK\s=\sS\r\n
+\s\s\s\sT\s=\s5\r\n
+\s\s\s\svol\s=\sdrift_and_volatility[idx].volatility_atm_par_rate[$index]\r\n
+\s\s\s\sforward\s=\sforward_5yr_atm_par[$index]\r\n
+\s\s\s\sreturn\sblack_model(S,\sK,\sdf_5yr,\sT,\svol,\sforward)\r\n
+end</c>
+            <c name="renewed_otm_call">if\shybrid_index=-1\sor\s!reset_rate_now[step]\r\n
+\s\s\s\sthen\sreturn\s0\r\n
+else\r\n
+\s\s\s\szcb_price\s=\siif(crediting_term_post_ratesetting=1,\szcb[1],zcb[2])\r\n
+\s\s\s\sK\s=\sindex_spot\s*\s(1\s+\screditing_term_post_ratesetting\s*\sdeclared_parameter)\r\n
+\s\s\s\sT=crediting_term_post_ratesetting\r\n
+\s\s\s\svol\s=\sparams[hybrid_index].scale_factor\s*\sparams[hybrid_index].target_vol\r\n
+\s\s\s\sreturn\sblack_model(index_spot,\sK,\szcb_price,\sT,\svol,\sindex_forward)\r\n
+end</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="ab_global_allocator_index" formattype="General" width="80" />
+      <c name="ab_index" formattype="General" width="80" />
+      <c name="aqr_index" formattype="General" width="80" />
+      <c name="atm_call" formattype="General" width="80" />
+      <c name="atm_calls_par_rate[0]" formattype="General" width="80" />
+      <c name="bond_return" formattype="General" width="80" />
+      <c name="bond_return_30y" formattype="General" width="80" />
+      <c name="bond_return_5y" formattype="General" width="144.2642642642644" />
+      <c name="bond_sharp_ratio" formattype="General" width="80" />
+      <c name="bond_variance[0]" formattype="General" width="80" />
+      <c name="dap_index" formattype="General" width="80" />
+      <c name="dfa_index" formattype="General" width="80" />
+      <c name="equity_bond_covariance[0]" formattype="General" width="80" />
+      <c name="equity_bond_covariance_30y" formattype="General" width="80" />
+      <c name="equity_bond_covariance_5y" formattype="General" width="80" />
+      <c name="equity_return" formattype="General" width="80" />
+      <c name="equity_sharp_ratio[0]" formattype="General" width="80" />
+      <c name="equity_variance[0]" formattype="General" width="80" />
+      <c name="forecast_vol[0]" formattype="General" width="80" />
+      <c name="forward_5yr_atm_par[0]" formattype="General" width="80" />
+      <c name="index_forward" formattype="General" width="80" />
+      <c name="index_forward_1y_ab[0]" formattype="General" width="80" />
+      <c name="index_forward_1y_ab_global[0]" formattype="General" width="80" />
+      <c name="index_forward_1y_aqr[0]" formattype="General" width="80" />
+      <c name="index_forward_1y_dfa[0]" formattype="General" width="80" />
+      <c name="index_forward_1y_lm[0]" formattype="General" width="80" />
+      <c name="index_forward_1y_mlsb" formattype="General" width="80" />
+      <c name="index_forward_1y_mseh[0]" formattype="General" width="80" />
+      <c name="index_forward_1y_pimbap[0]" formattype="General" width="80" />
+      <c name="index_forward_1y_pimco" formattype="General" width="80" />
+      <c name="index_forward_1y_pimco_gem[0]" formattype="General" width="80" />
+      <c name="index_forward_1y_spx_rc[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_ab[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_ab_global[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_aqr[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_dfa[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_lm[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_mlsb[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_mseh[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_pimbap[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_pimco[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_pimco_gem[0]" formattype="General" width="80" />
+      <c name="index_forward_2y_spx_rc[0]" formattype="General" width="80" />
+      <c name="index_return[0]" formattype="General" width="80" />
+      <c name="index_spot" formattype="General" width="80" />
+      <c name="invesco_index" formattype="General" width="80" />
+      <c name="jpm_asc_index" formattype="General" width="80" />
+      <c name="jpm_mom_index" formattype="General" width="80" />
+      <c name="jpm_qua_index" formattype="General" width="80" />
+      <c name="lm_index" formattype="General" width="80" />
+      <c name="mlsb_index" formattype="General" width="80" />
+      <c name="money_market_return" formattype="General" width="80" />
+      <c name="mseh_index" formattype="General" width="80" />
+      <c name="otm_calls[0]" formattype="General" width="80" />
+      <c name="pimbap_index" formattype="General" width="80" />
+      <c name="pimco_gem_index" formattype="General" width="80" />
+      <c name="pimco_index" formattype="General" width="80" />
+      <c name="renewed_otm_call" formattype="General" width="80" />
+      <c name="scale_fac_t[0]" formattype="General" width="80" />
+      <c name="sptr_return[0]" formattype="General" width="80" />
+      <c name="spx_rc_index" formattype="General" width="80" />
+      <c name="spx_return" formattype="General" width="80" />
+      <c name="step" formattype="General" width="80" />
+      <c name="target_vol[0]" formattype="General" width="80" />
+      <c name="weight_bond[0]" formattype="General" width="80" />
+      <c name="weight_cash[0]" formattype="General" width="80" />
+      <c name="weight_equity[0]" formattype="General" width="80" />
+      <c name="x5_5yr_atm_par_cliquet[0]" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

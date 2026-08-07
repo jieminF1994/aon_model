@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="Gaap" version="master" format-version="20">
+  <inputs>
+    <input name="snfl_growth_rate" type="real" />
+    <input name="accum_withdrawal_history" type="real" />
+    <input name="initial_premium" type="real" />
+    <input name="df" type="real" modifier="Cashflow" />
+    <input name="df_npa_at_issue" type="real" modifier="Cashflow" />
+    <input name="df_npa_total_curve" type="real" modifier="Cashflow" />
+    <input name="host_rate_net" type="real" />
+    <input name="t" type="real" shape="*" />
+    <input name="surrender_charge_rate" type="real" shape="*" />
+    <input name="accum_fee_history" type="real" />
+    <input name="index_min_withdrawal_value" type="real" />
+    <input name="time_dt" type="real" shape="*" description="The length of the time period (in year)" />
+    <input name="launch_db_this_period" type="bool" modifier="Cashflow" />
+    <input name="lapse_this_period" type="bool" modifier="Cashflow" />
+    <input name="account_value_post_interest_credit" type="real" modifier="Cashflow" />
+    <input name="ann_fac_terminal" type="real" modifier="Cashflow" />
+    <input name="policy_inforce_ind_eop" type="int" modifier="Cashflow" />
+    <input name="pip_last" type="real" modifier="Cashflow" />
+    <input name="num_steps" type="int" />
+    <input name="mva_on_lapse" type="real" modifier="Cashflow" />
+    <input name="is_rider_multiplier" type="bool" />
+    <input name="net_withdrawal" type="real" modifier="Cashflow" />
+    <input name="net_withdrawal_less_mva" type="real" modifier="Cashflow" />
+    <input name="AvailableFWA" type="real" modifier="Cashflow" />
+    <input name="withdrawal_total" type="real" modifier="Cashflow" />
+    <input name="account_value_post_glb_fee" type="real" modifier="Cashflow" />
+    <input name="rider_fee" type="real" modifier="Cashflow" />
+    <input name="strategy_fee" type="real" modifier="Cashflow" />
+    <input name="gaap_claim_type" type="int" />
+    <input name="interest_credit_amount_pro_rata" type="real" modifier="Cashflow" />
+    <input name="investment_account" type="int" />
+    <input name="living_benefit_elected" type="bool" />
+    <input name="credit_interest_now" type="bool" modifier="Cashflow" />
+    <input name="is_after_maturity_date" type="bool" modifier="Cashflow" />
+    <input name="pip_rate" type="real" modifier="Cashflow" />
+    <input name="income_base_step_up" type="real" modifier="Cashflow" />
+    <input name="apply_lad" type="bool" />
+    <input name="is_annexus" type="bool" />
+    <input name="strategy_value" type="real" modifier="Cashflow" />
+    <input name="death_benefit" type="real" modifier="Cashflow" />
+    <input name="is_rider_income_builder" type="bool" />
+    <input name="minimum_accumulation_value_post_growth" type="real" modifier="Cashflow" />
+    <input name="is_mav_product" type="bool" />
+    <input name="minimum_growth_rate" type="real" />
+    <input name="minimum_accumulation_value" type="real" />
+    <input name="is_guardian" type="bool" />
+    <input name="pro_rata_RiderFee" type="real" modifier="Cashflow" />
+    <input name="cf_lad_host" type="real" modifier="Cashflow" />
+    <input name="cf_lad_index_credit" type="real" modifier="Cashflow" />
+    <input name="cf_lad_claim" type="real" modifier="Cashflow" />
+    <input name="is_lad_period" type="bool" modifier="Cashflow" />
+    <input name="lad_mawa" type="real" modifier="Cashflow" />
+    <input name="lad_pip" type="real" modifier="Cashflow" />
+    <input name="cash_surrender_value" type="real" modifier="Cashflow" />
+    <input name="cf_lad_claim_ex_credit" type="real" modifier="Cashflow" />
+    <input name="cf_lad_index_credit_ex_credit" type="real" modifier="Cashflow" />
+    <input name="cf_lad_claim_ex_total_curve" type="real" modifier="Cashflow" />
+    <input name="cf_lad_index_credit_ex_total_curve" type="real" modifier="Cashflow" />
+    <input name="is_after_valuation_date" type="bool" modifier="Cashflow" />
+    <input name="cf_lad_index_credit_nippon_life" type="real" modifier="Cashflow" />
+    <input name="cf_lad_claim_nippon_life" type="real" modifier="Cashflow" />
+    <input name="df_npa_nippon_life" type="real" modifier="Cashflow" />
+  </inputs>
+  <results>
+    <result name="withdrawal_over_guaranteed" ref="=Projection.withdrawal_over_guaranteed" />
+    <result name="pv_ed" ref="=Projection.pv_ed" />
+    <result name="pv_host" ref="=Projection.pv_host_net" />
+    <result name="pv_liability" ref="=Projection.pv_liability" />
+    <result name="accum_cf_host" ref="=Projection.accum_cf_host" />
+    <result name="cf_claims" ref="=Projection.cf_claims" />
+    <result name="cf_guaranteed_av_death" ref="=Projection.cf_guaranteed_av_death" />
+    <result name="cf_guaranteed_av_lapse" ref="=Projection.cf_guaranteed_av_lapse" />
+    <result name="cf_host_withdrawal" ref="=Projection.cf_host_withdrawal" />
+    <result name="cf_index_credit_total" ref="=Projection.cf_index_credit_total" />
+    <result name="cf_index_credit_withdrawal" ref="=Projection.cf_index_credit_withdrawal" />
+    <result name="cf_terminal_claim" ref="=Projection.cf_terminal_claim" />
+    <result name="cf_terminal_host" ref="=Projection.cf_terminal_host" />
+    <result name="cf_terminal_index_credit" ref="=Projection.cf_terminal_index_credit" />
+    <result name="cf_total_av_death" ref="=Projection.cf_total_av_death" />
+    <result name="cf_total_av_lapse" ref="=Projection.cf_total_av_lapse" />
+    <result name="claims_amount" ref="=Projection.claims_amount" />
+    <result name="excess_account_value" ref="=Projection.excess_account_value" />
+    <result name="guaranteed_account_value_death" ref="=Projection.guaranteed_account_value_death" />
+    <result name="guaranteed_account_value_lapse" ref="=Projection.guaranteed_account_value_lapse" />
+    <result name="guaranteed_withdrawal" ref="=Projection.guaranteed_withdrawal" />
+    <result name="host_df" ref="=Projection.host_df_net" />
+    <result name="premium" ref="=Projection.premium" />
+    <result name="pv_claims" ref="=Projection.pv_claims" />
+    <result name="pv_index_credit" ref="=Projection.pv_index_credit" />
+    <result name="snfl_mwv" ref="=Projection.snfl_mwv_mav_bop" />
+    <result name="total_account_value_death" ref="=Projection.total_account_value_death" />
+    <result name="total_account_value_lapse" ref="=Projection.total_account_value_lapse" />
+    <result name="pv_db_claims" ref="=Projection.pv_db_claims" />
+    <result name="pv_claims_ex_credit" ref="=Projection.pv_claims_ex_credit" />
+    <result name="pv_ed_ex_credit" ref="=Projection.pv_ed_ex_credit" />
+    <result name="pv_claims_ex_total_curve" ref="=Projection.pv_claims_ex_total_curve" />
+    <result name="pv_ed_ex_total_curve" ref="=Projection.pv_ed_ex_total_curve" />
+    <result name="roll_forward_accum_cf_claims" ref="=Projection.roll_forward_accum_cf_claims" />
+    <result name="roll_forward_accum_cf_ed" ref="=Projection.roll_forward_accum_cf_ed" />
+    <result name="roll_forward_accum_cf_host" ref="=Projection.roll_forward_accum_cf_host" />
+    <result name="pv_claims_nippon_life" ref="=Projection.pv_claims_nippon_life" />
+    <result name="pv_ed_nippon_life" ref="=Projection.pv_ed_nippon_life" />
+  </results>
+  <calculations>
+    <table name="Projection" type="CashFlow">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="snfl_mwv_mav_bop" datatype="real" />
+        <c name="snfl_mwv_mav_post_growth" datatype="real" />
+        <c name="snfl_mwv_mav_post_growth_sc" description="MAV adjused for SC" datatype="real" />
+        <c name="snfl_mwv_mav_post_withdrawal" datatype="real" />
+        <c name="premium" datatype="real" />
+        <c name="guaranteed_account_value_lapse" datatype="real" />
+        <c name="guaranteed_account_value_death" datatype="real" />
+        <c name="total_account_value_lapse" datatype="real" />
+        <c name="total_account_value_death" datatype="real" />
+        <c name="excess_account_value" datatype="real" />
+        <c name="guaranteed_withdrawal" datatype="real" />
+        <c name="withdrawal_over_guaranteed" datatype="real" />
+        <c name="claims_amount" datatype="real" />
+        <c name="death_claim" datatype="real" />
+        <c name="host_df_net" datatype="real" />
+        <c name="cf_guaranteed_av_lapse" datatype="real" />
+        <c name="cf_guaranteed_av_death" datatype="real" />
+        <c name="cf_total_av_lapse" datatype="real" />
+        <c name="cf_total_av_death" datatype="real" />
+        <c name="cf_host_withdrawal" datatype="real" />
+        <c name="cf_index_credit_withdrawal" datatype="real" />
+        <c name="cf_terminal_host" datatype="real" />
+        <c name="cf_terminal_index_credit" datatype="real" />
+        <c name="cf_terminal_claim" datatype="real" />
+        <c name="cf_host_total" datatype="real" />
+        <c name="cf_index_credit_total" datatype="real" />
+        <c name="cf_index_credit_total_ex_credit" datatype="real" />
+        <c name="cf_index_credit_total_nippon_life" datatype="real" />
+        <c name="cf_index_credit_total_ex_total_curve" datatype="real" />
+        <c name="cf_claims" datatype="real" />
+        <c name="cf_claims_ex_credit" datatype="real" />
+        <c name="cf_claims_nippon_life" datatype="real" />
+        <c name="cf_claims_ex_total_curve" datatype="real" />
+        <c name="accum_cf_host" datatype="real" />
+        <c name="roll_forward_accum_cf_host" datatype="real" />
+        <c name="roll_forward_accum_cf_ed" datatype="real" />
+        <c name="roll_forward_accum_cf_claims" datatype="real" />
+        <c name="pv_host_net" datatype="real" />
+        <c name="pv_index_credit" datatype="real" />
+        <c name="pv_claims" datatype="real" />
+        <c name="pv_ed" datatype="real" />
+        <c name="pv_liability" datatype="real" />
+        <c name="pv_db_claims" datatype="real" />
+        <c name="pv_claims_ex_credit" datatype="real" />
+        <c name="pv_index_credit_ex_credit" datatype="real" />
+        <c name="pv_ed_ex_credit" datatype="real" />
+        <c name="pv_claims_nippon_life" datatype="real" />
+        <c name="pv_index_credit_nippon_life" datatype="real" />
+        <c name="pv_ed_nippon_life" datatype="real" />
+        <c name="pv_claims_ex_total_curve" datatype="real" />
+        <c name="pv_index_credit_ex_total_curve" datatype="real" />
+        <c name="pv_ed_ex_total_curve" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=\s0</c>
+            <c name="snfl_mwv_mav_bop">=\siif(is_mav_product,\sminimum_accumulation_value,\sindex_min_withdrawal_value)\r\n
+</c>
+            <c name="snfl_mwv_mav_post_growth">if\sis_mav_product\sthen\r\n
+    return\ssnfl_mwv_mav_bop\s*\s(1\s+\sminimum_growth_rate)\s^\stime_dt[step]\r\n
+else\r\n
+    return\ssnfl_mwv_mav_bop\s*\s(1\s+\ssnfl_growth_rate)\s^\stime_dt[step]\r\n
+end</c>
+            <c name="snfl_mwv_mav_post_growth_sc">if\sis_mav_product\sthen\r\n
+\s\s\s\sreturn\ssnfl_mwv_mav_post_growth\s-\s(snfl_mwv_mav_post_growth\s-\sAvailableFWA)*\ssurrender_charge_rate[step]\r\n
+else\s\r\n
+\s\s\s\sreturn\ssnfl_mwv_mav_post_growth\r\n
+end\s</c>
+            <c name="snfl_mwv_mav_post_withdrawal">=\smax(snfl_mwv_mav_post_growth\s-\sguaranteed_withdrawal,\s0)</c>
+            <c name="premium">=\smax(0,\sinitial_premium\s-\saccum_withdrawal_history\s-\saccum_fee_history)</c>
+            <c name="guaranteed_account_value_lapse">=\smax((1\s-\s0.9\s*\ssurrender_charge_rate[step])\s*\spremium,\ssnfl_mwv_mav_post_growth_sc)</c>
+            <c name="guaranteed_account_value_death">=\smax(guaranteed_account_value_lapse,\smax(premium,\ssnfl_mwv_mav_post_growth))</c>
+            <c name="total_account_value_lapse">=\smax(account_value_post_glb_fee,\sguaranteed_account_value_lapse)</c>
+            <c name="total_account_value_death">=\smax(total_account_value_lapse,\smax(snfl_mwv_mav_post_growth,\s\r\n
+\s\s\s\siif(is_annexus,\sstrategy_value,\saccount_value_post_interest_credit\r\n
+\s\s\s\s+\siif(credit_interest_now,\s0,\sinterest_credit_amount_pro_rata))))</c>
+            <c name="excess_account_value">=\smax(account_value_post_glb_fee\s-\ssnfl_mwv_mav_post_growth,\s0)</c>
+            <c name="guaranteed_withdrawal">=\s0</c>
+            <c name="withdrawal_over_guaranteed">=\s0</c>
+            <c name="claims_amount"></c>
+            <c name="death_claim">=\s0</c>
+            <c name="host_df_net">=\s(1\s+\shost_rate_net)\s^\s(-t[step])</c>
+            <c name="cf_guaranteed_av_lapse">=\s0</c>
+            <c name="cf_guaranteed_av_death">=\s0</c>
+            <c name="cf_total_av_lapse">=\s0</c>
+            <c name="cf_total_av_death">=\s0</c>
+            <c name="cf_host_withdrawal">=\s0</c>
+            <c name="cf_index_credit_withdrawal">=\s0</c>
+            <c name="cf_terminal_host">=0</c>
+            <c name="cf_terminal_index_credit">=0</c>
+            <c name="cf_terminal_claim">=0</c>
+            <c name="cf_host_total">=\scf_guaranteed_av_lapse\s+\scf_guaranteed_av_death\s+\scf_host_withdrawal\s+\scf_terminal_host\r\n
+\s\s\s\s+\siif(investment_account\s==\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit,\s0)</c>
+            <c name="cf_index_credit_total">=\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)</c>
+            <c name="cf_index_credit_total_ex_credit">=\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)</c>
+            <c name="cf_index_credit_total_nippon_life">=\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)</c>
+            <c name="cf_index_credit_total_ex_total_curve">=\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)</c>
+            <c name="cf_claims">=\s0</c>
+            <c name="cf_claims_ex_credit">=0</c>
+            <c name="cf_claims_nippon_life">=0</c>
+            <c name="cf_claims_ex_total_curve">=0</c>
+            <c name="accum_cf_host">=\scf_host_total</c>
+            <c name="roll_forward_accum_cf_host">=\siif(is_after_valuation_date,\s0,\scf_host_total)</c>
+            <c name="roll_forward_accum_cf_ed">=\siif(is_after_valuation_date,\s0,\scf_index_credit_total)</c>
+            <c name="roll_forward_accum_cf_claims">=\siif(is_after_valuation_date,\s0,\scf_claims)</c>
+            <c name="pv_host_net">=\shost_df_net\s*\scf_host_total</c>
+            <c name="pv_index_credit">=\sdf\s*\scf_index_credit_total</c>
+            <c name="pv_claims">=\sdf\s*\scf_claims</c>
+            <c name="pv_ed">=\spv_index_credit\s+\siif(gaap_claim_type\s=\s0\sor\s(gaap_claim_type\s=\s1\sand\sis_rider_multiplier),\r\n
+\s\s\s\spv_claims,\s0)</c>
+            <c name="pv_liability">=\spv_host_net\s+\spv_index_credit\s+\spv_claims</c>
+            <c name="pv_db_claims">=\s0</c>
+            <c name="pv_claims_ex_credit">=\sdf_npa_at_issue\s*\scf_claims_ex_credit</c>
+            <c name="pv_index_credit_ex_credit">=\sdf_npa_at_issue\s*\scf_index_credit_total_ex_credit</c>
+            <c name="pv_ed_ex_credit">=\spv_index_credit_ex_credit\s+\siif(gaap_claim_type\s=\s0\sor\s(gaap_claim_type\s=\s1\sand\sis_rider_multiplier),\r\n
+\s\s\s\spv_claims_ex_credit,\s0)</c>
+            <c name="pv_claims_nippon_life">=\sdf_npa_nippon_life\s*\scf_claims_nippon_life</c>
+            <c name="pv_index_credit_nippon_life">=\sdf_npa_nippon_life\s*\scf_index_credit_total_nippon_life</c>
+            <c name="pv_ed_nippon_life">=\spv_index_credit_nippon_life\s+\siif(gaap_claim_type\s=\s0\sor\s(gaap_claim_type\s=\s1\sand\sis_rider_multiplier),\r\n
+\s\s\s\spv_claims_nippon_life,\s0)</c>
+            <c name="pv_claims_ex_total_curve">=\sdf_npa_total_curve\s*\scf_claims_ex_total_curve</c>
+            <c name="pv_index_credit_ex_total_curve">=\sdf_npa_total_curve\s*\scf_index_credit_total_ex_total_curve</c>
+            <c name="pv_ed_ex_total_curve">=\spv_index_credit_ex_total_curve\s+\siif(gaap_claim_type\s=\s0\sor\s(gaap_claim_type\s=\s1\sand\sis_rider_multiplier),\r\n
+\s\s\s\spv_claims_ex_total_curve,\s0)</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=\sprev(step)\s+\s1</c>
+            <c name="snfl_mwv_mav_bop">=\sprev(snfl_mwv_mav_post_withdrawal)</c>
+            <c name="snfl_mwv_mav_post_growth">if\sis_mav_product\sthen\r\n
+    return\ssnfl_mwv_mav_bop\s*\s(1\s+\sminimum_growth_rate)\s^\stime_dt[step]\r\n
+else\r\n
+    return\ssnfl_mwv_mav_bop\s*\s(1\s+\ssnfl_growth_rate)\s^\stime_dt[step]\r\n
+end</c>
+            <c name="snfl_mwv_mav_post_growth_sc">if\sis_mav_product\sthen\r\n
+\s\s\s\sreturn\ssnfl_mwv_mav_post_growth\s-\s(snfl_mwv_mav_post_growth\s-\sAvailableFWA)*\ssurrender_charge_rate[step]\r\n
+else\s\r\n
+\s\s\s\sreturn\ssnfl_mwv_mav_post_growth\r\n
+end</c>
+            <c name="snfl_mwv_mav_post_withdrawal">=\smax(snfl_mwv_mav_post_growth\s-\sguaranteed_withdrawal,\s0)</c>
+            <c name="premium">=\smax(0,\sprev(premium)\s-\srider_fee\s-\snet_withdrawal\s-\sstrategy_fee)</c>
+            <c name="guaranteed_account_value_lapse">=\smax((1\s-\s0.9\s*\ssurrender_charge_rate[step])\s*\spremium,\ssnfl_mwv_mav_post_growth_sc)</c>
+            <c name="guaranteed_account_value_death">=\smax(guaranteed_account_value_lapse,\smax(premium,\ssnfl_mwv_mav_post_growth))</c>
+            <c name="total_account_value_lapse">=\smax(cash_surrender_value,\sguaranteed_account_value_lapse)</c>
+            <c name="total_account_value_death">=\smax(total_account_value_lapse,\smax(snfl_mwv_mav_post_growth,\s\r\n
+\s\s\s\siif(is_annexus,\sstrategy_value,\saccount_value_post_interest_credit\r\n
+\s\s\s\s+\siif(credit_interest_now,\s0,\sinterest_credit_amount_pro_rata))))</c>
+            <c name="excess_account_value">=\smax(account_value_post_glb_fee\s-\ssnfl_mwv_mav_post_growth,\s0)</c>
+            <c name="guaranteed_withdrawal">=\smin(iif(is_annexus,\snet_withdrawal_less_mva,\snet_withdrawal),\r\n
+\s\s\s\smax(snfl_mwv_mav_post_growth,\r\n
+\s\s\s\s(1\s-\s0.9\s*\ssurrender_charge_rate[step])\s*\sprev(premium)))</c>
+            <c name="withdrawal_over_guaranteed">=\smax(0,\smin(net_withdrawal_less_mva\s-\sguaranteed_withdrawal,\saccount_value_post_glb_fee\s-\sguaranteed_withdrawal))</c>
+            <c name="claims_amount">=\smax(0,\swithdrawal_total\s-\sguaranteed_withdrawal\s-\swithdrawal_over_guaranteed)</c>
+            <c name="death_claim">=\siif(is_annexus\sand\slaunch_db_this_period,\smax(death_benefit\s-\stotal_account_value_death,\s0),\s0)</c>
+            <c name="host_df_net">=\s(1\s+\shost_rate_net)\s^\s(-t[step])</c>
+            <c name="cf_guaranteed_av_lapse">=\siif(lapse_this_period,\sguaranteed_account_value_lapse,\s0)</c>
+            <c name="cf_guaranteed_av_death">=\siif(launch_db_this_period,\sguaranteed_account_value_death,\s0)</c>
+            <c name="cf_total_av_lapse">=\siif(lapse_this_period,\stotal_account_value_lapse,\s0)</c>
+            <c name="cf_total_av_death">=\siif(launch_db_this_period,\stotal_account_value_death,\s0)</c>
+            <c name="cf_host_withdrawal">=\spolicy_inforce_ind_eop\s*\sguaranteed_withdrawal</c>
+            <c name="cf_index_credit_withdrawal">=\sprev(policy_inforce_ind_eop)\s*\swithdrawal_over_guaranteed</c>
+            <c name="cf_terminal_host">/*\r\n
+Account\sterminal\sprovision\r\n
+*/\r\n
+\r\n
+if\sstep\s!=\snum_steps\sor\spolicy_inforce_ind_eop\s==\s0\sor\s(apply_lad\sand\sis_after_maturity_date)\sthen\s\r\n
+\s\s\s\sreturn\s0\s\r\n
+else\r\n
+\s\s\s\sreturn\sguaranteed_account_value_death\r\n
+end\r\n
+</c>
+            <c name="cf_terminal_index_credit">/*\r\n
+Account\sterminal\sprovision\r\n
+*/\r\n
+\r\n
+if\sstep\s!=\snum_steps\sor\spolicy_inforce_ind_eop\s==\s0\sor\s(apply_lad\sand\sis_after_maturity_date)\sthen\s\r\n
+\s\s\s\sreturn\s0\s\r\n
+else\r\n
+\s\s\s\sreturn\stotal_account_value_death\s-\sguaranteed_account_value_death\r\n
+end\r\n
+</c>
+            <c name="cf_terminal_claim">/*\r\n
+Account\sterminal\sprovision\r\n
+*/\r\n
+\r\n
+if\sstep\s!=\snum_steps\sor\spolicy_inforce_ind_eop\s==\s0\sor\s(apply_lad\sand\sis_after_maturity_date)\sthen\s\r\n
+\s\s\s\sreturn\s0\s\r\n
+else\r\n
+\s\s\s\sreturn\siif(living_benefit_elected,\smax(pip_last\s*\sann_fac_terminal,\r\n
+\s\s\s\s\s\s\s\stotal_account_value_death)\s-\stotal_account_value_death,\s0)\r\n
+end\r\n
+</c>
+            <c name="cf_host_total">if\sapply_lad\sand\sliving_benefit_elected\sand\scompare(lad_mawa\s!=\s0,\s1e-03)\sand\scompare(lad_pip\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sif\sis_lad_period\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\siif(investment_account\s==\s0,\scf_lad_host\s+\scf_lad_index_credit,\scf_lad_host)\r\n
+\s\s\s\selif\sis_after_maturity_date\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scf_guaranteed_av_lapse\s+\scf_guaranteed_av_death\s+\scf_host_withdrawal\s+\scf_terminal_host\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\siif(investment_account\s==\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit,\s0)\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\scf_guaranteed_av_lapse\s+\scf_guaranteed_av_death\s+\scf_host_withdrawal\s+\scf_terminal_host\r\n
+\s\s\s\s\s\s\s\s+\siif(investment_account\s==\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit,\s0)\r\n
+end</c>
+            <c name="cf_index_credit_total">if\sapply_lad\sand\sliving_benefit_elected\sand\scompare(lad_mawa\s!=\s0,\s1e-03)\sand\scompare(lad_pip\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sif\sis_lad_period\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_lad_index_credit)\r\n
+\s\s\s\selif\sis_after_maturity_date\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)\r\n
+end</c>
+            <c name="cf_index_credit_total_ex_credit">if\sapply_lad\sand\sliving_benefit_elected\sand\scompare(lad_mawa\s!=\s0,\s1e-03)\sand\scompare(lad_pip\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sif\sis_lad_period\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_lad_index_credit_ex_credit)\r\n
+\s\s\s\selif\sis_after_maturity_date\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)\r\n
+end</c>
+            <c name="cf_index_credit_total_nippon_life">if\sapply_lad\sand\sliving_benefit_elected\sand\scompare(lad_mawa\s!=\s0,\s1e-03)\sand\scompare(lad_pip\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sif\sis_lad_period\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_lad_index_credit_nippon_life)\r\n
+\s\s\s\selif\sis_after_maturity_date\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)\r\n
+end</c>
+            <c name="cf_index_credit_total_ex_total_curve">if\sapply_lad\sand\sliving_benefit_elected\sand\scompare(lad_mawa\s!=\s0,\s1e-03)\sand\scompare(lad_pip\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sif\sis_lad_period\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_lad_index_credit_ex_total_curve)\r\n
+\s\s\s\selif\sis_after_maturity_date\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(investment_account\s==\s0,\s0,\scf_total_av_lapse\s-\scf_guaranteed_av_lapse\r\n
+\s\s\s\s\s\s\s\s+\scf_total_av_death\s-\scf_guaranteed_av_death\r\n
+\s\s\s\s\s\s\s\s+\scf_index_credit_withdrawal\s+\scf_terminal_index_credit)\r\n
+end</c>
+            <c name="cf_claims">if\sapply_lad\sand\sliving_benefit_elected\sand\scompare(lad_mawa\s!=\s0,\s1e-03)\sand\scompare(lad_pip\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sif\sis_lad_period\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scf_lad_claim\r\n
+\s\s\s\selif\sis_after_maturity_date\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sprev(policy_inforce_ind_eop)\s*\sclaims_amount\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\siif(gaap_claim_type\s==\s2,\sdeath_claim,\s0)\s+\scf_terminal_claim\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\sprev(policy_inforce_ind_eop)\s*\sclaims_amount\r\n
+\s\s\s\s\s\s\s\s+\siif(gaap_claim_type\s==\s2,\sdeath_claim,\s0)\s+\scf_terminal_claim\r\n
+end</c>
+            <c name="cf_claims_ex_credit">if\sapply_lad\sand\sliving_benefit_elected\sand\scompare(lad_mawa\s!=\s0,\s1e-03)\sand\scompare(lad_pip\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sif\sis_lad_period\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scf_lad_claim_ex_credit\r\n
+\s\s\s\selif\sis_after_maturity_date\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sprev(policy_inforce_ind_eop)\s*\sclaims_amount\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\siif(gaap_claim_type\s==\s2,\sdeath_claim,\s0)\s+\scf_terminal_claim\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\sprev(policy_inforce_ind_eop)\s*\sclaims_amount\r\n
+\s\s\s\s\s\s\s\s+\siif(gaap_claim_type\s==\s2,\sdeath_claim,\s0)\s+\scf_terminal_claim\r\n
+end</c>
+            <c name="cf_claims_nippon_life">if\sapply_lad\sand\sliving_benefit_elected\sand\scompare(lad_mawa\s!=\s0,\s1e-03)\sand\scompare(lad_pip\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sif\sis_lad_period\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scf_lad_claim_nippon_life\r\n
+\s\s\s\selif\sis_after_maturity_date\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sprev(policy_inforce_ind_eop)\s*\sclaims_amount\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\siif(gaap_claim_type\s==\s2,\sdeath_claim,\s0)\s+\scf_terminal_claim\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\sprev(policy_inforce_ind_eop)\s*\sclaims_amount\r\n
+\s\s\s\s\s\s\s\s+\siif(gaap_claim_type\s==\s2,\sdeath_claim,\s0)\s+\scf_terminal_claim\r\n
+end</c>
+            <c name="cf_claims_ex_total_curve">if\sapply_lad\sand\sliving_benefit_elected\sand\scompare(lad_mawa\s!=\s0,\s1e-03)\sand\scompare(lad_pip\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sif\sis_lad_period\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scf_lad_claim_ex_total_curve\r\n
+\s\s\s\selif\sis_after_maturity_date\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sprev(policy_inforce_ind_eop)\s*\sclaims_amount\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s+\siif(gaap_claim_type\s==\s2,\sdeath_claim,\s0)\s+\scf_terminal_claim\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\sprev(policy_inforce_ind_eop)\s*\sclaims_amount\r\n
+\s\s\s\s\s\s\s\s+\siif(gaap_claim_type\s==\s2,\sdeath_claim,\s0)\s+\scf_terminal_claim\r\n
+end</c>
+            <c name="accum_cf_host">=\sprev(accum_cf_host)\s+\scf_host_total</c>
+            <c name="roll_forward_accum_cf_host">=\siif(is_after_valuation_date,\s0,\scf_host_total)\s+\sprev(roll_forward_accum_cf_host)</c>
+            <c name="roll_forward_accum_cf_ed">=\siif(is_after_valuation_date,\s0,\scf_index_credit_total)\s+\sprev(roll_forward_accum_cf_ed)</c>
+            <c name="roll_forward_accum_cf_claims">=\siif(is_after_valuation_date,\s0,\scf_claims)\s+\sprev(roll_forward_accum_cf_claims)</c>
+            <c name="pv_host_net">=\sprev(pv_host_net)\s+\shost_df_net\s*\scf_host_total</c>
+            <c name="pv_index_credit">=\sprev(pv_index_credit)\s+\sdf\s*\scf_index_credit_total</c>
+            <c name="pv_claims">=\sprev(pv_claims)\s+\sdf\s*\scf_claims</c>
+            <c name="pv_ed">=\spv_index_credit\s+\siif(gaap_claim_type\s=\s0\sor\s(gaap_claim_type\s=\s1\sand\sis_rider_multiplier),\r\n
+\s\s\s\spv_claims,\s0)</c>
+            <c name="pv_liability">=\spv_host_net\s+\spv_index_credit\s+\spv_claims</c>
+            <c name="pv_db_claims">=\sprev(pv_db_claims)\s+\sdf\s*\sdeath_claim</c>
+            <c name="pv_claims_ex_credit">=\sprev(pv_claims_ex_credit)\s+\sdf_npa_at_issue\s*\scf_claims_ex_credit</c>
+            <c name="pv_index_credit_ex_credit">=\sprev(pv_index_credit_ex_credit)\s+\sdf_npa_at_issue\s*\scf_index_credit_total_ex_credit</c>
+            <c name="pv_ed_ex_credit">=\spv_index_credit_ex_credit\s+\siif(gaap_claim_type\s=\s0\sor\s(gaap_claim_type\s=\s1\sand\sis_rider_multiplier),\r\n
+\s\s\s\spv_claims_ex_credit,\s0)</c>
+            <c name="pv_claims_nippon_life">=\sprev(pv_claims_nippon_life)\s+\sdf_npa_nippon_life\s*\scf_claims_nippon_life</c>
+            <c name="pv_index_credit_nippon_life">=\sprev(pv_index_credit_nippon_life)\s+\sdf_npa_nippon_life\s*\scf_index_credit_total_nippon_life</c>
+            <c name="pv_ed_nippon_life">=\spv_index_credit_nippon_life\s+\siif(gaap_claim_type\s=\s0\sor\s(gaap_claim_type\s=\s1\sand\sis_rider_multiplier),\r\n
+\s\s\s\spv_claims_nippon_life,\s0)</c>
+            <c name="pv_claims_ex_total_curve">=\sprev(pv_claims_ex_total_curve)\s+\sdf_npa_total_curve\s*\scf_claims_ex_total_curve</c>
+            <c name="pv_index_credit_ex_total_curve">=\sprev(pv_index_credit_ex_total_curve)\s+\sdf_npa_total_curve\s*\scf_index_credit_total_ex_total_curve</c>
+            <c name="pv_ed_ex_total_curve">=\spv_index_credit_ex_total_curve\s+\siif(gaap_claim_type\s=\s0\sor\s(gaap_claim_type\s=\s1\sand\sis_rider_multiplier),\r\n
+\s\s\s\spv_claims_ex_total_curve,\s0)</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="accum_cf_host" formattype="General" width="80" />
+      <c name="cf_claims" formattype="General" width="80" />
+      <c name="cf_claims_ex_credit" formattype="General" width="80" />
+      <c name="cf_claims_ex_total_curve" formattype="General" width="80" />
+      <c name="cf_claims_nippon_life" formattype="General" width="80" />
+      <c name="cf_guaranteed_av_death" formattype="General" width="80" />
+      <c name="cf_guaranteed_av_lapse" formattype="General" width="80" />
+      <c name="cf_host_total" formattype="General" width="80" />
+      <c name="cf_host_withdrawal" formattype="General" width="80" />
+      <c name="cf_index_credit_total" formattype="General" width="80" />
+      <c name="cf_index_credit_total_ex_credit" formattype="General" width="80" />
+      <c name="cf_index_credit_total_ex_total_curve" formattype="General" width="80" />
+      <c name="cf_index_credit_total_nippon_life" formattype="General" width="80" />
+      <c name="cf_index_credit_withdrawal" formattype="General" width="80" />
+      <c name="cf_terminal_claim" formattype="General" width="130.4" />
+      <c name="cf_terminal_host" formattype="General" width="116.8" />
+      <c name="cf_terminal_index_credit" formattype="General" width="164.8" />
+      <c name="cf_total_av_death" formattype="General" width="80" />
+      <c name="cf_total_av_lapse" formattype="General" width="80" />
+      <c name="claims_amount" formattype="General" width="80" />
+      <c name="death_claim" formattype="General" width="80" />
+      <c name="excess_account_value" formattype="General" width="80" />
+      <c name="guaranteed_account_value_death" formattype="General" width="229" />
+      <c name="guaranteed_account_value_lapse" formattype="General" width="267" />
+      <c name="guaranteed_withdrawal" formattype="General" width="80" />
+      <c name="host_df_net" formattype="General" width="80" />
+      <c name="premium" formattype="General" width="96" />
+      <c name="pv_claims" formattype="General" width="80" />
+      <c name="pv_claims_ex_credit" formattype="General" width="80" />
+      <c name="pv_claims_ex_total_curve" formattype="General" width="80" />
+      <c name="pv_claims_nippon_life" formattype="General" width="80" />
+      <c name="pv_db_claims" formattype="General" width="80" />
+      <c name="pv_ed" formattype="General" width="80" />
+      <c name="pv_ed_ex_credit" formattype="General" width="80" />
+      <c name="pv_ed_ex_total_curve" formattype="General" width="80" />
+      <c name="pv_ed_nippon_life" formattype="General" width="80" />
+      <c name="pv_host_net" formattype="General" width="80" />
+      <c name="pv_index_credit" formattype="General" width="80" />
+      <c name="pv_index_credit_ex_credit" formattype="General" width="80" />
+      <c name="pv_index_credit_ex_total_curve" formattype="General" width="80" />
+      <c name="pv_index_credit_nippon_life" formattype="General" width="80" />
+      <c name="pv_liability" formattype="General" width="80" />
+      <c name="roll_forward_accum_cf_claims" formattype="General" width="80" />
+      <c name="roll_forward_accum_cf_ed" formattype="General" width="80" />
+      <c name="roll_forward_accum_cf_host" formattype="General" width="80" />
+      <c name="snfl_mwv_mav_bop" formattype="General" width="168" />
+      <c name="snfl_mwv_mav_post_growth" formattype="General" width="181" />
+      <c name="snfl_mwv_mav_post_growth_sc" formattype="General" width="256" />
+      <c name="snfl_mwv_mav_post_withdrawal" formattype="General" width="215" />
+      <c name="step" formattype="General" width="80" />
+      <c name="total_account_value_death" formattype="General" width="99.2" />
+      <c name="total_account_value_lapse" formattype="General" width="97" />
+      <c name="withdrawal_over_guaranteed" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

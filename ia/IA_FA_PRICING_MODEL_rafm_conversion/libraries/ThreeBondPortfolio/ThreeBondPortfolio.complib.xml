@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="ThreeBondPortfolio" version="master" format-version="20">
+  <UserUDFs>
+    <udf name="find_idx">int\sfind_idx(real\sarg,\sreal[N]\sarray)\r\n
+\s\s\s\s$result\s=\s-1\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN\s-\s1\r\n
+\s\s\s\s\s\s\s\sif\scompare(arg\s==\sarray[i],\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\si\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="compute_bond_weight">real\scompute_bond_weight(\r\n
+\s\s\s\sint\sidx,\s\r\n
+\s\s\s\sreal[3]\sdurations_swap,\r\n
+\s\s\s\sreal[3]\sdurations_credit,\s\s\s\s\s\r\n
+\s\s\s\sreal[3]\sconvexities_swap,\s\r\n
+\s\s\s\sreal[3]\sconvexities_credit,\s\r\n
+\s\s\s\sreal\sduration_target,\s\r\n
+\s\s\s\sreal\sconvexity_target,\r\n
+\s\s\s\sbool\suse_credit_spread\r\n
+)\r\n
+\s\s\s\sreal[3]\sdurations\r\n
+\s\s\s\sreal[3]\sconvexities\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\s2\r\n
+\s\s\s\s\s\s\s\sdurations[i]\s=\siif(use_credit_spread,\sdurations_credit[i],\sdurations_swap[i])\r\n
+\s\s\s\s\s\s\s\sconvexities[i]\s=\siif(use_credit_spread,\sconvexities_credit[i],\sconvexities_swap[i])\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s//\sIf\sno\sconvexity\starget\sis\sgiven\s(NaN)\swe\sneed\sto\ssolve\sa\s2x2\sset\sof\sequations\shere.\s\sWe\suse\sthe\sclosed-form\sexperession\r\n
+\s\s\s\s//\sfor\sthe\sinverse\sof\sa\s2x2\smatrix.\r\n
+\s\s\s\s//\r\n
+\s\s\s\s//\sRef:\shttps://en.wikipedia.org/wiki/Invertible_matrix#Inversion_of_2_%C3%97_2_matrices\r\n
+\s\s\s\sif\sconvexity_target\s!=\sconvexity_target\sthen\s//\sChecks\sif\sconvexity_target\sis\sNaN\r\n
+\s\s\s\s\s\s\s\sreal\sdet\s=\sdurations[1]\s-\sdurations[2]\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\sidx\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s\sduration_target\s-\sdurations[2]\r\n
+\s\s\s\s\s\s\s\selif\sidx\s==\s2\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s-duration_target\s+\sdurations[1]\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s$result\s=\s$result\s/\sdet\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s//\sIf\sa\sconvexity\starget\sis\sgiven\swe\sneed\sto\ssolve\sa\s3x3\sset\sof\sequations\shere.\s\sWe\suse\sthe\sclosed-form\sexperession\r\n
+\s\s\s\s//\sfor\sthe\sinverse\sof\sa\s3x3\smatrix.\r\n
+\s\s\s\s//\r\n
+\s\s\s\s//\sRef:\shttps://en.wikipedia.org/wiki/Invertible_matrix#Inversion_of_3_%C3%97_3_matrices\r\n
+\s\s\s\sreal\sA\s=\sconvexities[1]\s-\sconvexities[2]\r\n
+\s\s\s\sreal\sB\s=\s-(convexities[0]\s-\sconvexities[2])\r\n
+\s\s\s\sreal\sC\s=\sconvexities[0]\s-\sconvexities[1]\r\n
+\s\s\s\sreal\sD\s=\s-(durations[1]\s-\sdurations[2])\r\n
+\s\s\s\sreal\sE\s=\sdurations[0]\s-\sdurations[2]\r\n
+\s\s\s\sreal\sF\s=\s-(durations[0]\s-\sdurations[1])\r\n
+\s\s\s\sreal\sG\s=\sdurations[1]\s*\sconvexities[2]\s-\sdurations[2]\s*\sconvexities[1]\r\n
+\s\s\s\sreal\sH\s=\s-(durations[0]\s*\sconvexities[2]\s-\sdurations[2]\s*\sconvexities[0])\r\n
+\s\s\s\sreal\sI\s=\sdurations[0]\s*\sconvexities[1]\s-\sdurations[1]\s*\sconvexities[0]\r\n
+\s\s\s\sreal\sdet\s=\sA\s*\sdurations[0]\s+\sB\s*\sdurations[1]\s+\sC\s*\sdurations[2]\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\sidx\s==\s0\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sA\s*\sduration_target\s+\sD\s*\sconvexity_target\s+\sG\r\n
+\s\s\s\selif\sidx\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sB\s*\sduration_target\s+\sE\s*\sconvexity_target\s+\sH\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\sC\s*\sduration_target\s+\sF\s*\sconvexity_target\s+\sI\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s$result\s/\sdet\r\n
+end</udf>
+    <udf name="compute_yield">real\scompute_yield(\r\n
+\s\s\s\sreal\sweight_0,\s\r\n
+\s\s\s\sreal\sweight_1,\s\r\n
+\s\s\s\sreal\sweight_2,\s\r\n
+\s\s\s\sreal[3]\sdfs_swap,\r\n
+\s\s\s\sreal[3]\sdfs_credit,\r\n
+\s\s\s\sbool\suse_credit_spread,\r\n
+\s\s\s\sreal[3]\stenors,\s\r\n
+\s\s\s\sreal\syield_approx\r\n
+)\r\n
+\s\s\s\sint\sN_ITER\s=\s10\r\n
+\s\s\s\sreal\syield\s=\syield_approx\r\n
+\s\s\s\sreal\sprice\r\n
+\s\s\s\sreal\sgrad\r\n
+\s\s\s\sreal\stmp\r\n
+\s\s\s\sreal[3]\sweights\r\n
+\s\s\s\sweights[0]\s=\sweight_0\r\n
+\s\s\s\sweights[1]\s=\sweight_1\r\n
+\s\s\s\sweights[2]\s=\sweight_2\r\n
+\s\s\s\sreal[3]\sdfs\r\n
+\s\s\s\sfor\si\s=\s0\sto\s2\r\n
+\s\s\s\s\s\s\s\sdfs[i]\s=\siif(use_credit_spread,\sdfs_credit[i],\sdfs_swap[i])\r\n
+\s\s\s\send\r\n
+\s\s\s\sreal\spar\s=\ssumproduct(weights,\sdfs)\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\siter\s=\s0\sto\sN_ITER\s-\s1\r\n
+\s\s\s\s\s\s\s\sprice\s=\s0\r\n
+\s\s\s\s\s\s\s\sgrad\s=\s0\r\n
+\s\s\s\s\s\s\s\sfor\si\s=\s0\sto\s2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stmp\s=\s(1\s+\syield\s/\s2)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sprice\s=\sprice\s+\sweights[i]\s*\s\stmp\s^\s(-2\s*\stenors[i])\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sgrad\s=\sgrad\s+\s-tenors[i]\s*\stmp\s^\s(-2\s*\stenors[i]\s+\s1)\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\syield\s=\syield\s-\s(price\s-\spar)\s/\sgrad\r\n
+\s\s\s\send\r\n
+\s\s\s\s$result\s=\syield\r\n
+\r\n
+end</udf>
+    <udf name="compute_variance">real\scompute_variance(real[N]\szcb_std,\sreal[N]\sweights)\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN\s-\s1\r\n
+\s\s\s\s\s\s\s\s$result\s=\sweights[i]\s*\szcb_std[i]\s^\s2\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="sumproduct_weights">real\ssumproduct_weights(real\sweight_0,\sreal\sweight_1,\sreal\sweight_2,\sreal[3]\sarray_swap,\sreal[3]\sarray_credit,\sbool\suse_credit_spread)\r\n
+\s\s\s\sreal[3]\sweight\r\n
+\s\s\s\sweight[0]\s=\sweight_0\r\n
+\s\s\s\sweight[1]\s=\sweight_1\r\n
+\s\s\s\sweight[2]\s=\sweight_2\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\siif(use_credit_spread,\ssumproduct(weight,\sarray_credit),\ssumproduct(weight,\sarray_swap))\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="N_BOND" type="int" />
+    <input name="ZCB_TENORS" type="real" shape="*" />
+    <input name="zcb_swap" type="real" shape="*" modifier="Cashflow" />
+    <input name="zcb_std_swap" type="real" shape="*" modifier="Cashflow" />
+    <input name="zcb_return_swap" type="real" shape="*" modifier="Cashflow" />
+    <input name="bond_portfolios" type="composite" shape="*">
+      <field name="target_duration" type="real" />
+      <field name="target_convexity" type="real" />
+      <field name="use_credit_spread" type="bool" />
+    </input>
+    <input name="zcb_credit" type="real" shape="*" modifier="Cashflow" />
+    <input name="zcb_credit_std" type="real" shape="*" modifier="Cashflow" />
+    <input name="zcb_credit_return" type="real" shape="*" modifier="Cashflow" />
+    <input name="N_PORTFOLIO" type="int" />
+  </inputs>
+  <results>
+    <result name="bond_price_ga" ref="=Projection.bond_price_ga" />
+    <result name="bond_yield_ga" ref="=Projection.bond_yield_ga" />
+    <result name="bond_price_mva" ref="=Projection.bond_price_mva" />
+    <result name="bond_yield_mva" ref="=Projection.bond_yield_mva" />
+    <result name="bond_price_agg" ref="=Projection.bond_price_agg" />
+    <result name="bond_variance_agg" ref="=Projection.bond_variance_agg" />
+    <result name="bond_price_mlsb" ref="=Projection.bond_price_mlsb" />
+    <result name="bond_variance_mlsb" ref="=Projection.bond_variance_mlsb" />
+    <result name="portfolio_yield_estimate" ref="=Projection.portfolio_yield_estimate" />
+    <result name="bond_yield_credit" ref="=Projection.bond_yield_credit" />
+  </results>
+  <calculations>
+    <table name="Projection" type="CashFlow">
+      <column-groups>
+        <g name="g1">=N_BOND</g>
+        <g name="g3">=N_PORTFOLIO</g>
+      </column-groups>
+      <columns>
+        <c name="zcb_variance_swap" datatype="real" group="g1" />
+        <c name="bond_yield_swap" datatype="real" group="g1" />
+        <c name="term_swap" datatype="real" group="g1" />
+        <c name="bond_duration_swap" datatype="real" group="g1" />
+        <c name="bond_convexity_swap" datatype="real" group="g1" />
+        <c name="zcb_variance_credit" datatype="real" group="g1" />
+        <c name="bond_yield_credit" datatype="real" group="g1" />
+        <c name="term_credit" datatype="real" group="g1" />
+        <c name="bond_duration_credit" datatype="real" group="g1" />
+        <c name="bond_convexity_credit" datatype="real" group="g1" />
+        <c name="bond_weight_0" datatype="real" group="g3" />
+        <c name="bond_weight_1" datatype="real" group="g3" />
+        <c name="bond_weight_2" datatype="real" group="g3" />
+        <c name="portfolio_return_" datatype="real" group="g3" />
+        <c name="portfolio_value" datatype="real" group="g3" />
+        <c name="portfolio_yield_estimate" datatype="real" group="g3" />
+        <c name="portfolio_yield_" datatype="real" group="g3" />
+        <c name="portfolio_variance_" datatype="real" group="g3" />
+        <c name="portfolio_duration_" datatype="real" group="g3" />
+        <c name="portfolio_convexity_" datatype="real" group="g3" />
+        <c name="bond_price_ga" datatype="real" />
+        <c name="bond_yield_ga" datatype="real" />
+        <c name="bond_price_mva" datatype="real" />
+        <c name="bond_yield_mva" datatype="real" />
+        <c name="bond_price_agg" datatype="real" />
+        <c name="bond_variance_agg" datatype="real" />
+        <c name="bond_price_mlsb" datatype="real" />
+        <c name="bond_variance_mlsb" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="zcb_variance_swap">=\szcb_std_swap[$index]\s^\s2</c>
+            <c name="bond_yield_swap">=\s2\s*\s(exp(-log(zcb_swap[$index])\s/\s(2\s*\sZCB_TENORS[$index]))\s-\s1)</c>
+            <c name="term_swap">//\sThis\sterm\sis\sequal\sto\s\r\n
+//\s\s\s\s\s\s\s\s1\s/\s(1\s+\sy\s/\s2)\r\n
+//\sand\swill\sbe\sused\sagain\sto\scompute\sduration\sand\sconvexity.\r\n
+=\s1\s/\s(1\s+\sbond_yield_swap\s/\s2)</c>
+            <c name="bond_duration_swap">//\sDuration\sof\szero\sis\s\r\n
+//\s\s\s\s\s\sT\s/\s(1\s+\sy\s/\sn)\r\n
+=\sZCB_TENORS[$index]\s*\sterm_swap</c>
+            <c name="bond_convexity_swap">//\sConvexity\sof\szero\sis\s\r\n
+//\s\s\s\s\s\sT\s*\s(T\s+\s1\s/\sn)\s/\s(1\s+\sy\s/\sn)\s^\s2\r\n
+=\sZCB_TENORS[$index]\s*\s(ZCB_TENORS[$index]\s+\s0.5)\s*\sterm_swap\s^\s2</c>
+            <c name="zcb_variance_credit">=\szcb_std_swap[$index]\s^\s2</c>
+            <c name="bond_yield_credit">=\s2\s*\s(exp(-log(zcb_credit[$index])\s/\s(2\s*\sZCB_TENORS[$index]))\s-\s1)</c>
+            <c name="term_credit">//\sThis\sterm\sis\sequal\sto\s\r\n
+//\s\s\s\s\s\s\s\s1\s/\s(1\s+\sy\s/\s2)\r\n
+//\sand\swill\sbe\sused\sagain\sto\scompute\sduration\sand\sconvexity.\r\n
+=\s1\s/\s(1\s+\sbond_yield_credit\s/\s2)</c>
+            <c name="bond_duration_credit">//\sDuration\sof\szero\sis\s\r\n
+//\s\s\s\s\s\sT\s/\s(1\s+\sy\s/\sn)\r\n
+=\sZCB_TENORS[$index]\s*\sterm_credit</c>
+            <c name="bond_convexity_credit">//\sConvexity\sof\szero\sis\s\r\n
+//\s\s\s\s\s\sT\s*\s(T\s+\s1\s/\sn)\s/\s(1\s+\sy\s/\sn)\s^\s2\r\n
+=\sZCB_TENORS[$index]\s*\s(ZCB_TENORS[$index]\s+\s0.5)\s*\sterm_credit\s^\s2</c>
+            <c name="bond_weight_0">=\scompute_bond_weight(\r\n
+\s\s\s\s0,\s\r\n
+\s\s\s\sbond_duration_swap,\r\n
+\s\s\s\sbond_duration_credit,\r\n
+\s\s\s\sbond_convexity_swap,\r\n
+\s\s\s\sbond_convexity_credit,\r\n
+\s\s\s\sbond_portfolios[$index].target_duration,\s\r\n
+\s\s\s\sbond_portfolios[$index].target_convexity,\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="bond_weight_1">=\scompute_bond_weight(\r\n
+\s\s\s\s1,\s\r\n
+\s\s\s\sbond_duration_swap,\r\n
+\s\s\s\sbond_duration_credit,\r\n
+\s\s\s\sbond_convexity_swap,\r\n
+\s\s\s\sbond_convexity_credit,\r\n
+\s\s\s\sbond_portfolios[$index].target_duration,\s\r\n
+\s\s\s\sbond_portfolios[$index].target_convexity,\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="bond_weight_2">=\scompute_bond_weight(\r\n
+\s\s\s\s2,\s\r\n
+\s\s\s\sbond_duration_swap,\r\n
+\s\s\s\sbond_duration_credit,\r\n
+\s\s\s\sbond_convexity_swap,\r\n
+\s\s\s\sbond_convexity_credit,\r\n
+\s\s\s\sbond_portfolios[$index].target_duration,\s\r\n
+\s\s\s\sbond_portfolios[$index].target_convexity,\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="portfolio_return_"></c>
+            <c name="portfolio_value">100</c>
+            <c name="portfolio_yield_estimate">=\siif(\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread,\r\n
+\s\s\s\sbond_yield_credit[0]\s*\sbond_weight_0\s+\sbond_yield_credit[1]\s*\sbond_weight_1\s+\sbond_yield_credit[2]\s*\sbond_weight_2,\r\n
+\s\s\s\sbond_yield_swap[0]\s*\sbond_weight_0\s+\sbond_yield_swap[1]\s*\sbond_weight_1\s+\sbond_yield_swap[2]\s*\sbond_weight_2\r\n
+)</c>
+            <c name="portfolio_yield_">=\scompute_yield(\r\n
+\s\s\s\sbond_weight_0,\s\r\n
+\s\s\s\sbond_weight_1,\s\r\n
+\s\s\s\sbond_weight_2,\r\n
+\s\s\s\szcb_swap,\r\n
+\s\s\s\szcb_credit,\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread,\r\n
+\s\s\s\sZCB_TENORS,\s\r\n
+\s\s\s\sportfolio_yield_estimate\r\n
+)</c>
+            <c name="portfolio_variance_">=\ssumproduct_weights(\r\n
+\s\s\s\sbond_weight_0,\s\r\n
+\s\s\s\sbond_weight_1,\s\r\n
+\s\s\s\sbond_weight_2,\s\r\n
+\s\s\s\szcb_std_swap,\s\r\n
+\s\s\s\szcb_std_swap,\s\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)\s^\s2</c>
+            <c name="portfolio_duration_">=\ssumproduct_weights(\r\n
+\s\s\s\sbond_weight_0,\s\r\n
+\s\s\s\sbond_weight_1,\s\r\n
+\s\s\s\sbond_weight_2,\s\r\n
+\s\s\s\sbond_duration_swap,\s\r\n
+\s\s\s\sbond_duration_credit,\s\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="portfolio_convexity_">=\ssumproduct_weights(\r\n
+\s\s\s\sbond_weight_0,\s\r\n
+\s\s\s\sbond_weight_1,\s\r\n
+\s\s\s\sbond_weight_2,\s\r\n
+\s\s\s\sbond_convexity_swap,\s\r\n
+\s\s\s\sbond_convexity_credit,\s\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="bond_price_ga">=\sportfolio_value[0]</c>
+            <c name="bond_yield_ga">=\sportfolio_yield_[0]</c>
+            <c name="bond_price_mva">=\sportfolio_value[1]</c>
+            <c name="bond_yield_mva">=\sportfolio_yield_[1]</c>
+            <c name="bond_price_agg">=\sportfolio_value[2]</c>
+            <c name="bond_variance_agg">=\sportfolio_variance_[2]</c>
+            <c name="bond_price_mlsb">100</c>
+            <c name="bond_variance_mlsb">=\szcb_variance_swap[1]</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="zcb_variance_swap">=\szcb_std_swap[$index]\s^\s2</c>
+            <c name="bond_yield_swap">=\s2\s*\s(exp(-log(zcb_swap[$index])\s/\s(2\s*\sZCB_TENORS[$index]))\s-\s1)</c>
+            <c name="term_swap">//\sThis\sterm\sis\sequal\sto\s\r\n
+//\s\s\s\s\s\s\s\s1\s/\s(1\s+\sy\s/\s2)\r\n
+//\sand\swill\sbe\sused\sagain\sto\scompute\sduration\sand\sconvexity.\r\n
+=\s1\s/\s(1\s+\sbond_yield_swap\s/\s2)</c>
+            <c name="bond_duration_swap">//\sDuration\sof\szero\sis\s\r\n
+//\s\s\s\s\s\sT\s/\s(1\s+\sy\s/\sn)\r\n
+=\sZCB_TENORS[$index]\s*\sterm_swap</c>
+            <c name="bond_convexity_swap">//\sConvexity\sof\szero\sis\s\r\n
+//\s\s\s\s\s\sT\s*\s(T\s+\s1\s/\sn)\s/\s(1\s+\sy\s/\sn)\s^\s2\r\n
+=\sZCB_TENORS[$index]\s*\s(ZCB_TENORS[$index]\s+\s0.5)\s*\sterm_swap\s^\s2</c>
+            <c name="zcb_variance_credit">=\szcb_std_swap[$index]\s^\s2</c>
+            <c name="bond_yield_credit">=\s2\s*\s(exp(-log(zcb_credit[$index])\s/\s(2\s*\sZCB_TENORS[$index]))\s-\s1)</c>
+            <c name="term_credit">//\sThis\sterm\sis\sequal\sto\s\r\n
+//\s\s\s\s\s\s\s\s1\s/\s(1\s+\sy\s/\s2)\r\n
+//\sand\swill\sbe\sused\sagain\sto\scompute\sduration\sand\sconvexity.\r\n
+=\s1\s/\s(1\s+\sbond_yield_credit\s/\s2)</c>
+            <c name="bond_duration_credit">//\sDuration\sof\szero\sis\s\r\n
+//\s\s\s\s\s\sT\s/\s(1\s+\sy\s/\sn)\r\n
+=\sZCB_TENORS[$index]\s*\sterm_credit</c>
+            <c name="bond_convexity_credit">//\sConvexity\sof\szero\sis\s\r\n
+//\s\s\s\s\s\sT\s*\s(T\s+\s1\s/\sn)\s/\s(1\s+\sy\s/\sn)\s^\s2\r\n
+=\sZCB_TENORS[$index]\s*\s(ZCB_TENORS[$index]\s+\s0.5)\s*\sterm_credit\s^\s2</c>
+            <c name="bond_weight_0">=\scompute_bond_weight(\r\n
+\s\s\s\s0,\s\r\n
+\s\s\s\sbond_duration_swap,\r\n
+\s\s\s\sbond_duration_credit,\r\n
+\s\s\s\sbond_convexity_swap,\r\n
+\s\s\s\sbond_convexity_credit,\r\n
+\s\s\s\sbond_portfolios[$index].target_duration,\s\r\n
+\s\s\s\sbond_portfolios[$index].target_convexity,\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="bond_weight_1">=\scompute_bond_weight(\r\n
+\s\s\s\s1,\s\r\n
+\s\s\s\sbond_duration_swap,\r\n
+\s\s\s\sbond_duration_credit,\r\n
+\s\s\s\sbond_convexity_swap,\r\n
+\s\s\s\sbond_convexity_credit,\r\n
+\s\s\s\sbond_portfolios[$index].target_duration,\s\r\n
+\s\s\s\sbond_portfolios[$index].target_convexity,\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="bond_weight_2">=\scompute_bond_weight(\r\n
+\s\s\s\s2,\s\r\n
+\s\s\s\sbond_duration_swap,\r\n
+\s\s\s\sbond_duration_credit,\r\n
+\s\s\s\sbond_convexity_swap,\r\n
+\s\s\s\sbond_convexity_credit,\r\n
+\s\s\s\sbond_portfolios[$index].target_duration,\s\r\n
+\s\s\s\sbond_portfolios[$index].target_convexity,\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="portfolio_return_">=\siif(\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread,\r\n
+\s\s\s\sprev(bond_weight_0)\s*\szcb_credit_return[0]\s+\sprev(bond_weight_1)\s*\szcb_credit_return[1]\s+\sprev(bond_weight_2)\s*\szcb_credit_return[2],\r\n
+\s\s\s\sprev(bond_weight_0)\s*\szcb_return_swap[0]\s+\sprev(bond_weight_1)\s*\szcb_return_swap[1]\s+\sprev(bond_weight_2)\s*\szcb_return_swap[2]\r\n
+)</c>
+            <c name="portfolio_value">=\sprev(portfolio_value)\s*\s(1\s+\sportfolio_return_)</c>
+            <c name="portfolio_yield_estimate">=\siif(\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread,\r\n
+\s\s\s\sbond_yield_credit[0]\s*\sbond_weight_0\s+\sbond_yield_credit[1]\s*\sbond_weight_1\s+\sbond_yield_credit[2]\s*\sbond_weight_2,\r\n
+\s\s\s\sbond_yield_swap[0]\s*\sbond_weight_0\s+\sbond_yield_swap[1]\s*\sbond_weight_1\s+\sbond_yield_swap[2]\s*\sbond_weight_2\r\n
+)</c>
+            <c name="portfolio_yield_">=\scompute_yield(\r\n
+\s\s\s\sbond_weight_0,\s\r\n
+\s\s\s\sbond_weight_1,\s\r\n
+\s\s\s\sbond_weight_2,\r\n
+\s\s\s\szcb_swap,\r\n
+\s\s\s\szcb_credit,\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread,\r\n
+\s\s\s\sZCB_TENORS,\s\r\n
+\s\s\s\sportfolio_yield_estimate\r\n
+)</c>
+            <c name="portfolio_variance_">=\ssumproduct_weights(\r\n
+\s\s\s\sbond_weight_0,\s\r\n
+\s\s\s\sbond_weight_1,\s\r\n
+\s\s\s\sbond_weight_2,\s\r\n
+\s\s\s\szcb_std_swap,\s\r\n
+\s\s\s\szcb_std_swap,\s\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)\s^\s2</c>
+            <c name="portfolio_duration_">=\ssumproduct_weights(\r\n
+\s\s\s\sbond_weight_0,\s\r\n
+\s\s\s\sbond_weight_1,\s\r\n
+\s\s\s\sbond_weight_2,\s\r\n
+\s\s\s\sbond_duration_swap,\s\r\n
+\s\s\s\sbond_duration_credit,\s\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="portfolio_convexity_">=\ssumproduct_weights(\r\n
+\s\s\s\sbond_weight_0,\s\r\n
+\s\s\s\sbond_weight_1,\s\r\n
+\s\s\s\sbond_weight_2,\s\r\n
+\s\s\s\sbond_convexity_swap,\s\r\n
+\s\s\s\sbond_convexity_credit,\s\r\n
+\s\s\s\sbond_portfolios[$index].use_credit_spread\r\n
+)</c>
+            <c name="bond_price_ga">=\sportfolio_value[0]</c>
+            <c name="bond_yield_ga">=\sportfolio_yield_[0]</c>
+            <c name="bond_price_mva">=\sportfolio_value[1]</c>
+            <c name="bond_yield_mva">=\sportfolio_yield_[1]</c>
+            <c name="bond_price_agg">=\sportfolio_value[2]</c>
+            <c name="bond_variance_agg">=\sportfolio_variance_[2]</c>
+            <c name="bond_price_mlsb">=\sprev(bond_price_mlsb)\s*\s(1\s+\szcb_return_swap[1])</c>
+            <c name="bond_variance_mlsb">=\szcb_variance_swap[1]</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="bond_convexity_credit[0]" formattype="General" width="80" />
+      <c name="bond_convexity_swap[0]" formattype="General" width="80" />
+      <c name="bond_duration_credit[0]" formattype="General" width="80" />
+      <c name="bond_duration_swap[0]" formattype="General" width="80" />
+      <c name="bond_price_agg" formattype="General" width="98.0000000000001" />
+      <c name="bond_price_ga" formattype="General" width="80" />
+      <c name="bond_price_mlsb" formattype="General" width="80" />
+      <c name="bond_price_mva" formattype="General" width="126" />
+      <c name="bond_variance_agg" formattype="General" width="80" />
+      <c name="bond_variance_mlsb" formattype="General" width="80" />
+      <c name="bond_weight_0[0]" formattype="General" width="80" />
+      <c name="bond_weight_1[0]" formattype="General" width="80" />
+      <c name="bond_weight_2[0]" formattype="General" width="80" />
+      <c name="bond_yield_credit[0]" formattype="General" width="80" />
+      <c name="bond_yield_ga" formattype="General" width="115" />
+      <c name="bond_yield_mva" formattype="General" width="80" />
+      <c name="bond_yield_swap[0]" formattype="General" width="80" />
+      <c name="portfolio_convexity_[0]" formattype="General" width="80" />
+      <c name="portfolio_duration_[0]" formattype="General" width="80" />
+      <c name="portfolio_return_[0]" formattype="General" width="80" />
+      <c name="portfolio_value[0]" formattype="General" width="84" />
+      <c name="portfolio_variance_[0]" formattype="General" width="80" />
+      <c name="portfolio_yield_estimate[0]" formattype="General" width="80" />
+      <c name="portfolio_yield_[0]" formattype="General" width="80" />
+      <c name="term_credit[0]" formattype="General" width="80" />
+      <c name="term_swap[0]" formattype="General" width="80" />
+      <c name="zcb_variance_credit[0]" formattype="General" width="80" />
+      <c name="zcb_variance_swap[0]" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

@@ -1,0 +1,592 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="InterestCredit" version="master" format-version="20">
+  <UserUDFs>
+    <udf name="safe_return">real\ssafe_return(real\snum,\sreal\sdem)\r\n
+\s\s\s\s$result\s=\siif(compare(abs(dem)\s&gt;\s0,\s1e-3),\snum\s/\sdem\s-\s1,\s0)\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="inforce" type="composite">
+      <field name="account_value" type="real" />
+      <field name="index_at_last_renewal" type="real" />
+      <field name="index_floor" type="real" />
+      <field name="index_at_last_fix" type="real" />
+      <field name="accum_index_credit" type="real" />
+      <field name="interest_bonus_rate" type="real" />
+      <field name="index_cap" type="real" />
+      <field name="participation_rate" type="real" />
+      <field name="accum_index_term_return" type="real" />
+      <field name="index_term_spread" type="real" />
+      <field name="investment_account" type="int" />
+      <field name="index_spread" type="real" />
+      <field name="minimum_index_change_value" type="real" />
+      <field name="is_mav_product" type="bool" />
+      <field name="minimum_growth_rate" type="real" />
+    </input>
+    <input name="account_value_bop" type="real" modifier="Cashflow" />
+    <input name="equity_index" type="real" modifier="Cashflow" />
+    <input name="declared_parameter" type="real" shape="*" />
+    <input name="time_dt" type="real" shape="*" />
+    <input name="is_monthiversary" type="bool" shape="*" />
+    <input name="months_since_issue" type="int" shape="*" />
+    <input name="crediting_interest_now" type="bool" shape="*" />
+    <input name="first_credit_now" type="bool" modifier="Cashflow" />
+    <input name="pro_rata_factor" type="real" shape="*" />
+    <input name="is_2yr_anniversary" type="bool" shape="*" />
+    <input name="policy_year" type="int" shape="*" />
+    <input name="is_end_of_index_term" type="bool" shape="*" />
+    <input name="years_since_issue" type="int" shape="*" />
+    <input name="years_passed_in_index_term" type="real" shape="*" />
+    <input name="systematic_withdrawal_started" type="bool" modifier="Cashflow" />
+    <input name="lockin_during_st" type="bool" />
+    <input name="elapsed_strategy_term" type="real" modifier="Cashflow" />
+    <input name="disable_withdrawal" type="bool" />
+    <input name="is_annexus_10yr" type="bool" />
+    <input name="is_annexus_5yr" type="bool" />
+    <input name="is_annexus_accelerator" type="bool" />
+    <input name="first_credit_term_passed" type="bool" shape="*" />
+    <input name="accumulation_factor" type="real" modifier="Cashflow" />
+    <input name="is_running_dac" type="bool" />
+    <input name="crediting_term" type="int" />
+    <input name="crediting_term_post_ratesetting" type="int" />
+    <input name="option_value_dac" type="real" />
+    <input name="option_budget_dac" type="real" />
+    <input name="rider_fee" type="real" />
+    <input name="years_passed_in_strategy_term" type="real" modifier="Cashflow" />
+    <input name="index_strike" type="real" />
+    <input name="no_rate_setting" type="bool" />
+    <input name="disable_rate_setting" type="bool" />
+    <input name="surrender_charge_period" type="int" />
+    <input name="first_credit_passed" type="bool" modifier="Cashflow" />
+    <input name="step_esg" type="int" modifier="Cashflow" />
+  </inputs>
+  <results>
+    <result name="account_value_eop" ref="=Projection.account_value_eop" />
+    <result name="interest_credit_amount" ref="=Projection.interest_credit_amount" />
+    <result name="interest_credit_percentage" ref="=Projection.interest_credit_percent" />
+    <result name="interest_credit_amount_pro_rata" ref="=Projection.partial_interest_credit_amount" />
+    <result name="strategy_return" ref="=Projection.strategy_return" />
+    <result name="lock_in_return" ref="=Projection.Lock_in_return" />
+    <result name="adjusted_strategy_return" ref="=Projection.adjusted_strategy_return" />
+    <result name="adjustment_factor_on_activation" ref="=Projection.adjustment_factor_on_activation" />
+    <result name="x5_rider_return" ref="=Projection.x5_rider_return" />
+    <result name="adjusted_x5_rider_return" ref="=Projection.adjusted_x5_rider_return" />
+    <result name="p2p_return" ref="=Projection.p2p_return" />
+    <result name="index_at_last_credit" ref="=Projection.index_at_last_credit" />
+    <result name="interest_credit_amount_mgr" ref="=Projection.interest_credit_amount_mgr" />
+    <result name="interest_credit_percent_for_liability" ref="=Projection.interest_credit_percent_for_liability" />
+    <result name="interest_credit_percent_on_strategy_return_mgr" ref="=Projection.interest_credit_percent_on_strategy_return_mgr" />
+  </results>
+  <calculations>
+    <table name="Projection" type="CashFlow">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="credit_interest_now" datatype="bool" />
+        <c name="index_at_last_credit" datatype="real" />
+        <c name="p2p_return" datatype="real" />
+        <c name="index_at_last_monthiversary" datatype="real" />
+        <c name="index_at_last_index_term_end" datatype="real" />
+        <c name="local_floor" datatype="real" />
+        <c name="annexus_spread" datatype="real" />
+        <c name="index_term_return" datatype="real" />
+        <c name="strike" datatype="real" />
+        <c name="index_term_return_accum" datatype="real" />
+        <c name="Lock_in_return" datatype="bool" />
+        <c name="adjustment_factor_on_activation" datatype="real" />
+        <c name="adjustment_factor_daily" datatype="real" />
+        <c name="annexus_strategy_return" datatype="real" />
+        <c name="monthly_p2p_return" datatype="real" />
+        <c name="monthly_p2p_return_accum" datatype="real" />
+        <c name="monthly_sum" datatype="real" />
+        <c name="n_month" datatype="int" />
+        <c name="monthly_average" datatype="real" />
+        <c name="monthly_average_return" datatype="real" />
+        <c name="strategy_return" datatype="real" />
+        <c name="x5_rider_return" datatype="real" />
+        <c name="adjusted_strategy_return" datatype="real" />
+        <c name="adjusted_x5_rider_return" datatype="real" />
+        <c name="interest_credit_percent" datatype="real" />
+        <c name="interest_credit_percent_for_liability" datatype="real" />
+        <c name="interest_credit_amount" datatype="real" />
+        <c name="interest_credit_percent_on_strategy_return_mgr" datatype="real" />
+        <c name="interest_credit_amount_mgr" datatype="real" />
+        <c name="interest_credit_amount_mgr_cdsc" datatype="real" />
+        <c name="partial_interest_credit_amount" datatype="real" />
+        <c name="account_value_eop" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">0</c>
+            <c name="credit_interest_now">=\screditing_interest_now[step]</c>
+            <c name="index_at_last_credit">=inforce.index_at_last_renewal</c>
+            <c name="p2p_return">0</c>
+            <c name="index_at_last_monthiversary">=inforce.index_at_last_fix</c>
+            <c name="index_at_last_index_term_end">=\sinforce.index_at_last_fix</c>
+            <c name="local_floor">//For\sAnnexus\sIA\r\n
+\r\n
+if\sis_annexus_10yr\sthen\r\n
+\s\s\s\sreturn\siif(years_since_issue[step]\s&lt;\s10\sor\sdisable_rate_setting\sor\sno_rate_setting,\sInforce.index_floor,\s0)\r\n
+elif\sis_annexus_5yr\sthen\r\n
+\s\s\s\sreturn\siif(years_since_issue[step]\s&lt;\s15\sor\sdisable_rate_setting\sor\sno_rate_setting,\sInforce.index_floor,\s0)\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="annexus_spread">0</c>
+            <c name="index_term_return">0</c>
+            <c name="strike">if\sis_annexus_10yr\s&amp;&amp;\s(first_credit_now\sor\sdisable_rate_setting\sor\sno_rate_setting)\sthen\r\n
+\s\s\s\sreturn\sindex_strike\r\n
+elif\sis_annexus_5yr\s&amp;&amp;\s((credit_interest_now\s&amp;&amp;\spolicy_year[step]\s&lt;\s16)\sor\sdisable_rate_setting\sor\sno_rate_setting)\sthen\r\n
+\s\s\s\sreturn\sindex_strike\r\n
+else\r\n
+\s\s\s\sreturn\s1.0\r\n
+endif</c>
+            <c name="index_term_return_accum">=\sInforce.accum_index_term_return</c>
+            <c name="Lock_in_return">=\sFalse</c>
+            <c name="adjustment_factor_on_activation">=0</c>
+            <c name="adjustment_factor_daily">=\s1\s</c>
+            <c name="annexus_strategy_return">=\s0</c>
+            <c name="monthly_p2p_return">0</c>
+            <c name="monthly_p2p_return_accum">=\sinforce.accum_index_credit</c>
+            <c name="monthly_sum">=\sinforce.accum_index_credit</c>
+            <c name="n_month">=\smonths_since_issue[step]\s%\s12</c>
+            <c name="monthly_average">=\siif(n_month\s!=\s0,\smonthly_sum\s/\sn_month,\s0)</c>
+            <c name="monthly_average_return">=\siif(\r\n
+\s\s\s\sn_month\s!=\s0,\r\n
+\s\s\s\ssafe_return(monthly_average,\sindex_at_last_credit),\r\n
+\s\s\s\s0\r\n
+)</c>
+            <c name="strategy_return">0</c>
+            <c name="x5_rider_return">0</c>
+            <c name="adjusted_strategy_return">=\sstrategy_return</c>
+            <c name="adjusted_x5_rider_return">=\sx5_rider_return</c>
+            <c name="interest_credit_percent">0</c>
+            <c name="interest_credit_percent_for_liability">0</c>
+            <c name="interest_credit_amount">=\s0</c>
+            <c name="interest_credit_percent_on_strategy_return_mgr">0</c>
+            <c name="interest_credit_amount_mgr">=\s0</c>
+            <c name="interest_credit_amount_mgr_cdsc">/*\r\n
+Total\sinterest\scredited\safter\sconsidering\ssurrender\scharge\speriod\r\n
+*/\r\n
+\r\n
+=\siif(policy_year[step]\s&lt;\ssurrender_charge_period\s+\s2,\sinterest_credit_amount,\sinterest_credit_amount_mgr)</c>
+            <c name="partial_interest_credit_amount">=\saccount_value_bop\s*\sstrategy_return\s*\spro_rata_factor[step]</c>
+            <c name="account_value_eop">/*\r\n
+account\svalue\safter\screditing\sinterest\r\n
+*/\r\n
+\r\n
+=\smax(account_value_bop\s+\sinterest_credit_amount_mgr_cdsc,\s0)</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=\sprev(step)\s+\s1</c>
+            <c name="credit_interest_now">=\screditing_interest_now[step]</c>
+            <c name="index_at_last_credit">=\siif(prev(credit_interest_now),\sprev(equity_index),\sprev(index_at_last_credit))</c>
+            <c name="p2p_return">=\ssafe_return(equity_index,\sindex_at_last_credit)</c>
+            <c name="index_at_last_monthiversary">=\siif(is_monthiversary[step\s-\s1],\sprev(equity_index),\sprev(index_at_last_monthiversary))</c>
+            <c name="index_at_last_index_term_end">=\siif(is_end_of_index_term[step\s-\s1],\sprev(equity_index),\sprev(index_at_last_index_term_end))</c>
+            <c name="local_floor">//For\sAnnexus\sIA\r\n
+\r\n
+if\sis_annexus_10yr\sthen\r\n
+\s\s\s\sreturn\siif(policy_year[step-1]\s&lt;\s11\sor\sdisable_rate_setting\sor\sno_rate_setting,\sInforce.index_floor,\s0)\r\n
+elif\sis_annexus_5yr\sthen\r\n
+\s\s\s\sreturn\siif(policy_year[step-1]\s&lt;\s16\sor\sdisable_rate_setting\sor\sno_rate_setting,\sInforce.index_floor,\s0)\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="annexus_spread">//The\sactual\sspread\sapplied\sto\sthe\sreturn\s=\sannualized\sspread*years\spassed\sin\sindex\sterm\r\n
+//At\sthe\send\sof\sthe\sindex\sterm,\swe\sshould\suse\sthe\sinteger\syear\sas\sthe\smultiplier\r\n
+\r\n
+=iif(first_credit_term_passed[step]\sand\s!disable_rate_setting\sand\s!no_rate_setting,\r\n
+\s\s\s\s\s0,\r\n
+\s\s\s\s\sInforce.index_term_spread)\r\n
+\s\s\s\s\s*iif(is_end_of_index_term[step],iif(is_annexus_10yr,2,1),years_passed_in_index_term[step])</c>
+            <c name="index_term_return">//index\sterm\sperformance\r\n
+\r\n
+=\siif(is_end_of_index_term[step],\r\n
+\s\s\s\s\s\smax(safe_return(equity_index,index_at_last_index_term_end)\r\n
+\s\s\s\s\s\s*\sdeclared_parameter[step_esg-1]\s-\sannexus_spread,\r\n
+\s\s\s\s\s\slocal_floor),\s0)</c>
+            <c name="strike">if\sis_annexus_10yr\s&amp;&amp;\s(first_credit_now\sor\sdisable_rate_setting\sor\sno_rate_setting)\sthen\r\n
+\s\s\s\sreturn\sindex_strike\r\n
+elif\sis_annexus_5yr\s&amp;&amp;\s((credit_interest_now\s&amp;&amp;\spolicy_year[step]\s&lt;\s16)\sor\sdisable_rate_setting\sor\sno_rate_setting)\sthen\r\n
+\s\s\s\sreturn\sindex_strike\r\n
+else\r\n
+\s\s\s\sreturn\s1.0\r\n
+endif</c>
+            <c name="index_term_return_accum">//For\seach\sstrategy\sterm,\sthe\scumulated\sindex\sterm\sreturn\sis\stracked\r\n
+\r\n
+=\siif(prev(credit_interest_now),\sindex_term_return,\r\n
+\s\s\s\s(1\s+\sprev(index_term_return_accum))\s*\s(1\s+\sindex_term_return)\s-\sstrike)\r\n
+</c>
+            <c name="Lock_in_return">if\sis_annexus_5yr\sand\ssystematic_withdrawal_started\sand\spolicy_year[step\s-\s1]\s&lt;\s16\r\n
+\s\s\s\sand\slockin_during_st\sand\s!disable_withdrawal\sthen\s\r\n
+\s\s\s\sreturn\sTrue\r\n
+else\r\n
+\s\s\s\sreturn\sFalse\r\n
+end</c>
+            <c name="adjustment_factor_on_activation">if\sis_annexus_5yr\sand\ssystematic_withdrawal_started\sand\s!prev(systematic_withdrawal_started)\r\n
+\s\s\s\sand\spolicy_year[step\s-\s1]\s&lt;\s16\sand\spolicy_year[step-1]\s&gt;=11\sand\s!lockin_during_st\sthen\s\r\n
+\s\s\s\sreturn\selapsed_strategy_term\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="adjustment_factor_daily">if\sis_annexus_5yr\sand\spolicy_year[step\s-\s1]\s&lt;\s16\sand\s!lockin_during_st\sthen\s\r\n
+\s\s\sif\ssystematic_withdrawal_started\sand\s!prev(systematic_withdrawal_started)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s1-\sadjustment_factor_on_activation\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sprev(adjustment_factor_daily)\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\s1\r\n
+\s\s\s\s\r\n
+end</c>
+            <c name="annexus_strategy_return">if\sLock_in_return\sand\sprev(Lock_in_return)\sthen\r\n
+\s\s\s\sreturn\sprev(strategy_return)\r\n
+else\r\n
+\s\s\s\sreturn\smax(0,iif(is_end_of_index_term[step],\sindex_term_return_accum,\s(1\s+\sindex_term_return_accum)\r\n
+\s\s\s\s\s\s\s\s*\s(1\s+\smax(safe_return(equity_index,\sindex_at_last_index_term_end)\r\n
+\s\s\s\s\s\s\s\s*\sdeclared_parameter[step_esg-1]\s-\sannexus_spread,\r\n
+\s\s\s\s\s\s\s\slocal_floor))\s-\s1))\r\n
+end\s</c>
+            <c name="monthly_p2p_return">=iif(is_monthiversary[step],\ssafe_return(equity_index,\sindex_at_last_monthiversary),\s0)</c>
+            <c name="monthly_p2p_return_accum">=\siif(\r\n
+\s\s\s\sprev(credit_interest_now),\r\n
+\s\s\s\smin(monthly_p2p_return,\sdeclared_parameter[step_esg-1]),\r\n
+\s\s\s\sprev(monthly_p2p_return_accum)\s+\smin(monthly_p2p_return,\sdeclared_parameter[step_esg-1])\r\n
+)</c>
+            <c name="monthly_sum">if\sprev(credit_interest_now)\sthen\r\n
+\s\s\s\sreturn\siif(is_monthiversary[step],\sequity_index,\s0)\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sis_monthiversary[step],\r\n
+\s\s\s\sprev(monthly_sum)\s+\sequity_index,\r\n
+\s\s\s\sprev(monthly_sum)\r\n
+)\s\s</c>
+            <c name="n_month">if\sprev(credit_interest_now)\sthen\r\n
+\s\s\s\sreturn\siif(is_monthiversary[step],\s1,\s0)\r\n
+end\r\n
+\r\n
+return\siif(is_monthiversary[step],\sprev(n_month)\s+\s1,\sprev(n_month))</c>
+            <c name="monthly_average">=\siif(n_month\s!=\s0,\smonthly_sum\s/\sn_month,\s0)</c>
+            <c name="monthly_average_return">=\siif(\r\n
+\s\s\s\sn_month\s!=\s0,\r\n
+\s\s\s\ssafe_return(monthly_average,\sindex_at_last_credit),\r\n
+\s\s\s\s0\r\n
+)</c>
+            <c name="strategy_return">/*\r\n
+Fixed\saccount\sinterest\scredited,\r\n
+which\sis\sthe\smultiplication\sof\saccount\sfund\svalue\sand\smonthly\srate.\s\r\n
+$$\smonthly\\text{_}rate\s=\s(1\s+\sannually\\text{_}rate)^{dt}\s-\s1\s$$\r\n
+*/\r\n
+\r\n
+switch\sinforce.investment_account\r\n
+\s\s\s\scase\s0:\s//\sFixed\saccount\r\n
+\s\s\s\s\s\s\s\sreturn\sdeclared_parameter[step_esg-1]\r\n
+\s\s\s\scase\s1:\s//\s1y\sAnnual\sP2P\s(cap)\r\n
+\s\s\s\s\s\s\s\s//\sfor\spolicy\shaving\sboth\sparticipation\srate\sand\scap\r\n
+\s\s\s\s\s\s\s\sif\sfirst_credit_now\sor\sdisable_rate_setting\sor\sno_rate_setting\sthen\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(min(inforce.participation_rate\s*\sp2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\selse\s\s\s\s//\sroll\sto\sa\spure\scap\swhen\safter\srate\ssetting\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\scase\s2:\s//\sMonthly\sP2P\r\n
+\s\s\s\s\s\s\s\sif\sfirst_credit_now\sor\s!first_credit_passed\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(monthly_p2p_return_accum,\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\selse\s\s//\sroll\sto\sa\spure\scap\safter\srate\ssetting\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\sendif\s\s\r\n
+\s\s\s\scase\s3:\s//\sMonthly\sAverage\s(w/spread)\r\n
+\s\s\s\s\s\s\s\sif\sfirst_credit_now\sor\s!first_credit_passed\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(monthly_average_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\selse\s\s\s\s\s//\sroll\sto\sa\spure\spar\safter\srate\ssetting\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\scase\s4:\s//\sMLSB\sP2P\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s5:\s//\sMLSB\sP2P\s2-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(pro_rata_factor[step]\s&lt;=\s0.5,\s1e-06),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1]\s/\s2,\sinforce.index_floor),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor))\r\n
+\s\s\s\scase\s6:\s//\sAnnual\sP2P\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s7:\s//\sMonthly\sAverage\s(w/cap)\r\n
+\s\s\s\s\s\s\s\sif\sfirst_credit_now\sor\s!first_credit_passed\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(min(monthly_average_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\selse\s//\sroll\sto\sa\spure\scap\safter\srate\ssetting\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\scase\s8:\s//\s2y\sAnnual\sP2P\s(cap)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s9:\s//\sMLSB\sP2P\s1-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s10:\s//\sMLSB\sP2P\s2-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s11:\s//\s5y\sAnnual\sP2P\s(cap)\r\n
+\s\s\s\s\s\s\s\sif\sfirst_credit_now\sor\sdisable_rate_setting\sor\sno_rate_setting\sthen\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sinforce.index_cap),\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\scase\s12:\s//\sPIMCO\sP2P\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s13:\s//\sPIMCO\sP2P\s2-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(pro_rata_factor[step]\s&lt;=\s0.5,\s1e-06),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1]\s/\s2,\sinforce.index_floor),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor))\r\n
+\s\s\s\scase\s14:\s//\sPIMCO\sP2P\s1-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s15:\s//\sPIMCO\sP2P\s2-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s16:\s//\sSPX\sP2P\s2-year\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s17:\s//\sMLSB\sAnnual\sP2P\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s18:\s//\sMSLB\s2-year\sP2P\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\s\s\s\s\s\s\s\s\r\n
+\s\s\s\scase\s19:\s//\sPIMCO\sAnnual\sP2P\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s20:\s//\sPIMCO\s2-year\sP2P\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s21:\s//\sMXEA\sP2P\s1-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s22:\s//\sMXEA\s1-year\sP2P\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s23:\s//\sRTY\sP2P\s1-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s24:\s//\sRTY\s1-year\sP2P\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s25:\s//\sAB\sP2P\s1-year\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s26:\s//\sAB\sP2P\s1-year\sParticipation\srate\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s27:\s//\sAB\sP2P\s2-year\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(pro_rata_factor[step]\s&lt;=\s0.5,\s1e-06),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1]\s/\s2,\sinforce.index_floor),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor))\r\n
+\s\s\s\scase\s28:\s//\sAB\sP2P\s2-year\sParticipation\srate\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s29:\s//\sMSEH\s10*2\sCliquet\r\n
+\s\s\s\s\s\s\s\sreturn\sannexus_strategy_return\r\n
+\s\s\s\scase\s30:\s//\sMSEH\ssingle\s5*1\sCliquet\r\n
+\s\s\s\s\s\s\s\sreturn\sannexus_strategy_return\r\n
+\s\s\s\scase\s31:\s//\sMSEH\sAnnual\sP2P\s(spread\s&amp;\spart\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\sannexus_strategy_return\r\n
+\s\s\s\scase\s32:\s//\sMSEH\sthree\s5*1\sCliquet\r\n
+\s\s\s\s\s\s\s\sreturn\sannexus_strategy_return\r\n
+\s\s\s\scase\s33:\s//\sPIMCO\sthree\s5*1\sCliquet\r\n
+\s\s\s\s\s\s\s\sreturn\sannexus_strategy_return\r\n
+\s\s\s\scase\s34:\s//\sPIMCO\s10*2\sCliquet\r\n
+\s\s\s\s\s\s\s\sreturn\sannexus_strategy_return\r\n
+\s\s\s\scase\s35:\s//\sPIMCO\sAnnual\sP2P\s(spread\s&amp;\spart\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\sannexus_strategy_return\r\n
+\s\s\s\scase\s36:\s//\sSPX\sAnnual\sP2P\s(spread\s&amp;\spart\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\sannexus_strategy_return\r\n
+\s\s\s\scase\s37:\s//\sLegg\sMason\sP2P\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s38:\s//\sLegg\sMason\sP2P\s2-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(pro_rata_factor[step]\s&lt;=\s0.5,\s1e-06),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1]\s/\s2,\sinforce.index_floor),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor))\r\n
+\s\s\s\scase\s39:\s//\sLegg\sMason\sP2P\s1-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s40:\s//\sLegg\sMason\sP2P\s2-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s41:\s//\sLegg\sMason\sAnnual\sP2P\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s42:\s//\sLegg\sMason\s2-year\sP2P\s(Participation\srate)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\s\r\n
+\s\s\s\scase\s43:\s//\sAB\sAnnual\sP2P\s(Participation\srate\sand\sspread)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1]-inforce.index_spread,\sinforce.index_floor)\r\n
+\s\s\s\scase\s44:\s//\sAB\s2-year\sP2P\s(Participation\srate\sand\sspread)\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(pro_rata_factor[step]\s&lt;=\s0.5,\s1e-06),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s*\sdeclared_parameter[step_esg-1]-inforce.index_spread/\s2,\sinforce.index_floor),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s*\sdeclared_parameter[step_esg-1]-inforce.index_spread,\sinforce.index_floor))\r\n
+\s\s\s\scase\s45:\s//\sAQR\sAnnual\sP2P\s(Participation\srate\sand\sspread)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1]-inforce.index_spread,\sinforce.index_floor)\r\n
+\s\s\s\scase\s46:\s//\sAQR\s2-year\sP2P\s(Participation\srate\sand\sspread)\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(pro_rata_factor[step]\s&lt;=\s0.5,\s1e-06),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s*\sdeclared_parameter[step_esg-1]-inforce.index_spread\s/\s2,\sinforce.index_floor),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax((p2p_return\s*\sdeclared_parameter[step_esg-1]-inforce.index_spread),\sinforce.index_floor))\r\n
+\s\s\s\scase\s47://\sAQR\sAnnual\sP2P\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s48://AQR\s2-year\sP2P\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s49://AQR\sAnnual\sp2p\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s50://AQR\s2-year\sp2p\swih\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(pro_rata_factor[step]\s&lt;=\s0.5,\s1e-06),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1]\s/\s2,\sinforce.index_floor),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor))\r\n
+\s\s\s\scase\s51://AQR\sannual\sp2p\swith\sparticipation\srate\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s52://AQR\s2-year\sp2p\swith\sparticipation\srate\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s53://AB\sGLOBAL\sALLOCATION\sAnnual\sp2p\swith\sparticipation\srate\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s54:\s//\sAB\sGLOBAL\sALLOCATION\sAnnual\sP2P\s(Participation\srate\sand\sspread)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1]-inforce.index_spread,\sinforce.index_floor)\r\n
+\s\s\s\scase\s55://PIMCO\sBAP\sAnnual\sp2p\swith\sparticipation\srate\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s56:\s//\sPIMCO\sBAP\sAnnual\sP2P\s(Participation\srate\sand\sspread)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1]-inforce.index_spread,\sinforce.index_floor)\r\n
+\s\s\s\scase\s57://\sSPX\sP2P\s5-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s58:\s//\sNASDAQ\sP2P\s1-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\sinforce.index_floor)\r\n
+\s\s\s\scase\s59:\s//\s1yr\sSPX\sBinary\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(p2p_return\s&gt;\s0,\s1e-06),0.01,\s0)\r\n
+\s\s\s\scase\s60:\s//\s1yr\sMXEA\sBinary\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(p2p_return\s&gt;\s0,\s1e-06),0.01,\s0)\r\n
+\s\s\s\scase\s61:\s//\s1yr\sRTY\sBinary\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(p2p_return\s&gt;\s0,\s1e-06),0.01,\s0)\r\n
+\s\s\s\scase\s62:\s//\sDFA\sAnnual\sp2p\swith\sparticipation\srate\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s63:\s//\sDFA\sAnnual\sP2P\s(Participation\srate\sand\sspread)\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1]\s-\sinforce.index_spread,\sinforce.index_floor)\r\n
+\s\s\s\scase\s64:\s//\sDFA\s2-year\sP2P\swith\sparticipation\srate\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s65:\s//\sDFA\s2-year\sP2P\s(Participation\srate\sand\sspread)\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(pro_rata_factor[step]\s&lt;=\s0.5,\s1e-06),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax(p2p_return\s*\sdeclared_parameter[step_esg-1]\s-\sinforce.index_spread\s/\s2,\sinforce.index_floor),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smax((p2p_return\s*\sdeclared_parameter[step_esg-1]\s-\sinforce.index_spread),\sinforce.index_floor))\r\n
+\s\s\s\scase\s66:\s//\sSPX\sP2P\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s67://\sSPX\sP2P\s6-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s-\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s68:\s//\sSPX\sP2P\sput\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(declared_parameter[step_esg-1]\s-\sp2p_return,\sinforce.index_floor)\r\n
+\s\s\s\scase\s69://\sSPX\sP2P\sput\s6-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(declared_parameter[step_esg-1]\s-\sp2p_return,\sinforce.index_floor)\r\n
+\s\s\s\scase\s70:\s//\sSPTR\sP2P\sput\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(declared_parameter[step_esg-1]\s-\sp2p_return,\sinforce.index_floor)\r\n
+\s\s\s\scase\s71://\sSPTR\sP2P\scall\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s-declared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s72:\s//\sSPX\sP2P\s1-year\strigger\sfund\r\n
+\s\s\s\s\s\s\s\sreturn\sdeclared_parameter[step_esg-1]\s*\siif(compare(p2p_return\s&gt;\sinforce.minimum_index_change_value\s+\s1e-05,\s1e-06),\s1,\s0)\r\n
+\s\s\s\scase\s73:\s//\sNASDAQ\sP2P\s1-year\strigger\sfund\r\n
+\s\s\s\s\s\s\s\sreturn\sdeclared_parameter[step_esg-1]\s*\siif(compare(p2p_return\s&gt;\sinforce.minimum_index_change_value\s+\s1e-05,\s1e-06),\s1,\s0)\r\n
+\s\s\s\scase\s74:\s//\sINVESCO\sP2P\s1-year\swith\spar\r\n
+\s\s\s\s\s\s\s\sreturn\smax(p2p_return\s*\sdeclared_parameter[step_esg-1],\sinforce.index_floor)\r\n
+\s\s\s\scase\s75:\s//\sJPM\sMOM\sP2P\s1-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\s\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\s0)\r\n
+\s\s\s\scase\s76:\s//\sJPM\sQUAL\sP2P\s1-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\s\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\s0)\r\n
+\s\s\s\scase\s77:\s//\sJPM\sASC\sP2P\s1-year\swith\scap\r\n
+\s\s\s\s\s\s\s\sreturn\s\smax(min(p2p_return,\sdeclared_parameter[step_esg-1]),\s0)\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s1/0\r\n
+end</c>
+            <c name="x5_rider_return">=\smax(0,\sannexus_strategy_return\s-\srider_fee\s*\syears_passed_in_strategy_term)</c>
+            <c name="adjusted_strategy_return">//For\sdaily\sincome\sbase\r\n
+\r\n
+=\sadjustment_factor_daily\s*\sstrategy_return</c>
+            <c name="adjusted_x5_rider_return">//For\sdaily\sincome\sbase\r\n
+\r\n
+=\sadjustment_factor_daily\s*\sx5_rider_return</c>
+            <c name="interest_credit_percent">if\sis_running_dac\sthen\r\n
+\s\s\s\sif\sfirst_credit_now\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s(1\s+\soption_value_dac)\s^\screditing_term\s-\s1\r\n
+\s\s\s\selif\scredit_interest_now\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s(1\s+\soption_budget_dac)\s^\screditing_term_post_ratesetting\s-\s1\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(credit_interest_now,\sstrategy_return,\s0)\r\n
+end</c>
+            <c name="interest_credit_percent_for_liability">if\sis_running_dac\sthen\r\n
+\s\s\s\sif\sfirst_credit_now\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s(1\s+\soption_value_dac)\s^\screditing_term\s-\s1\r\n
+\s\s\s\selif\scredit_interest_now\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s(1\s+\soption_budget_dac)\s^\screditing_term_post_ratesetting\s-\s1\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(credit_interest_now,\siif(is_annexus_accelerator,\sx5_rider_return,\sstrategy_return),\s0)\r\n
+end</c>
+            <c name="interest_credit_amount">/*\r\n
+apply\sinterest\sbonus\srate\sonly\sfor\sfirst\sincome\scredit\r\n
+*/\r\n
+\r\n
+=\siif(first_credit_now,\s(1\s+\sinforce.interest_bonus_rate),\s1)\r\n
+\s\s\s\s*\sinterest_credit_percent\s*\saccount_value_bop</c>
+            <c name="interest_credit_percent_on_strategy_return_mgr">if\sis_running_dac\sthen\r\n
+\s\s\s\sif\sfirst_credit_now\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s(1\s+\soption_value_dac)\s^\screditing_term\s-\s1\r\n
+\s\s\s\selif\scredit_interest_now\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s(1\s+\soption_budget_dac)\s^\screditing_term_post_ratesetting\s-\s1\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(credit_interest_now,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\siif(inforce.is_mav_product,\smax(strategy_return,\sinforce.minimum_growth_rate),\sstrategy_return),\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s0)\r\n
+end</c>
+            <c name="interest_credit_amount_mgr">/*\r\n
+apply\sinterest\sbonus\srate\sonly\sfor\sfirst\sincome\scredit\r\n
+apply\sminimum\sgrowth\srate\r\n
+*/\r\n
+\r\n
+=\siif(first_credit_now,\s(1\s+\sinforce.interest_bonus_rate),\s1)\r\n
+\s\s\s\s*\sinterest_credit_percent_on_strategy_return_mgr\s*\saccount_value_bop</c>
+            <c name="interest_credit_amount_mgr_cdsc">/*\r\n
+Total\sinterest\scredited\safter\sconsidering\ssurrender\scharge\speriod\r\n
+*/\r\n
+\r\n
+=\siif(policy_year[step]\s&lt;\ssurrender_charge_period\s+\s2,\sinterest_credit_amount,\sinterest_credit_amount_mgr)</c>
+            <c name="partial_interest_credit_amount">=\saccount_value_bop\s*\sstrategy_return\s*\spro_rata_factor[step]</c>
+            <c name="account_value_eop">/*\r\n
+account\svalue\safter\screditing\sinterest\r\n
+*/\r\n
+\r\n
+=\smax(account_value_bop\s+\sinterest_credit_amount_mgr_cdsc,\s0)</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="account_value_eop" formattype="General" width="80" />
+      <c name="adjusted_strategy_return" formattype="General" width="156.8" />
+      <c name="adjusted_x5_rider_return" formattype="General" width="153.6" />
+      <c name="adjustment_factor_daily" formattype="General" width="165.6" />
+      <c name="adjustment_factor_on_activation" formattype="General" width="209.6" />
+      <c name="annexus_spread" formattype="General" width="80" />
+      <c name="annexus_strategy_return" formattype="General" width="176.8" />
+      <c name="credit_interest_now" formattype="General" width="149.6" />
+      <c name="index_at_last_credit" formattype="General" width="148.666666666667" />
+      <c name="index_at_last_index_term_end" formattype="General" width="80" />
+      <c name="index_at_last_monthiversary" formattype="General" width="80" />
+      <c name="index_term_return" formattype="General" width="132.8" />
+      <c name="index_term_return_accum" formattype="General" width="165.6" />
+      <c name="interest_credit_amount" formattype="General" width="157.6" />
+      <c name="interest_credit_amount_mgr" formattype="General" width="80" />
+      <c name="interest_credit_amount_mgr_cdsc" formattype="General" width="80" />
+      <c name="interest_credit_percent" formattype="General" width="150.6" />
+      <c name="interest_credit_percent_for_liability" formattype="General" width="80" />
+      <c name="interest_credit_percent_on_strategy_return_mgr" formattype="General" width="80" />
+      <c name="local_floor" formattype="General" width="80" />
+      <c name="Lock_in_return" formattype="General" width="80" />
+      <c name="monthly_average" formattype="General" width="80" />
+      <c name="monthly_average_return" formattype="General" width="80" />
+      <c name="monthly_p2p_return" formattype="General" width="109" />
+      <c name="monthly_p2p_return_accum" formattype="General" width="80" />
+      <c name="monthly_sum" formattype="General" width="80" />
+      <c name="n_month" formattype="General" width="80" />
+      <c name="p2p_return" formattype="General" width="80" />
+      <c name="partial_interest_credit_amount" formattype="General" width="192" />
+      <c name="step" formattype="General" width="80" />
+      <c name="strategy_return" formattype="General" width="133.6" />
+      <c name="strike" formattype="General" width="80" />
+      <c name="x5_rider_return" formattype="General" width="108.8" />
+    </view>
+  </view-customizations>
+</computation-library-root>

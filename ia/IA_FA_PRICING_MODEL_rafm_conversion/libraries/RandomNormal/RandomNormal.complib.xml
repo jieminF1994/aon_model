@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="RandomNormal" version="master" format-version="20">
+  <inputs>
+    <input name="N_HYBRID_INDEX" type="int" modifier="Constant" />
+  </inputs>
+  <results>
+    <result name="v" ref="=projection_esg.variance" />
+    <result name="rate" ref="=projection_esg.rate" />
+    <result name="equity" ref="=projection_esg.equity" />
+    <result name="hybrid_index_equity_basis" ref="=projection_esg.hybrid_index_equity_basis" />
+    <result name="hybrid_index_bond_basis" ref="=projection_esg.hybrid_index_bond_basis" />
+    <result name="nasdaq" ref="=projection_esg.equity_nasdaq" />
+    <result name="nasdaq_vol" ref="=projection_esg.nasdaq_vol" />
+    <result name="mxea" ref="=projection_esg.equity_mxea" />
+    <result name="mxea_vol" ref="=projection_esg.mxea_vol" />
+    <result name="r2k" ref="=projection_esg.equity_r2k" />
+    <result name="r2k_vol" ref="=projection_esg.r2_vol" />
+    <result name="death_event_randu" ref="=Projection.death_event_randu" />
+    <result name="lapse_event_randu" ref="=Projection.lapse_event_randu" />
+    <result name="withdrawal_event_util_randu" ref="=Projection.withdrawal_event_util_randu" />
+    <result name="withdrawal_event_start_randu" ref="=Projection.withdrawal_event_start_randu" />
+    <result name="withdrawal_event_amount_randu" ref="=Projection.withdrawal_event_amount_randu" />
+    <result name="marriage_divorce_randu" ref="=Projection.marriage_divorce_randu" />
+    <result name="conf_benefit_util_randu" ref="=Projection.conf_benefit_util_randu" />
+    <result name="conf_event_randu" ref="=Projection.conf_event_randu" />
+    <result name="recovery_event_randu" ref="=Projection.recovery_event_randu" />
+    <result name="hybrid_target_vol" ref="=projection_esg.hybrid_target_vol" />
+  </results>
+  <calculations>
+    <table name="Projection_esg" type="CashFlow">
+      <column-groups>
+        <g name="g1" max-repeat-count="=\sN_HYBRID_INDEX">=N_HYBRID_INDEX</g>
+        <g name="g2" max-repeat-count="=\sN_HYBRID_INDEX">=N_HYBRID_INDEX</g>
+        <g name="g3" repeat-count="2" />
+      </column-groups>
+      <columns>
+        <c name="equity" datatype="real" />
+        <c name="equity_nasdaq" datatype="real" />
+        <c name="equity_r2k" datatype="real" />
+        <c name="equity_mxea" datatype="real" />
+        <c name="variance" datatype="real" />
+        <c name="nasdaq_vol" datatype="real" />
+        <c name="r2_vol" datatype="real" />
+        <c name="mxea_vol" datatype="real" />
+        <c name="rate" datatype="real" />
+        <c name="hybrid_index_equity_basis" datatype="real" group="g1" />
+        <c name="hybrid_index_bond_basis" datatype="real" group="g2" />
+        <c name="hybrid_target_vol" datatype="real" group="g3" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="equity">//\sHeston\smodel\sequity\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="equity_nasdaq">=\srng.normal()</c>
+            <c name="equity_r2k">=\srng.normal()</c>
+            <c name="equity_mxea">=\srng.normal()</c>
+            <c name="variance">//\sHeston\smodel\svariance\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="nasdaq_vol">=\srng.normal()</c>
+            <c name="r2_vol">=\srng.normal()</c>
+            <c name="mxea_vol">=\srng.normal()</c>
+            <c name="rate">//\sG2++\smodel\s0'th\sfactor\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="hybrid_index_equity_basis">=rng.normal()</c>
+            <c name="hybrid_index_bond_basis">=rng.normal()</c>
+            <c name="hybrid_target_vol">//\srandom\snumber\sfor\starget\svol\sswitch\sfor\sJPM\sAdaptive\sindex\s\r\n
+//\sindex\s=\s0\s:\sJPM\sMOM\r\n
+//\sindex\s=\s1\s:\sJPM\sQUA\r\n
+=rng.normal()</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="equity">//\sHeston\smodel\sequity\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="equity_nasdaq">=\srng.normal()</c>
+            <c name="equity_r2k">=\srng.normal()</c>
+            <c name="equity_mxea">=\srng.normal()</c>
+            <c name="variance">//\sHeston\smodel\svariance\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="nasdaq_vol">=\srng.normal()</c>
+            <c name="r2_vol">=\srng.normal()</c>
+            <c name="mxea_vol">=\srng.normal()</c>
+            <c name="rate">//\sG2++\smodel\s0'th\sfactor\snormal\srandom\svariable.\r\n
+=\srng.normal()</c>
+            <c name="hybrid_index_equity_basis">=rng.normal()</c>
+            <c name="hybrid_index_bond_basis">=rng.normal()</c>
+            <c name="hybrid_target_vol">//\srandom\snumber\sfor\starget\svol\sswitch\sfor\sJPM\sAdaptive\sindex\s\r\n
+//\sindex\s=\s0\s:\sJPM\sMOM\r\n
+//\sindex\s=\s1\s:\sJPM\sQUA\r\n
+=rng.normal()</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+    <table name="Projection" type="CashFlow">
+      <column-groups>
+        <g name="g1" repeat-count="2" />
+        <g name="g4" repeat-count="2" />
+        <g name="g5" repeat-count="2" />
+      </column-groups>
+      <columns>
+        <c name="death_event_randu" datatype="real" group="g1" />
+        <c name="lapse_event_randu" datatype="real" />
+        <c name="withdrawal_event_util_randu" datatype="real" />
+        <c name="withdrawal_event_start_randu" datatype="real" />
+        <c name="withdrawal_event_amount_randu" datatype="real" />
+        <c name="marriage_divorce_randu" datatype="real" />
+        <c name="conf_benefit_util_randu" datatype="real" />
+        <c name="conf_event_randu" datatype="real" group="g4" />
+        <c name="recovery_event_randu" datatype="real" group="g5" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="death_event_randu">=rng.uniform()</c>
+            <c name="lapse_event_randu">=rng.uniform()</c>
+            <c name="withdrawal_event_util_randu">=rng.uniform()</c>
+            <c name="withdrawal_event_start_randu">=rng.uniform()</c>
+            <c name="withdrawal_event_amount_randu">=rng.uniform()</c>
+            <c name="marriage_divorce_randu">=rng.uniform()</c>
+            <c name="conf_benefit_util_randu">=rng.uniform()</c>
+            <c name="conf_event_randu">=rng.uniform()</c>
+            <c name="recovery_event_randu">=rng.uniform()</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="death_event_randu">=rng.uniform()</c>
+            <c name="lapse_event_randu">=rng.uniform()</c>
+            <c name="withdrawal_event_util_randu"></c>
+            <c name="withdrawal_event_start_randu"></c>
+            <c name="withdrawal_event_amount_randu">=rng.uniform()</c>
+            <c name="marriage_divorce_randu"></c>
+            <c name="conf_benefit_util_randu"></c>
+            <c name="conf_event_randu">=rng.uniform()</c>
+            <c name="recovery_event_randu">=rng.uniform()</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="conf_benefit_util_randu" formattype="General" width="80" />
+      <c name="conf_event_randu[0]" formattype="General" width="80" />
+      <c name="death_event_randu[0]" formattype="General" width="80" />
+      <c name="lapse_event_randu" formattype="General" width="116" />
+      <c name="marriage_divorce_randu" formattype="General" width="80" />
+      <c name="recovery_event_randu[0]" formattype="General" width="80" />
+      <c name="withdrawal_event_amount_randu" formattype="General" width="80" />
+      <c name="withdrawal_event_start_randu" formattype="General" width="80" />
+      <c name="withdrawal_event_util_randu" formattype="General" width="80" />
+    </view>
+    <view name="Cashflow:Projection_esg">
+      <c name="hybrid_target_vol[0]" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

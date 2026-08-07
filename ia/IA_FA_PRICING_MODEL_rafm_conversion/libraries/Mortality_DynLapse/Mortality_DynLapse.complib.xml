@@ -1,0 +1,1673 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="Mortality_DynLapse" version="master" format-version="20" description="Mortality - UDD assumption&#xD;&#xA;Lapse - always at month end&#xD;&#xA;with Dynamic Lapse&#xD;&#xA;">
+  <ImportedUDFs>
+    <ImportUDF ref="private_libraries\InterestRateSensitiveDynamicLapse\InterestRateSensitiveDynamicLapse.udflib.xml" />
+  </ImportedUDFs>
+  <UserUDFs>
+    <udf name="LapseIntFacCalculator">/*\r\n
+Lapse\sinterest\sfactor\sfunction\swith\srespect\sto\r\n
+policy\selapsed\stime,\sincome\sbase,\sshort\srate,\saccount\svalue\sand\smaximum\sannual\swithdrawal\samount.\r\n
+\r\n
+Input\sof\sfunction:\r\n
+\r\n
+J_idt:\spolicy\selpased\stime\r\n
+\\(Int\\beta_1\\):\sparameter\scalculated\sin\sMortality_DynLapse.projection\r\n
+\\(Int\\beta_2\\):\sparameter\scalculated\sin\sMortality_DynLapse.projection\r\n
+GMWB_mbb:\sincome\sbase\r\n
+r:\sshort\srate\r\n
+AV:\stotal\saccount\svalue\send\sof\sprojection\speriod\r\n
+mawa:\smaximum\sannual\swithdrawal\samount\r\n
+other\sparameters:\s\\(\\beta_0\\),\s\\(\\beta_3\\),\s\\(\\beta_4\\)\r\n
+\r\n
+Intermediate\svariables:\r\n
+\r\n
+\\(\\beta_3\\text{_new}\\),\s\\(G\\),\s\\(P_0\\),\s\\(P\\)\r\n
+\r\n
+Formulas:\r\n
+\r\n
+$$\\beta_3\\text{_}new\s=\s\\max(\\beta_3\\times\\frac{GMWB\\text{_}mbb}{AV},\\frac{mawa}{AV})$$\r\n
+\r\n
+$$\sG\s=\s\\beta_0+\\beta_1\\times\\max(0,r-\\beta_3\\text{_}new)\s$$\r\n
+\r\n
+$$\sP_0\s=\s(\\beta_2-1)\\times\\frac{\\exp(\\beta_0)}{1+\\exp(\\beta_0)}+1\s$$\r\n
+\r\n
+$$\sP\s=\s\\begin{cases}\r\n
+\\frac{1}{P_0}\\times((\\beta_2-1)\\times\\frac{\\exp(G)}{1+\\exp(G)}+1),\s&amp;\sG&lt;10\s\\\\\r\n
+\\frac{1}{P_0}\\times\\beta_2,\s&amp;\sG\\geq\s10\r\n
+\\end{cases}\s$$\r\n
+\r\n
+$$\sLapseIntFac\s=\s1+(P-1)\\times\\max(\\frac{\\beta_4-J\\text{_}idt}{\\beta_4},0)\s$$\r\n
+\r\n
+*/\r\n
+real\sLapseIntFacCalculator(real\sJ_idt,\sreal\saLapseIntBeta1,\sreal\saLapseIntBeta2,\sreal\sGMWB_mbb,\sreal\sr,\sreal\sAV,\sreal\smawa)\r\n
+\s\s\s\sreal\sbeta0\s=\s-5.0\r\n
+\s\s\s\sreal\sbeta3\s=\s0.05\r\n
+\s\s\s\sreal\sbeta4\s=\s40.0\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sbeta3_new\s=\smax(beta3\s*\sGMWB_mbb,\smawa)/AV\r\n
+\s\s\s\sreal\sG\s=\sbeta0\s+\saLapseIntBeta1\s*\smax(0.0,\sr\s-\sbeta3_new)\r\n
+\s\s\s\sreal\sP0\s=\s(aLapseIntBeta2\s-\s1.0)\s*\sexp(beta0)/(1.0\s+\sexp(beta0))\s+\s1.0\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sP\s=\s0.0\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\s(G&lt;10)\sthen\r\n
+\s\s\s\s\s\s\s\sP\s=\s1.0\s/\sP0\s*\s((aLapseIntBeta2\s-1)\s*\sexp(G)\s/\s(1+exp(G))\s+\s1)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sP\s=\s1.0\s/\sP0\s*\saLapseIntBeta2\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s1.0\s+\s(P\s-\s1)\s*\smax((beta4\s-\sJ_idt)/beta4,\s0)\r\n
+\s\s\s\s\r\n
+end</udf>
+    <udf name="GetAnnFac">/*\r\n
+Calculate\sannuity\sfactor\sfor\sa\sgiven\srate\susing\slinear\sinterpolation.\r\n
+*/\r\n
+\r\n
+real\sGetAnnFac(real\sRate,\sint\sLB,\sint\sUB,\sreal\sAF_LB,\sreal\sAF_UB,\sreal\sDF_LB,\sreal\sDF_UB,\sreal\sLSAF_LB,\sreal\sLSAF_UB,\sreal\sSurvivor)\r\n
+\s\s\s\s\s\s\s\sreal\sAnnFacI\s=\sdo_interp1_(Rate,\sLB,\sUB,\sAF_LB,\sAF_UB)\r\n
+\s\s\s\s\s\s\s\sreal\sDFI\s\s\s\s\s=\sdo_interp1_(Rate,\sLB,\sUB,\sDF_LB,\sDF_UB)\r\n
+\s\s\s\s\s\s\s\sreal\sAnnFacL\s=\sdo_interp1_(Rate,\sLB,\sUB,\sLSAF_LB,\sLSAF_UB)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s$result\s=\s(AnnFacL\s-\sAnnFacI)/DFI/Survivor\r\n
+\s\s\s\s\s\s\s\s\r\n
+end</udf>
+    <udf name="SafeDivide">/*\r\n
+Safe\sdivide\sfunction\sto\savoid\sinvalid\sdivision\r\n
+*/\r\n
+\r\n
+real\sSafeDivide(real\snom,\sreal\sdenom,\sreal\sdefault_val)\r\n
+\s\s\s\sif\s(compare(denom==0,\s1E-8)\sor\scompare(abs(denom)&gt;1E10,\s1E-11))\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sdefault_val\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\sZeroIfSmall(nom/denom)\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="ZeroIfSmall">/*\r\n
+Set\svery\ssmall\snumber\sto\s0\r\n
+*/\r\n
+\r\n
+real\sZeroIfSmall(real\sarg)\r\n
+\r\n
+\s\s\s\sif\s(compare(arg\s==\s0,\s1E-6))\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\sarg\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="DynamicLapseMultiplier">real\sDynamicLapseMultiplier(real\sdynLapseParam1,\sreal\sdynLapseParam2,\sreal\sMoneyness,\sreal\sdynLapseMultiFloorLB)\r\n
+\r\n
+\s\s\s\s$result\s=\smax(dynLapseMultiFloorLB,\s1\s-\sdynLapseParam1\s*\satan(dynLapseParam2\s*\sMoneyness))\r\n
+\r\n
+end</udf>
+    <udf name="ItmDynamicLapseShockMultiplier">real\sItmDynamicLapseShockMultiplier(real\sitm)\r\n
+\r\n
+\s\s\s\sif\scompare(itm\s&lt;\s-1,\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s1\r\n
+\s\s\s\selif\scompare(itm\s&lt;\s-0.5,\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s1.63\r\n
+\s\s\s\selif\scompare(itm\s&lt;\s-0.2,\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s-2.1\s*\sitm\s+\s0.58\r\n
+\s\s\s\selif\scompare(itm\s&lt;\s0.2,\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s1\r\n
+\s\s\s\selif\scompare(itm\s&lt;\s0.5,\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s-2.133333\s*\sitm\s+\s1.4266665\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0.36\r\n
+\s\s\s\sendif\r\n
+\s\s\s\s\r\n
+end</udf>
+    <udf name="lookup_moneyness">real\slookup_moneyness(real[N,M]\slookup_bb_over_av_table,\sreal\smoneyness,\sreal\saccount_value,\sint\sfactor_index,\sbool\sflag_interp)\r\n
+\s\s\s\sreal\sparam_first\r\n
+\s\s\s\sreal\sparam_second\r\n
+\s\s\s\sreal\slookup_first\r\n
+\s\s\s\sreal\slookup_second\r\n
+\s\s\s\sreal\sbb_over_av\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(account_value\s&lt;=\s0,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s3\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s//\srounding\slogic\sthat\smatches\sthe\schecking\stool\r\n
+\s\s\s\sbb_over_av\s=\smoneyness\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN-2\r\n
+\s\s\s\s\s\s\s\sif\scompare(bb_over_av\s&gt;\slookup_bb_over_av_table[i,0],\s1e-6)\sand\scompare(bb_over_av\s&lt;=\slookup_bb_over_av_table[i+1,0],\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparam_first\s=\slookup_bb_over_av_table[i,factor_index]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sparam_second\s=\slookup_bb_over_av_table[i+1,factor_index]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slookup_first\s=\slookup_bb_over_av_table[i,0]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slookup_second\s=\slookup_bb_over_av_table[i+1,0]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//\swhether\slinearly\sinterpolate\sthe\slookup\svalue\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//\sotherwise\srounding\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\sflag_interp\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\sparam_first\s+\s(param_second\s-\sparam_first)\s/\s(lookup_second\s-\slookup_first)\s*\s(bb_over_av\s-\slookup_first)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(bb_over_av\s-\slookup_first\s&lt;=\slookup_second\s-\sbb_over_av,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\sparam_first\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\sparam_second\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s//$result\s=\sparam_first\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\slookup_bb_over_av_table[N-1,factor_index]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="pol_age_1" type="int" shape="*" description="The age of the first covered person" />
+    <input name="acc_value" type="real" description="Total account fund value beginning of period" modifier="Cashflow" />
+    <input name="pol_yr" type="int" shape="*" description="The number of year from the policy issue date" />
+    <input name="TimeT" type="real" shape="*" description="Policy elapsed time" />
+    <input name="IsPiPEffective" type="bool" description="True if protected income payment if effective" modifier="Cashflow" />
+    <input name="RiderElected" type="bool" description="True if the policy has a living benefit rider" />
+    <input name="cf_Inc_base" type="real" description="The income base of the living benefit rider" modifier="Cashflow" />
+    <input name="Scen_Rates" type="real" description="The forward rate" modifier="Cashflow" />
+    <input name="Time_dt" type="real" shape="*" description="The length of the projection period (in year)" />
+    <input name="DOB_1st" type="date_t" description="Birthday of the first covered person" />
+    <input name="proj_date" type="date_t" shape="*" description="The date of the beginning of the projection period" />
+    <input name="pol_age_2" type="int" shape="*" description="The age of the second covered person" />
+    <input name="DOB_2nd" type="date_t" description="Birthday of the second covered person" />
+    <input name="mawp" type="real" shape="*" description="Maximum annual withdrawal percentage" />
+    <input name="disable_dynamic_lapse" type="bool" description="True if not using dynamic lapse" />
+    <input name="ann_fac" type="real" description="Annuity factor" modifier="Cashflow" />
+    <input name="bm_g2_1_base" type="real" shape="*" description="Mortality improvement factor of first person for base" />
+    <input name="bm_g2_2_base" type="real" shape="*" description="Mortality improvement factor of second person for base" />
+    <input name="bm_base_mort" type="real" shape="*" description="Base mortality rate of the first person" />
+    <input name="bm_base_mort_2" type="real" shape="*" description="Base mortality rate of the second person" />
+    <input name="pipp" type="real" shape="*" description="Protected income payment percentage" />
+    <input name="policy_base_lapse" type="real" shape="*" description="Base lapse rate" />
+    <input name="new_money_rate" type="real" shape="*" />
+    <input name="CDSC_perc" type="real" shape="*" description="Withdrawal charge percentage, used in no GLB dynamic lapse calculation." />
+    <input name="MVA_perc" type="real" description="MVA percentage, used in no GLB dynamic lapse calculation." modifier="Cashflow" />
+    <input name="CreditInterestNow" type="bool" description="True if crediting interest." modifier="Cashflow" />
+    <input name="disable_interest_rate_lapse" type="bool" />
+    <input name="bm_g2_1_glwb" type="real" shape="*" description="Mortality improvement factor of first person for glwb" />
+    <input name="bm_g2_2_glwb" type="real" shape="*" description="Mortality improvement factor of second person for glwb" />
+    <input name="surrender_charge_period_ind" type="bool" shape="*" />
+    <input name="surrender_charge_spike_period_ind" type="bool" shape="*" />
+    <input name="base_lapse_rate_shock_multiplier" type="real" />
+    <input name="interest_dynamic_lapse_shock_multiplier" type="real" />
+    <input name="is_itm_dynamic_lapse_shocked" type="bool" />
+    <input name="remaining_term" type="real" shape="*" />
+    <input name="base_isl_floor" type="real" />
+    <input name="base_isl_cap" type="real" />
+    <input name="lapse_wd_multiplier" type="real" />
+    <input name="systematic_withdrawal_started_bop" type="bool" modifier="Cashflow" />
+    <input name="doubling_terminated" type="bool" shape="*" />
+    <input name="glwb_shock_lapse_multiplier" type="real" />
+    <input name="disable_glwb_shock_lapse" type="bool" />
+    <input name="mortality_mult_glb_1" type="real" shape="*" />
+    <input name="mortality_mult_glb_2" type="real" shape="*" />
+    <input name="mortality_mult_no_glb_1" type="real" shape="*" />
+    <input name="mortality_mult_no_glb_2" type="real" shape="*" />
+    <input name="use_2019_q3_lapse_assumptions" type="bool" />
+    <input name="surrender_charge_period" type="int" />
+    <input name="competitor_crediting_rate" type="real" shape="*" description="New money rate, used in no GLB dynamic lapse calculation." />
+    <input name="is_annexus_product" type="bool" />
+    <input name="apv_lb_x5" type="real" modifier="Cashflow" />
+    <input name="apv_db" type="real" modifier="Cashflow" />
+    <input name="disable_DB_AnnFac" type="bool" />
+    <input name="APV_LB_new_calc" type="bool" />
+    <input name="ann_fac_annexus" type="real" modifier="Cashflow" />
+    <input name="is_flex" type="bool" />
+    <input name="disable_flex" type="bool" />
+    <input name="mawp_flex" type="real" modifier="Cashflow" />
+    <input name="pipp_flex" type="real" modifier="Cashflow" />
+    <input name="flex_lapse_multiplier" type="real" />
+    <input name="income_percentage" type="real" shape="*" />
+    <input name="guaranteed_lifetime_income_amount" type="real" modifier="Cashflow" />
+    <input name="is_rider_income_builder" type="bool" />
+    <input name="initial_glia" type="real" />
+    <input name="apply_shock_lapse_at_issue" type="bool" />
+    <input name="lapse_wd_multiplier_at_issue" type="real" />
+    <input name="dynamic_lapse_at_issue" type="composite">
+      <field name="dyn_lapse_at_spike_ITM_P1" type="real" />
+      <field name="dyn_lapse_at_spike_ITM_P2" type="real" />
+      <field name="dyn_lapse_at_spike_OTM_P1" type="real" />
+      <field name="dyn_lapse_at_spike_OTM_P2" type="real" />
+      <field name="dyn_lapse_beyond_spike_ITM_P1" type="real" />
+      <field name="dyn_lapse_beyond_spike_ITM_P2" type="real" />
+      <field name="dyn_lapse_beyond_spike_OTM_P1" type="real" />
+      <field name="dyn_lapse_beyond_spike_OTM_P2" type="real" />
+      <field name="dyn_lapse_at_spike_ITM_P1_withdrawal" type="real" />
+      <field name="dyn_lapse_at_spike_ITM_P2_withdrawal" type="real" />
+      <field name="dyn_lapse_at_spike_OTM_P1_withdrawal" type="real" />
+      <field name="dyn_lapse_at_spike_OTM_P2_withdrawal" type="real" />
+      <field name="dyn_lapse_beyond_spike_ITM_P1_withdrawal" type="real" />
+      <field name="dyn_lapse_beyond_spike_ITM_P2_withdrawal" type="real" />
+      <field name="dyn_lapse_beyond_spike_OTM_P1_withdrawal" type="real" />
+      <field name="dyn_lapse_beyond_spike_OTM_P2_withdrawal" type="real" />
+      <field name="dyn_lapse_multiplier_floor" type="real" />
+    </input>
+    <input name="use_legacy_dynamic_lapse" type="bool" />
+    <input name="dynamic_lapse_legacy_at_issue" type="composite">
+      <field name="life_factor" type="real" shape="*,*" />
+    </input>
+    <input name="ann_fac_legacy" type="real" modifier="Cashflow" />
+    <input name="use_at_issue_assumptions" type="bool" />
+    <input name="is_running_dac" type="bool" />
+    <input name="option_value_dac" type="real" />
+    <input name="option_budget_dac" type="real" />
+    <input name="inforce_option_price" type="real" shape="*" description="Current credit rate, used in no GLB dynamic lapse calculation." />
+    <input name="first_credit_after_valuation_date_passed" type="bool" modifier="Cashflow" />
+    <input name="is_lre" type="bool" />
+    <input name="option_budget_type" type="int" />
+    <input name="option_budget_gaap" type="real" />
+    <input name="reset_rate_now" type="bool" shape="*" />
+    <input name="option_cost_at_issue_date" type="real" />
+    <input name="account_value_at_sc_end" type="real" modifier="Cashflow" />
+    <input name="eps_fee_refund_estimate" type="real" modifier="Cashflow" />
+    <input name="CSV" type="real" modifier="Cashflow" />
+    <input name="MWV" type="real" modifier="Cashflow" />
+    <input name="yrs_until_scp_end" type="real" shape="*" />
+    <input name="epr_fee_pct" type="real" />
+    <input name="strategy_fee_credit" type="real" modifier="Cashflow" />
+    <input name="account_value_post_strategy_fee" type="real" modifier="Cashflow" />
+    <input name="crediting_term_post_ratesetting" type="int" />
+    <input name="use_2025_q3_dynamic_lapse" type="bool" />
+    <input name="lapse_skew_factor" type="real" shape="*" />
+    <input name="is_monthiversary" type="bool" shape="*" />
+    <input name="use_2025_q3_lapse_skew" type="bool" />
+    <input name="step_esg" type="int" modifier="Cashflow" />
+  </inputs>
+  <results>
+    <result name="mQx" ref="=projection.DeathTP" description="Death percentage in this projection period" />
+    <result name="mLx" ref="=projection.LapseTM" description="Lapse rate in this projection period taking mortality into account" />
+    <result name="mPx" ref="=projection.Survivor" description="Survival percentage at the end of this projection period" />
+    <result name="dyn_mult_factor" ref="=projection.dynamic_lapse_multiplier" description="Dynamic lapse factor of living benefit rider" />
+    <result name="lapse_int_factor" ref="=projection.LapseIntFactor" description="Lapse interest factor" />
+    <result name="lapse_int_beta_1" ref="=projection.aLapseIntBeta1" description="Input of lapse interest factor function" />
+    <result name="pv_annuity" ref="=projection.actuarial_present_value" description="PV of future withdrawal" />
+    <result name="lapse_int_beta_2" ref="=projection.aLapseIntBeta2" description="Input of lapse interest factor function" />
+    <result name="base_lapse" ref="=projection.Base_Lapse" description="Base lapse rate" />
+    <result name="itm" ref="=projection.moneyness" description="In-the-moneyness of rider option" />
+    <result name="mort_base" ref="=projection.Base_Mort   " />
+    <result name="mort_multiplier" ref="=projection.Mort_mult1" />
+    <result name="mort_g2" ref="=projection.G2_1   " />
+    <result name="mort_tm" ref="=projection.MortTM" />
+    <result name="lapse_prob" ref="=projection.LapseRate_Final" />
+    <result name="survivor_lapse_only" ref="=projection.survivor_lapse_only" />
+    <result name="mawa_Rate" ref="=projection.mawa_Rate" />
+    <result name="income_percentage_rate" ref="=projection.income_percentage_rate" />
+    <result name="mawa" ref="=projection.MAWA" />
+    <result name="pip" ref="=projection.PIP" />
+    <result name="excess_lapse" ref="=projection.Excess_Lapse" />
+    <result name="interest_sensitive_lapse" ref="=projection.Interest_Rate_Sensitive_Lapse" />
+  </results>
+  <calculations>
+    <table name="Dictionary" type="KeyValue">
+      <c name="default_moneyness" datatype="real">=\siif(use_at_issue_assumptions\sand\suse_legacy_dynamic_lapse,\s3,\s1000)</c>
+      <c name="InputB2" datatype="real">/*\r\n
+Input\sof\sdynamic\slapse\sformula\r\n
+*/\r\n
+\r\n
+10\r\n
+</c>
+      <c name="InputB5" datatype="real">/*\r\n
+Input\sof\sdynamic\slapse\sformula\r\n
+*/\r\n
+\r\n
+50\r\n
+</c>
+      <c name="InputB1" datatype="real">/*\r\n
+Input\sof\sdynamic\slapse\sformula\r\n
+*/\r\n
+\r\n
+200</c>
+      <c name="DOB_PA" datatype="date_t">/*\r\n
+Birthday\sof\sthe\sfirst\scovered\sperson\r\n
+*/\r\n
+\r\n
+=DOB_1st</c>
+      <c name="DOB_JT" datatype="date_t">/*\r\n
+Birthday\sof\sthe\sfirst\scovered\sperson,\r\n
+set\sto\s0\sif\sthere\sis\sno\ssecond\sperson.\r\n
+*/\r\n
+\r\n
+=DOB_2nd</c>
+      <c name="dyn_lapse_at_spike_ITM_P1" datatype="real">=\s0.375</c>
+      <c name="dyn_lapse_at_spike_ITM_P2" datatype="real">=\s2.3</c>
+      <c name="dyn_lapse_at_spike_OTM_P1" datatype="real">=\s0.5</c>
+      <c name="dyn_lapse_at_spike_OTM_P2" datatype="real">=\s4</c>
+      <c name="dyn_lapse_beyond_spike_ITM_P1" datatype="real">=\s0.925</c>
+      <c name="dyn_lapse_beyond_spike_ITM_P2" datatype="real">=\s0.67</c>
+      <c name="dyn_lapse_beyond_spike_OTM_P1" datatype="real">=\s0.35</c>
+      <c name="dyn_lapse_beyond_spike_OTM_P2" datatype="real">=\s2.75</c>
+      <c name="dyn_lapse_ITM_P1_no_withdrawal" datatype="real">=0.35</c>
+      <c name="dyn_lapse_ITM_P2_no_withdrawal" datatype="real">=3.75</c>
+      <c name="dyn_lapse_OTM_P1_no_withdrawal" datatype="real">=0.45</c>
+      <c name="dyn_lapse_OTM_P2_no_withdrawal" datatype="real">=3.75</c>
+      <c name="dyn_lapse_ITM_P1_withdrawal" datatype="real">=0.65</c>
+      <c name="dyn_lapse_ITM_P2_withdrawal" datatype="real">=3.75</c>
+      <c name="dyn_lapse_OTM_P1_withdrawal" datatype="real">=0.65</c>
+      <c name="dyn_lapse_OTM_P2_withdrawal" datatype="real">=4</c>
+      <c name="dyn_lapse_multiplier_floor_LB" datatype="real">=\siif(use_2019_q3_lapse_assumptions,\s0.2,\s0.15)</c>
+      <c name="before_spike_M1" datatype="real">2</c>
+      <c name="before_spike_M2" datatype="real">1</c>
+      <c name="at_spike_M1" datatype="real">5</c>
+      <c name="at_spike_M2" datatype="real">2</c>
+      <c name="post_spike_M1" datatype="real">=\siif(use_2025_q3_dynamic_lapse,\s5,\s3)</c>
+      <c name="post_spike_M2" datatype="real">=\siif(use_2025_q3_dynamic_lapse,\s2,\s1)</c>
+      <c name="excess_lapse_threshold" datatype="real">0.0025</c>
+      <c name="dyn_lapse_eps_alpha" datatype="real">0.45</c>
+      <c name="dyn_lapse_eps_beta" datatype="real">3.75</c>
+      <c name="dyn_lapse_eps_gamma" datatype="real">-1</c>
+      <c name="dyn_lapse_eps_multiplier_floor" datatype="real">0.2</c>
+    </table>
+    <table name="projection" type="CashFlow">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="projection_date" datatype="date_t" />
+        <c name="PolicyAge1" datatype="int" />
+        <c name="PolicyAge2" datatype="int" />
+        <c name="account_value_bop" datatype="real" />
+        <c name="IncomeBase" datatype="real" />
+        <c name="mawa_rate" datatype="real" />
+        <c name="pip_rate" datatype="real" />
+        <c name="income_percentage_rate" datatype="real" />
+        <c name="GLIA" datatype="real" />
+        <c name="MAWA" datatype="real" />
+        <c name="PIP" datatype="real" />
+        <c name="AnnFac" datatype="real" />
+        <c name="Base_Mort" datatype="real" />
+        <c name="Base_Mort2" datatype="real" />
+        <c name="Mort_mult1" datatype="real" />
+        <c name="Mort_mult2" datatype="real" />
+        <c name="G2_1" datatype="real" />
+        <c name="G2_2" datatype="real" />
+        <c name="MortTM" datatype="real" />
+        <c name="MortTM2" datatype="real" />
+        <c name="NCMProp" datatype="real" />
+        <c name="NCMProp2" datatype="real" />
+        <c name="Final_Mort" datatype="real" />
+        <c name="Final_Mort2" datatype="real" />
+        <c name="Base_Lapse" datatype="real" />
+        <c name="YTE" datatype="int" />
+        <c name="actuarial_present_value" datatype="real" />
+        <c name="moneyness" datatype="real" />
+        <c name="dyn_lapse_curve_para1" datatype="real" />
+        <c name="dyn_lapse_curve_para2" datatype="real" />
+        <c name="dynamic_lapse_multiplier" datatype="real" />
+        <c name="J_idt" datatype="real" />
+        <c name="aLapseIntBeta1" datatype="real" />
+        <c name="aLapseIntBeta2" datatype="real" />
+        <c name="LapseIntFactor" datatype="real" />
+        <c name="current_credit_rate" datatype="real" />
+        <c name="Excess_Lapse" datatype="real" />
+        <c name="ITM_EPS" datatype="real" />
+        <c name="SFC_Dynamic_Lapse_Multiplier" datatype="real" />
+        <c name="SFC_Additional_Shock_Lapse" datatype="real" />
+        <c name="Interest_Rate_Sensitive_Lapse" datatype="real" />
+        <c name="Annual_Lapse" datatype="real" />
+        <c name="lapse_skew_rate" datatype="real" />
+        <c name="accumulated_lapse_skew_rate" datatype="real" />
+        <c name="lapse_shock_year_ind" datatype="bool" />
+        <c name="remaining_percentage_bop" datatype="real" />
+        <c name="remaining_percentage_eop" datatype="real" />
+        <c name="lapse_in_period_with_skew" datatype="real" />
+        <c name="LapseRate_Final" datatype="real" />
+        <c name="survivor_lapse_only" datatype="real" />
+        <c name="XY" datatype="real" />
+        <c name="XD" datatype="real" />
+        <c name="DY" datatype="real" />
+        <c name="DD" datatype="real" />
+        <c name="Surv_preLapse" datatype="real" />
+        <c name="LapseTM" datatype="real" />
+        <c name="XY_Final" datatype="real" />
+        <c name="XD_Final" datatype="real" />
+        <c name="DY_Final" datatype="real" />
+        <c name="DD_Final" datatype="real" />
+        <c name="Lapsed" datatype="real" />
+        <c name="Life_Check" datatype="real" />
+        <c name="DeathTP" datatype="real" />
+        <c name="Survivor" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+0\r\n
+</c>
+            <c name="projection_date">/*\r\n
+The\sdate\sof\sthe\sbeginning\sof\sthe\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=proj_date[step]</c>
+            <c name="PolicyAge1">/*\r\n
+The\sage\sof\sthe\sfirst\scovered\sperson.\r\n
+*/\r\n
+\r\n
+=pol_age_1[step]</c>
+            <c name="PolicyAge2">/*\r\n
+The\sage\sof\ssecond\scovered\sperson,\r\n
+set\sto\s0\sif\sthere\sis\sno\ssecond\sperson.\r\n
+*/\r\n
+\r\n
+=pol_age_2[step]</c>
+            <c name="account_value_bop">/*\r\n
+Total\saccount\sfund\svalue\send\sof\speriod\r\n
+*/\r\n
+\r\n
+=acc_value</c>
+            <c name="IncomeBase">/*\r\n
+The\sincome\sbase\sof\sthe\sliving\sbenefit\srider\r\n
+*/\r\n
+\r\n
+=cf_inc_base</c>
+            <c name="mawa_rate">if\sis_rider_income_builder\sthen\r\n
+\s\s\s\sreturn\sincome_percentage_rate\r\n
+else\r\n
+\s\s\s\sreturn\siif(is_flex\sand\s!disable_flex,\smawp_flex,\smawp[step])\r\n
+end</c>
+            <c name="pip_rate">if\sis_rider_income_builder\sthen\r\n
+\s\s\s\sreturn\sincome_percentage_rate\r\n
+else\r\n
+\s\s\s\sreturn\siif(is_flex\sand\s!disable_flex,\spipp_flex,\spipp[step])\r\n
+end\r\n
+</c>
+            <c name="income_percentage_rate">=\sincome_percentage[step]</c>
+            <c name="GLIA">=\sguaranteed_lifetime_income_amount</c>
+            <c name="MAWA">/*\r\n
+Maximum\sannual\swithdrawal\samount\r\n
+*/\r\n
+\r\n
+=\siif(is_rider_income_builder,\sinitial_glia,\smawa_rate\s*\sIncomeBase)</c>
+            <c name="PIP">/*\r\n
+Maximum\sannual\swithdrawal\samount\r\n
+*/\r\n
+\r\n
+=\siif(is_rider_income_builder,\sinitial_glia,\spip_rate\s*\sIncomeBase)</c>
+            <c name="AnnFac">/*\r\n
+Annuity\sfactor,\swhen\smultiplied\sby\sthe\smaximum\sannual\swithdrawal\samount,\r\n
+shows\sthe\sfuture\svalue\sof\stotal\swithdrawal\samount.\r\n
+*/\r\n
+\r\n
+if\sis_annexus_product\sthen\r\n
+\s\s\s\sreturn\sann_fac_annexus\r\n
+else\r\n
+\s\s\s\sreturn\siif(RiderElected,\siif(use_at_issue_assumptions\sand\suse_legacy_dynamic_lapse,\r\n
+\s\s\s\s\s\s\s\sann_fac_legacy,\sann_fac),\s0)\r\n
+end</c>
+            <c name="Base_Mort">/*\r\n
+Base\smortality\srate\sof\sthe\sfirst\sperson\r\n
+*/\r\n
+\r\n
+=bm_base_mort[step]</c>
+            <c name="Base_Mort2">/*\r\n
+Base\smortality\srate\sof\sthe\ssecond\sperson\r\n
+*/\r\n
+\r\n
+=bm_base_mort_2[step]</c>
+            <c name="Mort_mult1">/*\r\n
+Mortality\smultiplier\sfor\sthe\sfirst\sperson,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+=iif(RiderElected,\smortality_mult_glb_1[min(120,\sPolicyAge1)],\r\n
+mortality_mult_no_glb_1[min(120,\sPolicyAge1)])</c>
+            <c name="Mort_mult2">/*\r\n
+Mortality\smultiplier\sfor\sthe\ssecond\sperson,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s=\s0)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\s\s\s\s\r\n
+return\siif(RiderElected,\smortality_mult_glb_2[min(120,\sPolicyAge2)],\s\r\n
+mortality_mult_no_glb_2[min(120,\sPolicyAge2)])</c>
+            <c name="G2_1">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+=iif(RiderElected,\sbm_g2_1_glwb[step],\sbm_g2_1_base[step])</c>
+            <c name="G2_2">/*\r\n
+Mortality\simprovement\sfactor\sof\ssecond\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+=iif(RiderElected,\sbm_g2_2_glwb[step],\sbm_g2_2_base[step])</c>
+            <c name="MortTM">/*\r\n
+Mortality\srate\sof\sthe\sfirst\sperson\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+=\s1\s-\s(1\s-\smin(1,\sBase_Mort\s*\sMort_mult1)\s*\sG2_1)\s^\sTime_dt[step]</c>
+            <c name="MortTM2">/*\r\n
+Mortality\srate\sof\sthe\ssecond\sperson\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\s\s\s\s\r\n
+\s\s\s\sreturn\s1\s-\s(1\s-\smin(1,\sBase_Mort2\s*\sMort_mult2)\s*\sG2_2)\s^\sTime_dt[step]\r\n
+end</c>
+            <c name="NCMProp">/*\r\n
+If\sthe\sage\sof\sthe\sfirst\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+=0\r\n
+</c>
+            <c name="NCMProp2">/*\r\n
+If\sthe\sage\sof\sthe\ssecond\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="Final_Mort">/*\r\n
+Final\smortality\srate\sof\sthe\sfirst\sperson\safter\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+=\sMortTM</c>
+            <c name="Final_Mort2">/*\r\n
+Final\smortality\srate\sof\sthe\ssecond\sperson\safter\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+=\sMortTM2</c>
+            <c name="Base_Lapse">/*\r\n
+Base\slapse\srate\r\n
+*/\r\n
+if\sis_flex\sand\s!disable_flex\sand\s!systematic_withdrawal_started_bop\sthen\r\n
+\s\s\s\sreturn\sbase_lapse_rate_shock_multiplier\s*\sflex_lapse_multiplier\s*\spolicy_base_lapse[step]\r\n
+else\r\n
+\s\s\s\sreturn\sbase_lapse_rate_shock_multiplier\s*\spolicy_base_lapse[step]\r\n
+\s\s\s\s*\siif(systematic_withdrawal_started_bop,\r\n
+\s\s\s\s\s\s\s\siif(use_at_issue_assumptions,\slapse_wd_multiplier_at_issue,\slapse_wd_multiplier),\s1)\r\n
+\s\s\s\s*\siif(!systematic_withdrawal_started_bop\sand\sdoubling_terminated[step]\sand\s!is_lre,\sglwb_shock_lapse_multiplier,\s1)\r\n
+end</c>
+            <c name="YTE">/*\r\n
+Years\sto\sexhaustion,\sused\sin\sPV\sof\sfuture\swithdrawal\scalculation.\r\n
+In\sexpectation,\safter\sYTE\syears,\sthe\scontract\svalue\swill\sreduce\sto\s0.\r\n
+if\sMAWA\s=\s0,\sYTE\s=\s-1\r\n
+MAWA\s=\s0\sbecause\spolicyAge\sis\sless\sthan\s60.\r\n
+*/\r\n
+\r\n
+=ceil(SafeDivide(account_value_bop,MAWA,-1))\r\n
+</c>
+            <c name="actuarial_present_value">/*\r\n
+PV\sof\sfuture\swithdrawal,\r\n
+the\ssum\sof\spre-claim\swithdrawal\sand\spost-claim\sprotection\spayment.\r\n
+*/\r\n
+\r\n
+if\s(YTE\s&lt;\s0)\sthen\r\n
+//not\syet\s60,\sMAWA\s=\s0,\sPIPP\s=\s0\r\n
+\s\s\s\sreturn\saccount_value_bop\r\n
+else\r\n
+\s\s\s\sif\sis_annexus_product\sand\sAPV_LB_new_calc\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sapv_lb_x5\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sMAWA\s*\sAnnFac\r\n
+\s\s\s\send\r\n
+end\r\n
+</c>
+            <c name="moneyness">/*\r\n
+In-the-moneyness\sof\srider\soption\r\n
+*/\r\n
+\r\n
+=\sSafeDivide(actuarial_present_value\r\n
+\s\s\s\s+\siif(!disable_DB_AnnFac\sand\sis_annexus_product,\sapv_db,\s0),\saccount_value_bop,\r\n
+\s\s\s\sDictionary.default_moneyness)\s-\s1\r\n
+</c>
+            <c name="dyn_lapse_curve_para1">if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\sif\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0\r\n
+\s\s\s\selif\ssystematic_withdrawal_started_bop\sthen\r\n
+\s\s\s\s\s\s\s\sif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_ITM_P1_withdrawal\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_OTM_P1_withdrawal\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_ITM_P1_withdrawal\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_OTM_P1_withdrawal\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_ITM_P1\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_OTM_P1\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_ITM_P1\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_OTM_P1\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sif\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(systematic_withdrawal_started_bop,\sDictionary.dyn_lapse_ITM_P1_withdrawal,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_ITM_P1_no_withdrawal),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_beyond_spike_ITM_P1)\s\s\s\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(systematic_withdrawal_started_bop,\sDictionary.dyn_lapse_OTM_P1_withdrawal,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_OTM_P1_no_withdrawal),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_beyond_spike_OTM_P1)\r\n
+\s\s\s\s\s\s\s\send\s\s\s\s\r\n
+\s\s\s\send\r\n
+end</c>
+            <c name="dyn_lapse_curve_para2">if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\sif\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0\r\n
+\s\s\s\selif\ssystematic_withdrawal_started_bop\sthen\r\n
+\s\s\s\s\s\s\s\sif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_ITM_P2_withdrawal\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_OTM_P2_withdrawal\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_ITM_P2_withdrawal\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_OTM_P2_withdrawal\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_ITM_P2\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_OTM_P2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_ITM_P2\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_OTM_P2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sif\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(systematic_withdrawal_started_bop,\sDictionary.dyn_lapse_ITM_P2_withdrawal,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_ITM_P2_no_withdrawal),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_beyond_spike_ITM_P2)\s\s\s\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(systematic_withdrawal_started_bop,\sDictionary.dyn_lapse_OTM_P2_withdrawal,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_OTM_P2_no_withdrawal),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_beyond_spike_OTM_P2)\r\n
+\s\s\s\s\s\s\s\send\s\s\s\s\r\n
+\s\s\s\send\r\n
+end</c>
+            <c name="dynamic_lapse_multiplier">/*\r\n
+Dynamic\slapse\sfactor\sof\sliving\sbenefit\srider,\r\n
+used\sin\sfinal\slapse\scalculation,\r\n
+only\sapplicable\sif\sthe\sdynamic\slapse\sis\srequired.\r\n
+*/\r\n
+\r\n
+if\s(IsPiPEffective\sor\s!RiderElected)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+if\suse_at_issue_assumptions\sand\suse_legacy_dynamic_lapse\sthen\r\n
+\s\s\s\sdynamic_lapse_multiplier\s=\slookup_moneyness(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sdynamic_lapse_legacy_at_issue.life_factor,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smoneyness,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value_bop,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s1,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sFalse)\r\n
+end\s\r\n
+\r\n
+dynamic_lapse_multiplier\s=\siif(is_itm_dynamic_lapse_shocked,\sItmDynamicLapseShockMultiplier(moneyness),\s1)\r\n
+\s\s\s\s*\sDynamicLapseMultiplier(\s\r\n
+\s\s\s\s\s\s\s\sdyn_lapse_curve_para1,\s\r\n
+\s\s\s\s\s\s\s\sdyn_lapse_curve_para2,\r\n
+\s\s\s\s\s\s\s\smoneyness,\r\n
+\s\s\s\s\s\s\s\sDictionary.dyn_lapse_multiplier_floor_LB\r\n
+\s\s\s\s\s\s\s\s)\r\n
+if\s((use_at_issue_assumptions\sand\sapply_shock_lapse_at_issue)\r\n
+\s\s\s\sor\s(!use_at_issue_assumptions\sand\s!disable_glwb_shock_lapse))\r\n
+\s\s\s\sand\s!systematic_withdrawal_started_bop\sand\sdoubling_terminated[step]\sthen\r\n
+\s\s\s\sdynamic_lapse_multiplier\s=\sdynamic_lapse_multiplier\s+\s(1\s-\sdynamic_lapse_multiplier)\s/\s2\r\n
+end\r\n
+\r\n
+return\sdynamic_lapse_multiplier</c>
+            <c name="J_idt">/*\s\r\n
+Policy\selapsed\stime\ssince\sissue\sat\sthe\sbeginning\sof\seach\speriod\r\n
+*/\r\n
+\r\n
+=TimeT[step]</c>
+            <c name="aLapseIntBeta1">/*\r\n
+Input\sof\slapse\sinterest\sfactor\sfunction\r\n
+*/\r\n
+\r\n
+=Dictionary.InputB1</c>
+            <c name="aLapseIntBeta2">/*\r\n
+Input\sof\slapse\sinterest\sfactor\sfunction\r\n
+*/\r\n
+\r\n
+=Dictionary.InputB2</c>
+            <c name="LapseIntFactor">/*\r\n
+Lapse\sinterest\sfactor,\r\n
+used\sin\sfinal\slapse\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(IsPiPEffective\sor\s!RiderElected)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+return\sLapseIntFacCalculator(J_idt,\saLapseIntBeta1,\saLapseIntBeta2,\sIncomeBase,\sScen_Rates,\saccount_value_bop,MAWA)</c>
+            <c name="current_credit_rate">if\sis_running_dac\sthen\s//\sDAC\srun\r\n
+\s\s\s\sreturn\soption_value_dac\r\n
+elif\soption_budget_type\s==\s1\sthen\s//\sLDTI\sat\svaluation\sdate\srun\r\n
+\s\s\s\sreturn\soption_budget_gaap\r\n
+elif\soption_budget_type\s==\s2\sthen\s//\sLDTI\sat\sissue\srun\r\n
+\s\s\s\sreturn\soption_cost_at_issue_date\r\n
+else\s//\sECON\srun\r\n
+\s\s\s\sreturn\soption_budget_gaap\r\n
+end</c>
+            <c name="Excess_Lapse">/*\r\n
+Excess\slapse\srate,\r\n
+used\sin\sinterest\ssensitive\sdynamics\slapse\scalculation.\r\n
+*/\r\n
+\r\n
+net_credit_rate\s=\scurrent_credit_rate\s-\sepr_fee_pct\r\n
+\r\n
+if\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\sreturn\sInterestRateSensitiveDynamicLapse.excesslapserate(\r\n
+\s\s\s\s\s\s\s\scompetitor_crediting_rate[step_esg],\r\n
+\s\s\s\s\s\s\s\snet_credit_rate,\r\n
+\s\s\s\s\s\s\s\sCDSC_perc[step],\r\n
+\s\s\s\s\s\s\s\sMVA_perc,\r\n
+\s\s\s\s\s\s\s\sremaining_term[step],\r\n
+\s\s\s\s\s\s\s\sDictionary.before_spike_M1,\r\n
+\s\s\s\s\s\s\s\sDictionary.before_spike_M2,\r\n
+\s\s\s\s\s\s\s\sDictionary.excess_lapse_threshold\r\n
+\s\s\s\s)\r\n
+elif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\sreturn\sInterestRateSensitiveDynamicLapse.excesslapserate(\r\n
+\s\s\s\s\s\s\s\scompetitor_crediting_rate[step_esg],\r\n
+\s\s\s\s\s\s\s\snet_credit_rate,\r\n
+\s\s\s\s\s\s\s\sCDSC_perc[step],\r\n
+\s\s\s\s\s\s\s\sMVA_perc,\r\n
+\s\s\s\s\s\s\s\sremaining_term[step],\r\n
+\s\s\s\s\s\s\s\sDictionary.at_spike_M1,\r\n
+\s\s\s\s\s\s\s\sDictionary.at_spike_M2,\r\n
+\s\s\s\s\s\s\s\sDictionary.excess_lapse_threshold\r\n
+\s\s\s\s)\r\n
+else\r\n
+\s\s\s\sreturn\sInterestRateSensitiveDynamicLapse.excesslapserate(\r\n
+\s\s\s\s\s\s\s\scompetitor_crediting_rate[step_esg],\r\n
+\s\s\s\s\s\s\s\snet_credit_rate,\r\n
+\s\s\s\s\s\s\s\sCDSC_perc[step],\r\n
+\s\s\s\s\s\s\s\sMVA_perc,\r\n
+\s\s\s\s\s\s\s\sremaining_term[step],\r\n
+\s\s\s\s\s\s\s\sDictionary.post_spike_M1,\r\n
+\s\s\s\s\s\s\s\sDictionary.post_spike_M2,\r\n
+\s\s\s\s\s\s\s\sDictionary.excess_lapse_threshold\r\n
+\s\s\s\s)\r\n
+end</c>
+            <c name="ITM_EPS">/*\r\n
+ITM%=(AV(T)+Fee\sRefund)/(Max(CSV(t),MWV(t)))-1\r\n
+In\sthis\sformula:\r\n
+\s\s\s\sFee\sRefund\s=\s0\s\s\s\s\s\s\s\s\s\sif\sAV(T)&gt;NP\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sNP-AV(T)\s\s\sif\sNP&gt;AV(T)\r\n
+\s\s\s\sAV(T)\sis\sthe\sprojected\saccount\svalue\sat\sthe\send\sof\sthe\sSFC\sterm\s\r\n
+\s\s\s\sCSV(t)\sis\sthe\scash\ssurrender\svalue\sat\sthe\scalculation\sdate.\r\n
+\s\s\s\sMWV(t)\sis\sthe\sminimum\swithdrawal\svalue\sat\sthe\scalculation\sdate\r\n
+\s\s\s\sNP\sis\sthe\sNet\sPremium\sat\sthe\send\sof\sthe\sSFC\sterm\s(defined\sas\sTotal\sPremiums\s–\sWithdrawals)\r\n
+\s\s\s\sITM%\sshould\sbe\sfloored\sat\s0,\ssince\san\sout-of-the-money\sSFC\sfeature\sis\snot\santicipated\sto\scause\shigher\slapsation.\r\n
+\r\n
+*/\r\n
+=\smax(0,\s(account_value_at_sc_end\s+\seps_fee_refund_estimate)\s/\smax(CSV,\sMWV)\s-\s1)</c>
+            <c name="SFC_Dynamic_Lapse_Multiplier">/*\r\n
+SFC\sDynamic\sLapse\sMultiplier=Max(0,1-α×Arctan(β×(T-t)^γ×ITM))\r\n
+Where:\s\r\n
+α\s=\s0.45;\s\s\s\s\sβ\s=\s3.75;\s\s\s\s\sγ\s=\s-1\r\n
+and\s(T-t)\srepresents\sthe\sremaining\stime\sin\sthe\sSFC\sterm.\r\n
+The\sdynamic\slapse\smultiplier\sshould\sbe\sfloored\sat\s20%.\r\n
+*/\r\n
+\r\n
+=\smax(Dictionary.dyn_lapse_eps_multiplier_floor,\s\r\n
+\s\s\s\s\s\s1\s-\sDictionary.dyn_lapse_eps_alpha\s*\satan(Dictionary.dyn_lapse_eps_beta\s*\sITM_EPS\s*\s\r\n
+\s\s\s\s\s\s\s\s\s\syrs_until_scp_end[step]^Dictionary.dyn_lapse_eps_gamma))</c>
+            <c name="SFC_Additional_Shock_Lapse">/*\r\n
+Additional\sadditive\sshock\slapse\sbe\sapplied\sduring\sthe\sshock\syear\r\n
+*/\r\n
+if\scompare(epr_fee_pct\s&gt;\s0,\s1E-6)\sand\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\sreturn\sSafeDivide(strategy_fee_credit,\saccount_value_post_strategy_fee,\s0)\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="Interest_Rate_Sensitive_Lapse">/*\r\n
+Interest\srate\ssensitive\sdynamic\slapse,\r\n
+used\sin\sno\sliving\sbenefit\sdynamic\slapse\scalculation.\r\n
+*/\r\n
+\r\n
+=\siif(surrender_charge_period_ind[step],\s\r\n
+\s\s\s\sBase_Lapse\s*\siif(compare(epr_fee_pct\s&gt;\s0,\s1E-6),\s\sSFC_Dynamic_Lapse_Multiplier,\s1),\s\r\n
+\s\s\s\smax(base_isl_floor,\s\r\n
+\s\s\s\s\s\s\s\smin(iif(use_2025_q3_dynamic_lapse\sand\ssurrender_charge_spike_period_ind[step],\s0.9,\sbase_isl_cap),\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sBase_Lapse\s+\sinterest_dynamic_lapse_shock_multiplier\s*\sExcess_Lapse\s+\sSFC_Additional_Shock_Lapse)))</c>
+            <c name="Annual_Lapse">/*\r\n
+Final\sannual\slapse\srate,\r\n
+no\sdynamics,\sdynamics\swith\sliving\sbenefit,\r\n
+or\sdynamics\swithout\sliving\sbenefit.\r\n
+*/\r\n
+\r\n
+if\sdisable_dynamic_lapse\sthen\r\n
+\s\s\s\sreturn\sBase_Lapse\r\n
+elif\s!RiderElected\sthen\r\n
+\s\s\s\sreturn\sInterest_Rate_Sensitive_Lapse\r\n
+elif\sdisable_interest_rate_lapse\sthen\r\n
+\s\s\s\sreturn\sdynamic_lapse_multiplier\s*\sBase_Lapse\r\n
+else\r\n
+\s\s\s\sreturn\sdynamic_lapse_multiplier\s*\sLapseIntFactor\s*\sBase_Lapse\r\n
+endif</c>
+            <c name="lapse_skew_rate">=\siif(!RiderElected\sand\ssurrender_charge_spike_period_ind[step]\sand\sis_monthiversary[step],\r\n
+\s\s\s\slapse_skew_factor[step],\s0)</c>
+            <c name="accumulated_lapse_skew_rate">=\slapse_skew_rate</c>
+            <c name="lapse_shock_year_ind">=\ssurrender_charge_spike_period_ind[step]</c>
+            <c name="remaining_percentage_bop">=\s1</c>
+            <c name="remaining_percentage_eop">=\sremaining_percentage_bop\s-\slapse_in_period_with_skew</c>
+            <c name="lapse_in_period_with_skew">=\siif(surrender_charge_spike_period_ind[step]\sand\sis_monthiversary[step],\r\n
+\s\s\s\sremaining_percentage_bop\s/\s(1\s-\sAnnual_Lapse\s*\sprev(accumulated_lapse_skew_rate))\r\n
+\s\s\s\s*\sAnnual_Lapse\s*\slapse_skew_rate,\s0)</c>
+            <c name="LapseRate_Final">/*\r\n
+Final\slapse\srate\sin\sthis\sprojection\speriod\r\n
+*/\r\n
+=\siif(!RiderElected\sand\suse_2025_q3_lapse_skew\sand\ssurrender_charge_spike_period_ind[step],\r\n
+\s\s\s\slapse_in_period_with_skew/remaining_percentage_bop,\r\n
+\s\s\s\s1\s-\s(1\s-\smin(1,\sAnnual_Lapse))\s^\sTime_dt[step])</c>
+            <c name="survivor_lapse_only">=\s1</c>
+            <c name="XY">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\salive\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=\siif(PolicyAge2\s==\s0,\s0,\s1)</c>
+            <c name="XD">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\salive\sbut\sthe\ssecond\sperson\sis\sdead\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=iif(PolicyAge2\s==\s0\s,\s1,\s0)\r\n
+</c>
+            <c name="DY">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\salive\sbut\sthe\ssecond\sperson\sis\sdead\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+Set\sto\s0\sat\sthe\sbeginning.\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="DD">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\sdead\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+Set\sto\s0\sat\sthe\sbeginning.\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="Surv_preLapse">/*\r\n
+The\sprobability\sthat\sat\sleast\sone\scovered\sperson\sis\salive\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=XY+XD+DY</c>
+            <c name="LapseTM">/*\r\n
+Lapse\srate\sin\sthis\sprojection\speriod\r\n
+taking\smortality\sinto\saccount\r\n
+*/\r\n
+\r\n
+=LapseRate_Final*Surv_preLapse</c>
+            <c name="XY_Final">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\sstill\seffective\sin\sthe\scontract\r\n
+(alive\sand\snot\ssurrendered)\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=XY\s-\sSafeDivide(XY,Surv_preLapse,0)\s*\sLapseTM</c>
+            <c name="XD_Final">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\sstill\seffective\sin\sthe\scontract\r\n
+but\sthe\ssecond\sperson\sis\snot\s(dead\sor\ssurrendered)\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=XD\s-\sSafeDivide(XD,Surv_preLapse,0)\s*\sLapseTM</c>
+            <c name="DY_Final">/*\r\n
+The\sprobability\sthat\sthe\ssecond\sperson\sis\sstill\seffective\sin\sthe\scontract\r\n
+but\sthe\sfirst\sperson\sis\snot\s(dead\sor\ssurrendered)\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=DY\s-\sSafeDivide(DY,Surv_preLapse,0)\s*\sLapseTM</c>
+            <c name="DD_Final">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\snot\seffective\sin\sthe\scontract\r\n
+(dead\sor\ssurrendered)\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=DD</c>
+            <c name="Lapsed">/*\r\n
+Total\slapse\spercentage\r\n
+from\sthe\sfirst\sprojection\sdate\sto\sthe\send\sof\sthis\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=LapseTM</c>
+            <c name="Life_Check">/*\r\n
+check\sif\sthe\ssum\sof\sthe\sdead,\sthe\selapsed\sand\sthe\sremainings\sis\sequal\sto\s1\r\n
+*/\r\n
+\r\n
+=XY_Final\s+\sXD_Final\s+DY_Final\s+DD_Final\s+\sLapsed</c>
+            <c name="DeathTP">/*\r\n
+Death\spercentage\sin\sthis\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="Survivor">/*\r\n
+Survival\spercentage\sat\sthe\send\sof\sthis\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=XY_Final\s+\sXD_Final\s+\sDY_Final</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=prev(step)+1\r\n
+</c>
+            <c name="projection_date">/*\r\n
+The\sdate\sof\sthe\sbeginning\sof\sthe\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=proj_date[step]</c>
+            <c name="PolicyAge1">/*\r\n
+The\sage\sof\sthe\sfirst\scovered\sperson.\r\n
+*/\r\n
+\r\n
+=pol_age_1[step]</c>
+            <c name="PolicyAge2">/*\r\n
+The\sage\sof\ssecond\scovered\sperson,\r\n
+set\sto\s0\sif\sthere\sis\sno\ssecond\sperson.\r\n
+*/\r\n
+\r\n
+=pol_age_2[step]</c>
+            <c name="account_value_bop">/*\r\n
+Total\saccount\sfund\svalue\send\sof\speriod\r\n
+*/\r\n
+\r\n
+=acc_value</c>
+            <c name="IncomeBase">/*\r\n
+The\sincome\sbase\sof\sthe\sliving\sbenefit\srider\r\n
+*/\r\n
+\r\n
+=cf_inc_base</c>
+            <c name="mawa_rate">if\sis_rider_income_builder\sthen\r\n
+\s\s\s\sreturn\sincome_percentage_rate\r\n
+else\r\n
+\s\s\s\sreturn\siif(systematic_withdrawal_started_bop,\sprev(mawa_rate),\r\n
+\s\s\s\s\s\s\s\siif(is_flex\sand\s!disable_flex,\smawp_flex,\smawp[step]))\r\n
+end</c>
+            <c name="pip_rate">if\sis_rider_income_builder\sthen\r\n
+\s\s\s\sreturn\sincome_percentage_rate\r\n
+else\r\n
+\s\s\s\sreturn\siif(systematic_withdrawal_started_bop,\sprev(pip_rate),\r\n
+\s\s\s\siif(is_flex\sand\s!disable_flex,\spipp_flex,\spipp[step]))\r\n
+end\r\n
+\r\n
+</c>
+            <c name="income_percentage_rate">=\siif(systematic_withdrawal_started_bop,\sprev(income_percentage_rate),\sincome_percentage[step])</c>
+            <c name="GLIA">=\sguaranteed_lifetime_income_amount</c>
+            <c name="MAWA">/*\r\n
+Maximum\sannual\swithdrawal\samount\r\n
+*/\r\n
+\r\n
+=\siif(is_rider_income_builder,\sprev(GLIA),\smawa_rate\s*\sIncomeBase)</c>
+            <c name="PIP">=\siif(is_rider_income_builder,\sprev(GLIA),\spip_rate\s*\sIncomeBase)</c>
+            <c name="AnnFac">/*\r\n
+Annuity\sfactor,\swhen\smultiplied\sby\sthe\smaximum\sannual\swithdrawal\samount,\r\n
+shows\sthe\sfuture\svalue\sof\stotal\swithdrawal\samount.\r\n
+*/\r\n
+\r\n
+if\sis_annexus_product\sthen\r\n
+\s\s\s\sreturn\sann_fac_annexus\r\n
+else\r\n
+\s\s\s\sreturn\siif(RiderElected,\siif(use_at_issue_assumptions\sand\suse_legacy_dynamic_lapse,\r\n
+\s\s\s\s\s\s\s\sann_fac_legacy,\sann_fac),\s0)\r\n
+end</c>
+            <c name="Base_Mort">/*\r\n
+Base\smortality\srate\sof\sthe\sfirst\sperson\r\n
+*/\r\n
+\r\n
+=bm_base_mort[step]</c>
+            <c name="Base_Mort2">/*\r\n
+Base\smortality\srate\sof\sthe\ssecond\sperson\r\n
+*/\r\n
+\r\n
+=bm_base_mort_2[step]</c>
+            <c name="Mort_mult1">/*\r\n
+Mortality\smultiplier\sfor\sthe\sfirst\sperson,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+=iif(RiderElected,\smortality_mult_glb_1[min(120,\sPolicyAge1)],\s\r\n
+mortality_mult_no_glb_1[min(120,\sPolicyAge1)])</c>
+            <c name="Mort_mult2">/*\r\n
+Mortality\smultiplier\sfor\sthe\ssecond\sperson,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s=\s0)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\s\s\s\s\r\n
+return\siif(\r\n
+\s\s\s\sRiderElected,\s\r\n
+\s\s\s\smortality_mult_glb_2[min(120,\sPolicyAge2)],\s\r\n
+\s\s\s\smortality_mult_no_glb_2[min(120,\sPolicyAge2)]\r\n
+)</c>
+            <c name="G2_1">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+=iif(RiderElected,\sbm_g2_1_glwb[step],\sbm_g2_1_base[step])</c>
+            <c name="G2_2">/*\r\n
+Mortality\simprovement\sfactor\sof\ssecond\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+=iif(RiderElected,\sbm_g2_2_glwb[step],\sbm_g2_2_base[step])</c>
+            <c name="MortTM">/*\r\n
+Mortality\srate\sof\sthe\sfirst\sperson\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+=\s1\s-\s(1\s-\smin(1,\sBase_Mort\s*\sMort_mult1)\s*\sG2_1)\s^\sTime_dt[step]</c>
+            <c name="MortTM2">/*\r\n
+Mortality\srate\sof\sthe\ssecond\sperson\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\s\s\s\s\r\n
+\s\s\s\sreturn\s1\s-\s(1\s-\smin(1,\sBase_Mort2\s*\sMort_mult2)\s*\sG2_2)\s^\sTime_dt[step]\r\n
+end</c>
+            <c name="NCMProp">/*\r\n
+If\sthe\sage\sof\sthe\sfirst\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+if(PolicyAge1\s==\sprev(PolicyAge1))\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sMax(projection_date.day\s-\sDictionary.DOB_PA.day,0.0)/projection_date.day\r\n
+end\r\n
+</c>
+            <c name="NCMProp2">/*\r\n
+If\sthe\sage\sof\sthe\ssecond\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+if(PolicyAge2\s==\sprev(PolicyAge2))\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sMax(projection_date.day\s-\sDictionary.DOB_JT.day,0.0)/projection_date.day\r\n
+end\r\n
+</c>
+            <c name="Final_Mort">/*\r\n
+Final\smortality\srate\sof\sthe\sfirst\sperson\safter\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(compare(NCMProp\s==\s0,1E-3))\sthen\r\n
+\s\s\s\sreturn\sMortTM\r\n
+else\r\n
+\s\s\s\sreturn\s1\s-\s(1-\sprev(MortTM))^(1-NCMProp)\s*\s(1-MortTM)^NCMProp\s\r\n
+end</c>
+            <c name="Final_Mort2">/*\r\n
+Final\smortality\srate\sof\sthe\ssecond\sperson\safter\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\r\n
+return\s0\r\n
+end\r\n
+\r\n
+if\s(compare(NCMProp2\s==\s0,1E-3))\sthen\r\n
+\s\s\s\sreturn\sMortTM2\r\n
+else\r\n
+\s\s\s\sreturn\s1\s-\s(1-\sprev(MortTM2))^(1-NCMProp2)\s*\s(1-MortTM2)^NCMProp2\s\r\n
+end</c>
+            <c name="Base_Lapse">/*\r\n
+Base\slapse\srate\r\n
+*/\r\n
+if\sis_flex\sand\s!disable_flex\sand\s!systematic_withdrawal_started_bop\sthen\r\n
+\s\s\s\sreturn\sbase_lapse_rate_shock_multiplier\s*\sflex_lapse_multiplier\s*\spolicy_base_lapse[step]\r\n
+else\r\n
+\s\s\s\sreturn\sbase_lapse_rate_shock_multiplier\s*\spolicy_base_lapse[step]\r\n
+\s\s\s\s*\siif(systematic_withdrawal_started_bop,\r\n
+\s\s\s\s\s\s\s\siif(use_at_issue_assumptions,\slapse_wd_multiplier_at_issue,\slapse_wd_multiplier),\s1)\r\n
+\s\s\s\s*\siif(!systematic_withdrawal_started_bop\sand\sdoubling_terminated[step]\sand\s!is_lre,\sglwb_shock_lapse_multiplier,\s1)\r\n
+end</c>
+            <c name="YTE">/*\r\n
+Years\sto\sexhaustion,\sused\sin\sPV\sof\sfuture\swithdrawal\scalculation.\r\n
+In\sexpectation,\safter\sYTE\syears,\sthe\scontract\svalue\swill\sreduce\sto\s0.\r\n
+if\sMAWA\s=\s0,\sYTE\s=\s-1\r\n
+MAWA\s=\s0\sbecause\spolicyAge\sis\sless\sthan\s60.\r\n
+*/\r\n
+\r\n
+=ceil(SafeDivide(account_value_bop,\sMAWA,\s-1))\r\n
+</c>
+            <c name="actuarial_present_value">/*\r\n
+PV\sof\sfuture\swithdrawal,\r\n
+the\ssum\sof\spre-claim\swithdrawal\sand\spost-claim\sprotection\spayment.\r\n
+*/\r\n
+\r\n
+if\s(YTE\s&lt;\s0)\sthen\r\n
+//not\syet\s60,\sMAWA\s=\s0,\sPIPP\s=\s0\r\n
+\s\s\s\sreturn\saccount_value_bop\r\n
+else\r\n
+\s\s\s\sif\sis_annexus_product\sand\sAPV_LB_new_calc\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sapv_lb_x5\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sMAWA\s*\sAnnFac\r\n
+\s\s\s\send\r\n
+end\r\n
+</c>
+            <c name="moneyness">/*\r\n
+In-the-moneyness\sof\srider\soption\r\n
+*/\r\n
+\r\n
+=\sSafeDivide(actuarial_present_value\r\n
+\s\s\s\s+\siif(!disable_DB_AnnFac\sand\sis_annexus_product,\sapv_db,\s0),\saccount_value_bop,\r\n
+\s\s\s\sDictionary.default_moneyness)\s-\s1\r\n
+</c>
+            <c name="dyn_lapse_curve_para1">if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\sif\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0\r\n
+\s\s\s\selif\ssystematic_withdrawal_started_bop\sthen\r\n
+\s\s\s\s\s\s\s\sif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_ITM_P1_withdrawal\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_OTM_P1_withdrawal\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_ITM_P1_withdrawal\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_OTM_P1_withdrawal\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_ITM_P1\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_OTM_P1\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_ITM_P1\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_OTM_P1\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sif\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(systematic_withdrawal_started_bop,\sDictionary.dyn_lapse_ITM_P1_withdrawal,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_ITM_P1_no_withdrawal),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_beyond_spike_ITM_P1)\s\s\s\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(systematic_withdrawal_started_bop,\sDictionary.dyn_lapse_OTM_P1_withdrawal,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_OTM_P1_no_withdrawal),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_beyond_spike_OTM_P1)\r\n
+\s\s\s\s\s\s\s\send\s\s\s\s\r\n
+\s\s\s\send\r\n
+end</c>
+            <c name="dyn_lapse_curve_para2">if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\sif\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0\r\n
+\s\s\s\selif\ssystematic_withdrawal_started_bop\sthen\r\n
+\s\s\s\s\s\s\s\sif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_ITM_P2_withdrawal\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_OTM_P2_withdrawal\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_ITM_P2_withdrawal\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_OTM_P2_withdrawal\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_ITM_P2\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_at_spike_OTM_P2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_ITM_P2\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\sdynamic_lapse_at_issue.dyn_lapse_beyond_spike_OTM_P2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sif\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sif\scompare(moneyness\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(systematic_withdrawal_started_bop,\sDictionary.dyn_lapse_ITM_P2_withdrawal,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_ITM_P2_no_withdrawal),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_beyond_spike_ITM_P2)\s\s\s\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(systematic_withdrawal_started_bop,\sDictionary.dyn_lapse_OTM_P2_withdrawal,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_OTM_P2_no_withdrawal),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDictionary.dyn_lapse_beyond_spike_OTM_P2)\r\n
+\s\s\s\s\s\s\s\send\s\s\s\s\r\n
+\s\s\s\send\r\n
+end</c>
+            <c name="dynamic_lapse_multiplier">/*\r\n
+Dynamic\slapse\sfactor\sof\sliving\sbenefit\srider,\r\n
+used\sin\sfinal\slapse\scalculation,\r\n
+only\sapplicable\sif\sthe\sdynamic\slapse\sis\srequired.\r\n
+*/\r\n
+\r\n
+if\s(IsPiPEffective\sor\s!RiderElected)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+if\suse_at_issue_assumptions\sand\suse_legacy_dynamic_lapse\sthen\r\n
+\s\s\s\sdynamic_lapse_multiplier\s=\slookup_moneyness(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sdynamic_lapse_legacy_at_issue.life_factor,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smoneyness,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value_bop,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s1,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sFalse)\r\n
+end\s\r\n
+\r\n
+dynamic_lapse_multiplier\s=\siif(is_itm_dynamic_lapse_shocked,\sItmDynamicLapseShockMultiplier(moneyness),\s1)\r\n
+\s\s\s\s*\sDynamicLapseMultiplier(\s\r\n
+\s\s\s\s\s\s\s\sdyn_lapse_curve_para1,\s\r\n
+\s\s\s\s\s\s\s\sdyn_lapse_curve_para2,\r\n
+\s\s\s\s\s\s\s\smoneyness,\r\n
+\s\s\s\s\s\s\s\sDictionary.dyn_lapse_multiplier_floor_LB\r\n
+\s\s\s\s\s\s\s\s)\r\n
+if\s((use_at_issue_assumptions\sand\sapply_shock_lapse_at_issue)\r\n
+\s\s\s\sor\s(!use_at_issue_assumptions\sand\s!disable_glwb_shock_lapse))\r\n
+\s\s\s\sand\s!systematic_withdrawal_started_bop\sand\sdoubling_terminated[step]\sthen\r\n
+\s\s\s\sdynamic_lapse_multiplier\s=\sdynamic_lapse_multiplier\s+\s(1\s-\sdynamic_lapse_multiplier)\s/\s2\r\n
+end\r\n
+\r\n
+return\sdynamic_lapse_multiplier</c>
+            <c name="J_idt">/*\s\r\n
+Policy\selapsed\stime\ssince\sissue\sat\sthe\sbeginning\sof\seach\speriod\r\n
+*/\r\n
+\r\n
+=TimeT[step]</c>
+            <c name="aLapseIntBeta1">/*\r\n
+Input\sof\slapse\sinterest\sfactor\sfunction,\r\n
+updated\seach\sprojection\sstep.\r\n
+\r\n
+Formula:\r\n
+\r\n
+$$\s\\beta_1[t]\s=\s\\max(0,\\beta_1[t-1]-\\beta_5\\times\sBaseLapse[t-1]\\times\sDynFactor[t-1]\r\n
+\\times\sIntFactor[t-1]\\times\s\\frac{\\Delta\st}{0.25})\s$$\r\n
+*/\r\n
+\r\n
+if\s(IsPiPEffective)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+return\smax(0,\sprev(aLapseIntBeta1)-\sDictionary.InputB5\s*\sprev(Base_Lapse)\s*\sprev(dynamic_lapse_multiplier)\s*\sprev(LapseIntFactor)\s*\sTime_dt[step]/0.25)\r\n
+</c>
+            <c name="aLapseIntBeta2">/*\r\n
+Input\sof\slapse\sinterest\sfactor\sfunction,\r\n
+updated\susing\sbase\slapse\srate.\r\n
+\r\n
+Formula:\r\n
+\r\n
+$$\s\\beta_2\\text{_}new\s=\s\\min(\\beta_2,\\frac{0.6}{BaseLapse})\s$$\r\n
+*/\r\n
+\r\n
+if\s(IsPiPEffective)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+return\smin(Dictionary.InputB2,\s0.6\s/\sBase_Lapse)\r\n
+//return\smin(MParameters.InputB2,\s0.6/(Base_Lapse/100))</c>
+            <c name="LapseIntFactor">/*\r\n
+Lapse\sinterest\sfactor,\r\n
+used\sin\sfinal\slapse\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(IsPiPEffective\sor\s!RiderElected)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+return\sLapseIntFacCalculator(J_idt,\saLapseIntBeta1,\saLapseIntBeta2,\sIncomeBase,\sScen_Rates,\saccount_value_bop,MAWA)</c>
+            <c name="current_credit_rate">if\sis_running_dac\sthen\s//\sDAC\srun\r\n
+\s\s\s\sreturn\siif(!first_credit_after_valuation_date_passed,\soption_value_dac,\soption_budget_dac)\r\n
+elif\soption_budget_type\s==\s1\sthen\s//\sLDTI\sat\svaluation\sdate\srun\r\n
+\s\s\s\sreturn\siif(!first_credit_after_valuation_date_passed,\soption_budget_gaap,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(reset_rate_now[step],\sinforce_option_price[step_esg]/crediting_term_post_ratesetting,\sprev(current_credit_rate)))\r\n
+elif\soption_budget_type\s==\s2\sthen\s//\sLDTI\sat\sissue\srun\r\n
+\s\s\s\sreturn\siif(!first_credit_after_valuation_date_passed,\soption_cost_at_issue_date,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(reset_rate_now[step],\sinforce_option_price[step_esg]/crediting_term_post_ratesetting,\sprev(current_credit_rate)))\r\n
+else\s//\sECON\srun\r\n
+\s\s\s\s//return\sinforce_option_price\r\n
+\s\s\s\sreturn\siif(!first_credit_after_valuation_date_passed,\soption_budget_gaap,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(reset_rate_now[step],\sinforce_option_price[step_esg]/crediting_term_post_ratesetting,\sprev(current_credit_rate)))\r\n
+end</c>
+            <c name="Excess_Lapse">/*\r\n
+Excess\slapse\srate,\r\n
+used\sin\sinterest\ssensitive\sdynamics\slapse\scalculation.\r\n
+*/\r\n
+\r\n
+net_credit_rate\s=\scurrent_credit_rate\s-\sepr_fee_pct\r\n
+\r\n
+if\ssurrender_charge_period_ind[step]\sthen\r\n
+\s\s\s\sreturn\sInterestRateSensitiveDynamicLapse.excesslapserate(\r\n
+\s\s\s\s\s\s\s\scompetitor_crediting_rate[step_esg],\r\n
+\s\s\s\s\s\s\s\snet_credit_rate,\r\n
+\s\s\s\s\s\s\s\sCDSC_perc[step],\r\n
+\s\s\s\s\s\s\s\sMVA_perc,\r\n
+\s\s\s\s\s\s\s\sremaining_term[step],\r\n
+\s\s\s\s\s\s\s\sDictionary.before_spike_M1,\r\n
+\s\s\s\s\s\s\s\sDictionary.before_spike_M2,\r\n
+\s\s\s\s\s\s\s\sDictionary.excess_lapse_threshold\r\n
+\s\s\s\s)\r\n
+elif\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\sreturn\sInterestRateSensitiveDynamicLapse.excesslapserate(\r\n
+\s\s\s\s\s\s\s\scompetitor_crediting_rate[step_esg],\r\n
+\s\s\s\s\s\s\s\snet_credit_rate,\r\n
+\s\s\s\s\s\s\s\sCDSC_perc[step],\r\n
+\s\s\s\s\s\s\s\sMVA_perc,\r\n
+\s\s\s\s\s\s\s\sremaining_term[step],\r\n
+\s\s\s\s\s\s\s\sDictionary.at_spike_M1,\r\n
+\s\s\s\s\s\s\s\sDictionary.at_spike_M2,\r\n
+\s\s\s\s\s\s\s\sDictionary.excess_lapse_threshold\r\n
+\s\s\s\s)\r\n
+else\r\n
+\s\s\s\sreturn\sInterestRateSensitiveDynamicLapse.excesslapserate(\r\n
+\s\s\s\s\s\s\s\scompetitor_crediting_rate[step_esg],\r\n
+\s\s\s\s\s\s\s\snet_credit_rate,\r\n
+\s\s\s\s\s\s\s\sCDSC_perc[step],\r\n
+\s\s\s\s\s\s\s\sMVA_perc,\r\n
+\s\s\s\s\s\s\s\sremaining_term[step],\r\n
+\s\s\s\s\s\s\s\sDictionary.post_spike_M1,\r\n
+\s\s\s\s\s\s\s\sDictionary.post_spike_M2,\r\n
+\s\s\s\s\s\s\s\sDictionary.excess_lapse_threshold\r\n
+\s\s\s\s)\r\n
+end</c>
+            <c name="ITM_EPS">/*\r\n
+ITM%=(AV(T)+Fee\sRefund)/(Max(CSV(t),MWV(t)))-1\r\n
+In\sthis\sformula:\r\n
+\s\s\s\sFee\sRefund\s=\s0\s\s\s\s\s\s\s\s\s\sif\sAV(T)&gt;NP\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sNP-AV(T)\s\s\sif\sNP&gt;AV(T)\r\n
+\s\s\s\sAV(T)\sis\sthe\sprojected\saccount\svalue\sat\sthe\send\sof\sthe\sSFC\sterm\s\r\n
+\s\s\s\sCSV(t)\sis\sthe\scash\ssurrender\svalue\sat\sthe\scalculation\sdate.\r\n
+\s\s\s\sMWV(t)\sis\sthe\sminimum\swithdrawal\svalue\sat\sthe\scalculation\sdate\r\n
+\s\s\s\sNP\sis\sthe\sNet\sPremium\sat\sthe\send\sof\sthe\sSFC\sterm\s(defined\sas\sTotal\sPremiums\s–\sWithdrawals)\r\n
+\s\s\s\sITM%\sshould\sbe\sfloored\sat\s0,\ssince\san\sout-of-the-money\sSFC\sfeature\sis\snot\santicipated\sto\scause\shigher\slapsation.\r\n
+\r\n
+*/\r\n
+=\smax(0,\s(account_value_at_sc_end\s+\seps_fee_refund_estimate)\s/\smax(CSV,\sMWV)\s-\s1)</c>
+            <c name="SFC_Dynamic_Lapse_Multiplier">/*\r\n
+SFC\sDynamic\sLapse\sMultiplier=Max(0,1-α×Arctan(β×(T-t)^γ×ITM))\r\n
+Where:\s\r\n
+α\s=\s0.45;\s\s\s\s\sβ\s=\s3.75;\s\s\s\s\sγ\s=\s-1\r\n
+and\s(T-t)\srepresents\sthe\sremaining\stime\sin\sthe\sSFC\sterm.\r\n
+The\sdynamic\slapse\smultiplier\sshould\sbe\sfloored\sat\s20%.\r\n
+*/\r\n
+\r\n
+=\smax(Dictionary.dyn_lapse_eps_multiplier_floor,\s\r\n
+\s\s\s\s\s\s1\s-\sDictionary.dyn_lapse_eps_alpha\s*\satan(Dictionary.dyn_lapse_eps_beta\s*\sITM_EPS\s*\s\r\n
+\s\s\s\s\s\s\s\s\s\syrs_until_scp_end[step]^Dictionary.dyn_lapse_eps_gamma))</c>
+            <c name="SFC_Additional_Shock_Lapse">/*\r\n
+Additional\sadditive\sshock\slapse\sbe\sapplied\sduring\sthe\sshock\syear\r\n
+*/\r\n
+if\scompare(epr_fee_pct\s&gt;\s0,\s1E-6)\sand\ssurrender_charge_spike_period_ind[step]\sthen\r\n
+\s\s\s\sif\scompare(prev(SFC_Additional_Shock_Lapse)\s&gt;\s0,\s1E-6)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sprev(SFC_Additional_Shock_Lapse)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sSafeDivide(strategy_fee_credit,\saccount_value_post_strategy_fee,\s0)\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="Interest_Rate_Sensitive_Lapse">/*\r\n
+Interest\srate\ssensitive\sdynamic\slapse,\r\n
+used\sin\sno\sliving\sbenefit\sdynamic\slapse\scalculation.\r\n
+*/\r\n
+\r\n
+=\siif(surrender_charge_period_ind[step],\s\r\n
+\s\s\s\sBase_Lapse\s*\siif(compare(epr_fee_pct\s&gt;\s0,\s1E-6),\s\sSFC_Dynamic_Lapse_Multiplier,\s1),\s\r\n
+\s\s\s\smax(base_isl_floor,\s\r\n
+\s\s\s\s\s\s\s\smin(iif(use_2025_q3_dynamic_lapse\sand\ssurrender_charge_spike_period_ind[step],\s0.9,\sbase_isl_cap),\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sBase_Lapse\s+\sinterest_dynamic_lapse_shock_multiplier\s*\sExcess_Lapse\s+\sSFC_Additional_Shock_Lapse)))</c>
+            <c name="Annual_Lapse">/*\r\n
+Final\sannual\slapse\srate,\r\n
+no\sdynamics,\sdynamics\swith\sliving\sbenefit,\r\n
+or\sdynamics\swithout\sliving\sbenefit.\r\n
+*/\r\n
+\r\n
+if\sdisable_dynamic_lapse\sthen\r\n
+\s\s\s\sreturn\sBase_Lapse\r\n
+elif\s!RiderElected\sthen\r\n
+\s\s\s\sreturn\sInterest_Rate_Sensitive_Lapse\r\n
+elif\sdisable_interest_rate_lapse\sthen\r\n
+\s\s\s\sreturn\sdynamic_lapse_multiplier\s*\sBase_Lapse\r\n
+else\r\n
+\s\s\s\sreturn\sdynamic_lapse_multiplier\s*\sLapseIntFactor\s*\sBase_Lapse\r\n
+endif</c>
+            <c name="lapse_skew_rate">=\siif(!RiderElected\sand\ssurrender_charge_spike_period_ind[step]\sand\sis_monthiversary[step],\r\n
+\s\s\s\slapse_skew_factor[step],\sprev(lapse_skew_rate))</c>
+            <c name="accumulated_lapse_skew_rate">=\siif(!RiderElected\sand\ssurrender_charge_spike_period_ind[step]\sand\sis_monthiversary[step],\r\n
+\s\s\s\sprev(accumulated_lapse_skew_rate)\s+\slapse_skew_rate,\r\n
+\s\s\s\sprev(accumulated_lapse_skew_rate))</c>
+            <c name="lapse_shock_year_ind">=\ssurrender_charge_spike_period_ind[step]</c>
+            <c name="remaining_percentage_bop">=\siif(!prev(lapse_shock_year_ind)\sand\slapse_shock_year_ind,\s1,\sprev(remaining_percentage_eop))</c>
+            <c name="remaining_percentage_eop">=\sremaining_percentage_bop\s-\slapse_in_period_with_skew</c>
+            <c name="lapse_in_period_with_skew">=\siif(surrender_charge_spike_period_ind[step]\sand\sis_monthiversary[step],\r\n
+\s\s\s\sremaining_percentage_bop\s/\s(1\s-\sAnnual_Lapse\s*\sprev(accumulated_lapse_skew_rate))\r\n
+\s\s\s\s*\sAnnual_Lapse\s*\slapse_skew_rate,\s0)</c>
+            <c name="LapseRate_Final">/*\r\n
+Final\slapse\srate\sin\sthis\sprojection\speriod\r\n
+*/\r\n
+=\siif(!RiderElected\sand\suse_2025_q3_lapse_skew\sand\ssurrender_charge_spike_period_ind[step],\r\n
+\s\s\s\slapse_in_period_with_skew/remaining_percentage_bop,\r\n
+\s\s\s\s1\s-\s(1\s-\smin(1,\sAnnual_Lapse))\s^\sTime_dt[step])</c>
+            <c name="survivor_lapse_only">=\sprev(survivor_lapse_only)\s*\s(1\s-\sLapseRate_Final)</c>
+            <c name="XY">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\salive\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=prev(XY_Final)*(1-Final_Mort)\s*(1-Final_Mort2)</c>
+            <c name="XD">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\salive\sbut\sthe\ssecond\sperson\sis\sdead\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=prev(XY_Final)*(1-Final_Mort)*Final_Mort2\r\n
++prev(XD_Final)*(1-Final_Mort)</c>
+            <c name="DY">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\salive\sbut\sthe\ssecond\sperson\sis\sdead\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=prev(XY_Final)*Final_mort*(1-Final_Mort2)\r\n
++prev(DY_Final)*(1-Final_Mort2)</c>
+            <c name="DD">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\sdead\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=prev(XY_Final)*Final_Mort*Final_Mort2\r\n
++prev(XD_Final)*Final_Mort\r\n
++prev(DY_Final)*Final_Mort2\r\n
++prev(DD_Final)</c>
+            <c name="Surv_preLapse">/*\r\n
+The\sprobability\sthat\sat\sleast\sone\scovered\sperson\sis\salive\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=XY+XD+DY</c>
+            <c name="LapseTM">/*\r\n
+Lapse\srate\sin\sthis\sprojection\speriod\r\n
+taking\smortality\sinto\saccount\r\n
+*/\r\n
+\r\n
+=LapseRate_Final*Surv_preLapse</c>
+            <c name="XY_Final">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\sstill\seffective\sin\sthe\scontract\r\n
+(alive\sand\snot\ssurrendered)\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=XY\s-\sSafeDivide(XY,Surv_preLapse,0)\s*\sLapseTM</c>
+            <c name="XD_Final">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\sstill\seffective\sin\sthe\scontract\r\n
+but\sthe\ssecond\sperson\sis\snot\s(dead\sor\ssurrendered)\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=XD\s-\sSafeDivide(XD,Surv_preLapse,0)\s*\sLapseTM</c>
+            <c name="DY_Final">/*\r\n
+The\sprobability\sthat\sthe\ssecond\sperson\sis\sstill\seffective\sin\sthe\scontract\r\n
+but\sthe\sfirst\sperson\sis\snot\s(dead\sor\ssurrendered)\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=DY\s-\sSafeDivide(DY,Surv_preLapse,0)\s*\sLapseTM</c>
+            <c name="DD_Final">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\snot\seffective\sin\sthe\scontract\r\n
+(dead\sor\ssurrendered)\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=DD</c>
+            <c name="Lapsed">/*\r\n
+Total\slapse\spercentage\r\n
+from\sthe\sfirst\sprojection\sdate\sto\sthe\send\sof\sthis\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=prev(Lapsed)\s+\sLapseTM</c>
+            <c name="Life_Check">/*\r\n
+check\sif\sthe\ssum\sof\sthe\sdead,\sthe\selapsed\sand\sthe\sremainings\sis\sequal\sto\s1\r\n
+*/\r\n
+\r\n
+=XY_Final\s+\sXD_Final\s+DY_Final\s+DD_Final\s+\sLapsed</c>
+            <c name="DeathTP">/*\r\n
+Death\spercentage\sin\sthis\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=DD_Final\s-\sprev(DD_Final)</c>
+            <c name="Survivor">=XY_Final\s+\sXD_Final\s+\sDY_Final</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:projection">
+      <c name="account_value_bop" formattype="General" width="80" />
+      <c name="accumulated_lapse_skew_rate" formattype="General" width="80" />
+      <c name="actuarial_present_value" formattype="General" width="143.2" />
+      <c name="Annual_Lapse" formattype="General" width="80" />
+      <c name="current_credit_rate" formattype="General" width="122.04204204204211" />
+      <c name="dynamic_lapse_multiplier" formattype="General" width="80" />
+      <c name="dyn_lapse_curve_para1" formattype="General" width="80" />
+      <c name="dyn_lapse_curve_para2" formattype="General" width="80" />
+      <c name="Excess_Lapse" formattype="General" width="98" />
+      <c name="Final_Mort" formattype="General" width="111.37" />
+      <c name="G2_1[0]" formattype="General" width="80" />
+      <c name="G2_2[0]" formattype="General" width="80" />
+      <c name="GLIA" formattype="General" width="80" />
+      <c name="income_percentage_rate" formattype="General" width="88" />
+      <c name="Interest_Rate_Sensitive_Lapse" formattype="General" width="80" />
+      <c name="ITM_EPS" formattype="General" width="80" />
+      <c name="LapseRate_Final" formattype="General" width="75.4000000000001" />
+      <c name="LapseTM" formattype="General" width="130" />
+      <c name="lapse_in_period_with_skew" formattype="General" width="80" />
+      <c name="lapse_shock_year_ind" formattype="General" width="80" />
+      <c name="lapse_skew_rate" formattype="General" width="80" />
+      <c name="mawa_rate" formattype="General" width="80" />
+      <c name="moneyness" formattype="General" width="80" />
+      <c name="MortTM" formattype="General" width="100" />
+      <c name="NCMProp" formattype="General" width="68.08" />
+      <c name="PIP" formattype="General" width="80" />
+      <c name="pip_rate" formattype="General" width="80" />
+      <c name="projection_date" formattype="General" width="112" />
+      <c name="remaining_percentage_bop" formattype="General" width="80" />
+      <c name="remaining_percentage_eop" formattype="General" width="80" />
+      <c name="SFC_Additional_Shock_Lapse" formattype="General" width="80" />
+      <c name="SFC_Dynamic_Lapse_Multiplier" formattype="General" width="80" />
+      <c name="survivor_lapse_only" formattype="General" width="80" />
+      <c name="Surv_preLapse" formattype="General" width="137" />
+    </view>
+  </view-customizations>
+</computation-library-root>

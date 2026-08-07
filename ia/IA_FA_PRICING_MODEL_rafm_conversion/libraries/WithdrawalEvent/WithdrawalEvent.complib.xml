@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="WithdrawalEvent" version="master" format-version="20">
+  <UserUDFs>
+    <udf name="compute_withdrawal_amount_regime">int\scompute_withdrawal_amount_regime(\r\n
+\s\s\s\sint\sprev_withdrawal_amount_regime,\r\n
+\s\s\s\sbool\sis_anniversary,\s\r\n
+\s\s\s\sint\swithdrawal_ind,\r\n
+\s\s\s\sint\swithdrawal_first_period_ind,\r\n
+\s\s\s\sreal\srnd_withdrawal_amount_draw,\r\n
+\s\s\s\sreal[3]\sprob_init,\r\n
+\s\s\s\sreal[3,3]\sprob_transition\r\n
+)\r\n
+/*\r\n
+-1:\snot\sstarted\swithdrawal\r\n
+0:\sabove\sMAWA\r\n
+1:\sMAWA\r\n
+2:\sbelow\sMAWA\r\n
+*/\r\n
+\s\s\s\sif\swithdrawal_ind\s==\s0\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s-1\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\r\n
+\s\s\s\selif\s!is_anniversary\sthen\s//\snot\sat\sanniversary\r\n
+\s\s\s\s\s\s\s\s$result\s=\sprev_withdrawal_amount_regime\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\r\n
+\s\s\s\selif\swithdrawal_first_period_ind\s==\s1\sthen\s\s//\sfirst\swithdrawal,\suse\sinitial\sprob\r\n
+\s\s\s\s\s\s\s\sif\scompare(rnd_withdrawal_amount_draw\s&lt;\sprob_init[0],\s1E-10)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\selif\scompare(rnd_withdrawal_amount_draw\s&lt;\sprob_init[0]\s+\sprob_init[1],\s1E-10)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s1\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s2\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s//\salready\sstarted\swithdrawal,\suse\stransition\smatrix\r\n
+\s\s\s\sif\scompare(rnd_withdrawal_amount_draw\s&lt;\sprob_transition[prev_withdrawal_amount_regime,\s0],\s1E-10)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\selif\scompare(rnd_withdrawal_amount_draw\s&lt;\sprob_transition[prev_withdrawal_amount_regime,\s0]\s+\sprob_transition[prev_withdrawal_amount_regime,\s1],\s1E-10)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s1\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\s2\r\n
+\s\s\s\send\r\n
+\s\s\r\n
+end</udf>
+    <udf name="sample_multinomial">int\ssample_multinomial(real\su,\sreal[N]\sprobs)\r\n
+\s\s\s\sreal\scum_prob\s=\s0\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN\s-\s1\r\n
+\s\s\s\s\s\s\s\scum_prob\s=\scum_prob\s+\sprobs[i]\r\n
+\s\s\s\s\s\s\s\sif\scompare(u\s&lt;=\scum_prob,\s1e-10)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\si\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\s\s\s\s$result\s=\sN\s-\s1\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="is_anniversary" type="bool" shape="*" />
+    <input name="systematic_withdrawal_started" type="bool" modifier="Cashflow" />
+    <input name="initial_withdrawal_started" type="bool" />
+    <input name="av_over_bb" type="real" modifier="Cashflow" />
+    <input name="above_mawa_disable" type="real" />
+    <input name="disable_withdrawal_amount" type="bool" />
+    <input name="use_2020_q3_withdrawal_assumptions" type="bool" />
+    <input name="issue_age_youngest" type="int" shape="*" />
+    <input name="is_annexus" type="bool" />
+    <input name="withdrawal_rate_2019" type="composite" shape="*">
+      <field name="probability_single" type="real" shape="*,*" />
+    </input>
+    <input name="withdrawal_rate_2020" type="composite" shape="*">
+      <field name="probability_single" type="real" shape="*,*" />
+    </input>
+    <input name="first_partial_withdrawal_enum" type="int" />
+    <input name="min_issue_age" type="int" />
+    <input name="years_since_issue" type="real" />
+    <input name="year_fraction_since_last_anniversary" type="real" />
+    <input name="policy_year" type="int" shape="*" />
+    <input name="withdrawal_event_util_randu" type="real" modifier="Cashflow" />
+    <input name="withdrawal_event_start_randu" type="real" modifier="Cashflow" />
+    <input name="use_stochastic_utilization" type="bool" />
+    <input name="disable_withdrawal" type="bool" />
+    <input name="policy_duration" type="int" shape="*" />
+    <input name="is_utilization_shocked" type="bool" />
+    <input name="withdrawal_amount_info_at_issue" type="composite">
+      <field name="mawa_mult" type="real" shape="*" />
+      <field name="prob_init" type="real" shape="*" />
+      <field name="prob_transition" type="real" shape="*,*" />
+      <field name="above_mawa_disable" type="real" />
+      <field name="above_glia_disable" type="real" />
+    </input>
+    <input name="use_at_issue_assumptions" type="bool" />
+    <input name="FirstPartialWithdrawal_at_issue" type="composite" shape="*">
+      <field name="lip_qualified_nonPSPI" type="real" shape="31,16" />
+      <field name="pre_qualified_PSPI" type="real" shape="31,16" />
+      <field name="lip_unqualified_nonPSPI" type="real" shape="31,16" />
+      <field name="pre_unqualified_PSPI" type="real" shape="31,16" />
+      <field name="lipm_qualified_nonPSPI" type="real" shape="31,16" />
+      <field name="post_qualified_PSPI" type="real" shape="31,16" />
+      <field name="lipm_unqualified_nonPSPI" type="real" shape="31,16" />
+      <field name="post_unqualified_PSPI" type="real" shape="31,16" />
+      <field name="min_age_60_qualified_nonPSPI" type="real" shape="31,16" />
+      <field name="min_age_60_unqualified_nonPSPI" type="real" shape="31,16" />
+    </input>
+    <input name="pw_issue_year_ind" type="int" />
+    <input name="fpw_year_shift" type="int" />
+    <input name="av_over_glia" type="real" modifier="Cashflow" />
+    <input name="above_glia_disable" type="real" />
+    <input name="is_rider_income_builder" type="bool" />
+    <input name="amount_randu" type="real" modifier="Cashflow" />
+    <input name="use_2023_q3_withdrawal_amount_assumptions" type="bool" />
+    <input name="withdrawal_amount_info_2023" type="composite">
+      <field name="mawa_mult" type="real" shape="*" />
+      <field name="prob_init" type="real" shape="*" />
+      <field name="prob_transition" type="real" shape="*,*" />
+    </input>
+    <input name="use_2023_q3_first_partial_withdrawal_assumptions" type="bool" />
+    <input name="withdrawal_rate_2023" type="composite" shape="*">
+      <field name="probability_single" type="real" shape="*,*" />
+    </input>
+    <input name="withdrawal_amount_info_2019" type="composite">
+      <field name="mawa_mult" type="real" shape="*" />
+      <field name="prob_init" type="real" shape="*" />
+      <field name="prob_transition" type="real" shape="*,*" />
+    </input>
+    <input name="withdrawal_amount_info_2025" type="composite">
+      <field name="mawa_mult" type="real" shape="*" />
+      <field name="prob_init" type="real" shape="*" />
+      <field name="prob_transition" type="real" shape="*,*" />
+    </input>
+    <input name="use_2025_q3_withdrawal_amount" type="bool" />
+  </inputs>
+  <results>
+    <result name="withdrawal_amount_percentage" ref="=Projection.withdrawal_amount_percentage" />
+    <result name="withdrawal_ind_eop_stochastic_util" ref="=Projection.withdrawal_ind_eop_stochastic_util" />
+    <result name="withdrawal_amount_regime" ref="=Projection.withdrawal_amount_regime" />
+  </results>
+  <calculations>
+    <table name="Dictionary" type="KeyValue">
+      <c name="n_row" datatype="int">if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\sreturn\snum_rows(FirstPartialWithdrawal_at_issue[0].lip_qualified_nonPSPI)\r\n
+elif\suse_2023_q3_first_partial_withdrawal_assumptions\sthen\r\n
+\s\s\s\sreturn\snum_rows(withdrawal_rate_2023[0].probability_single)\r\n
+else\r\n
+\s\s\s\sreturn\snum_rows(withdrawal_rate_2020[0].probability_single)\r\n
+end</c>
+      <c name="n_col" datatype="int">if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\sreturn\snum_cols(FirstPartialWithdrawal_at_issue[0].lip_qualified_nonPSPI)\r\n
+elif\suse_2023_q3_first_partial_withdrawal_assumptions\sthen\r\n
+\s\s\s\sreturn\snum_cols(withdrawal_rate_2023[0].probability_single)\r\n
+else\r\n
+\s\s\s\sreturn\snum_cols(withdrawal_rate_2020[0].probability_single)\r\n
+end</c>
+    </table>
+    <table name="withdrawal_rate_table" type="Table2D">
+      <rows>=\sDictionary.n_row</rows>
+      <cols>=\sDictionary.n_col</cols>
+      <value datatype="Real">if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\sswitch\sfirst_partial_withdrawal_enum\r\n
+\s\s\s\s\s\s\s\scase\s1:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].pre_qualified_PSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\scase\s2:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].pre_unqualified_PSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\scase\s3:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].post_qualified_PSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\scase\s4:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].post_unqualified_PSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\scase\s5:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].min_age_60_qualified_nonPSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\scase\s6:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].min_age_60_unqualified_nonPSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\scase\s7:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].lip_qualified_nonPSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\scase\s8:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].lip_unqualified_nonPSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\scase\s9:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].lipm_qualified_nonPSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\scase\s10:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].lipm_unqualified_nonPSPI[$row,\s$col]\r\n
+\s\s\s\s\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sFirstPartialWithdrawal_at_issue[pw_issue_year_ind].lip_qualified_nonPSPI[$row,\s$col]\r\n
+\s\s\s\send\r\n
+end\r\n
+\r\n
+if\s(first_partial_withdrawal_enum\s==\s-1)\sthen\r\n
+    return\s0\r\n
+end\r\n
+\r\n
+if\suse_2023_q3_first_partial_withdrawal_assumptions\sthen\r\n
+\s\s\s\sreturn\swithdrawal_rate_2023[first_partial_withdrawal_enum].probability_single[$row,\s$col]\r\n
+elif\suse_2020_q3_withdrawal_assumptions\sthen\r\n
+\s\s\s\sreturn\swithdrawal_rate_2020[first_partial_withdrawal_enum].probability_single[$row,\s$col]\r\n
+else\r\n
+\s\s\s\sreturn\swithdrawal_rate_2019[first_partial_withdrawal_enum].probability_single[$row,\s$col]\r\n
+endif</value>
+    </table>
+    <table name="withdrawal_rate_annual" type="Table2D">
+      <rows>=\s1</rows>
+      <cols>=\sDictionary.n_col</cols>
+      <value datatype="Real">if\sis_annexus\sthen\r\n
+\s\s\s\sif\suse_2020_q3_withdrawal_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\swithdrawal_rate_table[min(Dictionary.n_row\s-\s1,\smax(0,\smin_issue_age\s-\s40)),\s$col]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\swithdrawal_rate_table[min(Dictionary.n_row\s-\s1,\smax(0,\smin_issue_age\s-\s45)),\s$col]\r\n
+\s\s\s\sendif\r\n
+else\r\n
+\s\s\s\sreturn\swithdrawal_rate_table[min(Dictionary.n_row\s-\s1,\smax(0,\smin_issue_age\s-\s50)),\s$col]\r\n
+endif</value>
+    </table>
+    <table name="Prob" type="KeyValue">
+      <c name="total_prob" datatype="real">=\siif(is_utilization_shocked,\s1,\ssum_range(\r\n
+\s\s\s\swithdrawal_rate_annual[0,:],\s\r\n
+\s\s\s\s0,\s\r\n
+\s\s\s\sDictionary.n_col-1\r\n
+)\r\n
+)</c>
+      <c name="non_util_prob_a_priori" datatype="real">=\s1\s-\stotal_prob</c>
+      <c name="non_util_prob_cond" datatype="real">if\sinitial_withdrawal_started\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+anni_idx\s=\sceil(years_since_issue\s+\s1e-6)\r\n
+if\sanni_idx\s&gt;=\sDictionary.n_col\sthen\r\n
+\s\s\s\sreturn\s1\r\n
+end\r\n
+cond_prob\s=\s1\s-\ssum_range(withdrawal_rate_annual[0,:],\s0,\sanni_idx\s-\s1)\s+\swithdrawal_rate_annual[0,anni_idx\s-\s1]\s*\s(1\s-\syear_fraction_since_last_anniversary)\r\n
+\r\n
+return\snon_util_prob_a_priori\s/\scond_prob</c>
+    </table>
+    <table name="withdrawal_rate_util" type="Table2D">
+      <rows>=1</rows>
+      <cols>=\sDictionary.n_col</cols>
+      <value datatype="Real">//\sWithdrawal\sprobability\sconditional\son\sbeing\sa\sutilizer.\r\n
+return\swithdrawal_rate_annual[$row,\s$col]\s/\sProb.total_prob</value>
+    </table>
+    <table name="withdrawal_dist_unnormalized" type="Table2D">
+      <rows>=1</rows>
+      <cols>=\sDictionary.n_col</cols>
+      <value datatype="Real">//\sWithdrawal\sprobability\sconditional\son\sbeing\sa\sutilizer\sand\son\snot\sstarting\r\n
+//\swithdrawals\sin\sany\sof\sthe\sprior\syears.\r\n
+pol_dur\s=\spolicy_duration[0]\r\n
+if\spol_dur\s&gt;=\sDictionary.n_col\sthen\r\n
+\s\s\s\sreturn\siif($col\s==\sDictionary.n_col\s-\s1,\s1,\s0)\r\n
+else\r\n
+\s\s\s\sif\s$col\s&lt;\spol_dur\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreturn\siif(\r\n
+\s\s\s\s\s\s\s\s$col\s==\spol_dur,\s\r\n
+\s\s\s\s\s\s\s\swithdrawal_rate_util[$row,\s$col]\s*\s(1\s-\syear_fraction_since_last_anniversary),\r\n
+\s\s\s\s\s\s\s\swithdrawal_rate_util[$row,\s$col]\r\n
+\s\s\s\s)\r\n
+end</value>
+    </table>
+    <table name="withdrawal_dist" type="Table2D">
+      <rows>=1</rows>
+      <cols>=\sDictionary.n_col</cols>
+      <value datatype="Real">=\swithdrawal_dist_unnormalized[$row,\s$col]\s/\ssum(withdrawal_dist_unnormalized[$row,\s:])</value>
+    </table>
+    <table name="Projection" type="CashFlow">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="withdraw_non_util_bool" datatype="bool" />
+        <c name="withdrawal_year_sample" datatype="int" />
+        <c name="withdrawal_draw" datatype="int" />
+        <c name="withdrawal_ind_eop_stochastic_util" datatype="int" />
+        <c name="withdrawal_ind_eop" datatype="int" />
+        <c name="withdrawal_first_period_ind" datatype="int" />
+        <c name="withdrawal_amount_regime" datatype="int" />
+        <c name="withdrawal_amount_percentage" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="withdraw_non_util_bool">=\siif(compare(withdrawal_event_util_randu\s&lt;=\sProb.non_util_prob_cond,\s1e-8),\sTrue,\sFalse)</c>
+            <c name="withdrawal_year_sample">=\siif(withdraw_non_util_bool,\s1000,\r\n
+\s\s\s\ssample_multinomial(withdrawal_event_start_randu,\swithdrawal_dist[0,\s:]))\s-\sfpw_year_shift</c>
+            <c name="withdrawal_draw">if\sinitial_withdrawal_started\sthen\r\n
+\s\s\s\sreturn\s1\r\n
+else\r\n
+\s\s\s\sreturn\siif(policy_duration[step]\s&gt;=\swithdrawal_year_sample,\s1,\s0)\r\n
+end</c>
+            <c name="withdrawal_ind_eop_stochastic_util">=\siif(systematic_withdrawal_started,\s1,\s0)</c>
+            <c name="withdrawal_ind_eop">=\siif(use_stochastic_utilization,\swithdrawal_ind_eop_stochastic_util,\r\n
+\s\s\s\siif(systematic_withdrawal_started,\s1,\s0))</c>
+            <c name="withdrawal_first_period_ind">=\siif(initial_withdrawal_started,\s0,\swithdrawal_ind_eop)</c>
+            <c name="withdrawal_amount_regime">/*\r\n
+-1:\snot\sstarted\swithdrawal\r\n
+0:\sabove\sMAWA\r\n
+1:\sMAWA\r\n
+2:\sbelow\sMAWA\r\n
+*/\r\n
+if\sinitial_withdrawal_started\sthen\r\n
+\s\s\s\sreturn\s1\r\n
+end\r\n
+\r\n
+if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\swithdrawal_amount_regime\s=\scompute_withdrawal_amount_regime(\r\n
+\s\s\s\s\s\s\s\s-1,\r\n
+\s\s\s\s\s\s\s\sis_anniversary[step],\s//\sis_policy_anniversary[step],\s\r\n
+\s\s\s\s\s\s\s\swithdrawal_ind_eop,\r\n
+\s\s\s\s\s\s\s\swithdrawal_first_period_ind,\r\n
+\s\s\s\s\s\s\s\samount_randu,\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_info_at_issue.prob_init,\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_info_at_issue.prob_transition\r\n
+\s\s\s\s)\r\n
+\s\s\s\sif\swithdrawal_amount_regime\s==\s0\sand\sis_rider_income_builder\sand \r\n
+    compare(av_over_glia\s&lt;\swithdrawal_amount_info_at_issue.above_glia_disable,\s1e-6)\sthen\r\n
+        return\s1\r\n
+    end\r\n
+\s\s\s\sif\swithdrawal_amount_regime\s==\s0\sand\s!is_rider_income_builder\sand\s\r\n
+\s\s\s\scompare(av_over_bb\s&lt;\swithdrawal_amount_info_at_issue.above_mawa_disable,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s1\r\n
+\s\s\s\send\r\n
+\s\s\s\sreturn\swithdrawal_amount_regime\r\n
+else\r\n
+\s\s\s\sif\suse_2025_q3_withdrawal_amount\sthen\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_regime\s=\scompute_withdrawal_amount_regime(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s-1,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sis_anniversary[step],\s//\sis_policy_anniversary[step],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_ind_eop,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_first_period_ind,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\samount_randu,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2025.prob_init,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2025.prob_transition\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selif\suse_2023_q3_withdrawal_amount_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_regime\s=\scompute_withdrawal_amount_regime(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s-1,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sis_anniversary[step],\s//\sis_policy_anniversary[step],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_ind_eop,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_first_period_ind,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\samount_randu,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2023.prob_init,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2023.prob_transition\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_regime\s=\scompute_withdrawal_amount_regime(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s-1,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sis_anniversary[step],\s//\sis_policy_anniversary[step],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_ind_eop,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_first_period_ind,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\samount_randu,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2019.prob_init,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2019.prob_transition\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\send\r\n
+\s\s\s\s if\swithdrawal_amount_regime\s==\s0\sand\sis_rider_income_builder\sand \r\n
+    compare(av_over_glia\s&lt;\sabove_glia_disable,\s1e-6)\sthen\r\n
+        return\s1\r\n
+    end\r\n
+\s\s\s\sif\swithdrawal_amount_regime\s==\s0\sand\s!is_rider_income_builder\sand\r\n
+\s\s\s\scompare(av_over_bb\s&lt;\sabove_mawa_disable,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s1\r\n
+\s\s\s\send\s\s\s\s\r\n
+\s\s\s\sreturn\swithdrawal_amount_regime\r\n
+end</c>
+            <c name="withdrawal_amount_percentage">=\siif(disable_withdrawal_amount,\s1,\s(min(withdrawal_amount_regime,\s0)\s+\s1)\r\n
+\s\s\s\s*\siif(use_at_issue_assumptions,\r\n
+\s\s\s\swithdrawal_amount_info_at_issue.mawa_mult[max(withdrawal_amount_regime,\s0)],\r\n
+\s\s\s\siif(use_2025_q3_withdrawal_amount,\swithdrawal_amount_info_2025.mawa_mult[max(withdrawal_amount_regime,\s0)],\r\n
+\s\s\s\siif(use_2023_q3_withdrawal_amount_assumptions,\swithdrawal_amount_info_2023.mawa_mult[max(withdrawal_amount_regime,\s0)],\r\n
+\s\s\s\swithdrawal_amount_info_2019.mawa_mult[max(withdrawal_amount_regime,\s0)]))))</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=prev(step)+1</c>
+            <c name="withdraw_non_util_bool">=\sprev(withdraw_non_util_bool)</c>
+            <c name="withdrawal_year_sample">=\sprev(withdrawal_year_sample)</c>
+            <c name="withdrawal_draw">if\sinitial_withdrawal_started\sthen\r\n
+\s\s\s\sreturn\s1\r\n
+else\r\n
+\s\s\s\sreturn\siif(policy_duration[step]\s&gt;=\swithdrawal_year_sample,\s1,\s0)\r\n
+end</c>
+            <c name="withdrawal_ind_eop_stochastic_util">return\sprev(withdrawal_ind_eop)\s+\s(1\s-\sprev(withdrawal_ind_eop))\r\n
+\s\s\s\s\s\s\s\s*\swithdrawal_draw\s*\siif(is_anniversary[step],\s1,\s0)</c>
+            <c name="withdrawal_ind_eop">=\siif(use_stochastic_utilization,\swithdrawal_ind_eop_stochastic_util,\r\n
+\s\s\s\siif(systematic_withdrawal_started,\s1,\s0))</c>
+            <c name="withdrawal_first_period_ind">=\swithdrawal_ind_eop\s*\s(1\s-\sprev(withdrawal_ind_eop))</c>
+            <c name="withdrawal_amount_regime">/*\r\n
+-1:\snot\sstarted\swithdrawal\r\n
+0:\sabove\sMAWA\r\n
+1:\sMAWA\r\n
+2:\sbelow\sMAWA\r\n
+*/\r\n
+if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\swithdrawal_amount_regime\s=\scompute_withdrawal_amount_regime(\r\n
+\s\s\s\s\s\s\s\sprev(withdrawal_amount_regime),\r\n
+\s\s\s\s\s\s\s\sis_anniversary[step],\s//\sis_policy_anniversary[step],\s\r\n
+\s\s\s\s\s\s\s\swithdrawal_ind_eop,\r\n
+\s\s\s\s\s\s\s\swithdrawal_first_period_ind,\r\n
+\s\s\s\s\s\s\s\samount_randu,\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_info_at_issue.prob_init,\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_info_at_issue.prob_transition\r\n
+\s\s\s\s)\r\n
+\s\s\s\sif\swithdrawal_amount_regime\s==\s0\sand\sis_rider_income_builder\sand \r\n
+    compare(prev(av_over_glia)\s&lt;\swithdrawal_amount_info_at_issue.above_glia_disable,\s1e-6)\sthen\r\n
+        return\s1\r\n
+    end\r\n
+\s\s\s\sif\swithdrawal_amount_regime\s==\s0\sand\s!is_rider_income_builder\sand\r\n
+\s\s\s\scompare(prev(av_over_bb)\s&lt;\swithdrawal_amount_info_at_issue.above_mawa_disable,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s1\r\n
+\s\s\s\send\r\n
+\s\s\s\sreturn\swithdrawal_amount_regime\r\n
+else\r\n
+\s\s\s\sif\suse_2025_q3_withdrawal_amount\sthen\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_regime\s=\scompute_withdrawal_amount_regime(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sprev(withdrawal_amount_regime),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sis_anniversary[step],\s//\sis_policy_anniversary[step],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_ind_eop,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_first_period_ind,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\samount_randu,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2025.prob_init,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2025.prob_transition\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selif\suse_2023_q3_withdrawal_amount_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_regime\s=\scompute_withdrawal_amount_regime(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sprev(withdrawal_amount_regime),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sis_anniversary[step],\s//\sis_policy_anniversary[step],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_ind_eop,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_first_period_ind,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\samount_randu,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2023.prob_init,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2023.prob_transition\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\swithdrawal_amount_regime\s=\scompute_withdrawal_amount_regime(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sprev(withdrawal_amount_regime),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sis_anniversary[step],\s//\sis_policy_anniversary[step],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_ind_eop,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_first_period_ind,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\samount_randu,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2019.prob_init,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\swithdrawal_amount_info_2019.prob_transition\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+\s\s\s\sif\swithdrawal_amount_regime\s==\s0\sand\sis_rider_income_builder\sand \r\n
+    compare(prev(av_over_glia)\s&lt;\sabove_glia_disable,\s1e-6)\sthen\r\n
+        return\s1\r\n
+    end\r\n
+\s\s\s\sif\swithdrawal_amount_regime\s==\s0\sand\s!is_rider_income_builder\sand\r\n
+\s\s\s\scompare(prev(av_over_bb)\s&lt;\sabove_mawa_disable,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s1\r\n
+\s\s\s\send\s\s\s\s\r\n
+\s\s\s\sreturn\swithdrawal_amount_regime\r\n
+end</c>
+            <c name="withdrawal_amount_percentage">=\siif(disable_withdrawal_amount,\s1,\s(min(withdrawal_amount_regime,\s0)\s+\s1)\r\n
+\s\s\s\s*\siif(use_at_issue_assumptions,\r\n
+\s\s\s\swithdrawal_amount_info_at_issue.mawa_mult[max(withdrawal_amount_regime,\s0)],\r\n
+\s\s\s\siif(use_2025_q3_withdrawal_amount,\swithdrawal_amount_info_2025.mawa_mult[max(withdrawal_amount_regime,\s0)],\r\n
+\s\s\s\siif(use_2023_q3_withdrawal_amount_assumptions,\swithdrawal_amount_info_2023.mawa_mult[max(withdrawal_amount_regime,\s0)],\r\n
+\s\s\s\swithdrawal_amount_info_2019.mawa_mult[max(withdrawal_amount_regime,\s0)]))))</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="step" formattype="General" width="80" />
+      <c name="withdrawal_amount_percentage" formattype="General" width="80" />
+      <c name="withdrawal_amount_regime" formattype="General" width="80" />
+      <c name="withdrawal_draw" formattype="General" width="128.6" />
+      <c name="withdrawal_first_period_ind" formattype="General" width="80" />
+      <c name="withdrawal_ind_eop" formattype="General" width="80" />
+      <c name="withdrawal_ind_eop_stochastic_util" formattype="General" width="80" />
+      <c name="withdrawal_year_sample" formattype="General" width="80" />
+      <c name="withdraw_non_util_bool" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

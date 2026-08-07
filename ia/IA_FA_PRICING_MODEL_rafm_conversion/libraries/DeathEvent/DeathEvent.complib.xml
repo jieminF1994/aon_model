@@ -1,0 +1,695 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="DeathEvent" version="master" format-version="20">
+  <UserUDFs>
+    <udf name="marriage_divorce_rate">real\smarriage_divorce_rate(\r\n
+\s\s\s\sint\sattained_age,\r\n
+\s\s\s\sint[N]\sage,\r\n
+\s\s\s\sreal[N]\srates)\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\sattained_age\s&lt;\sage[0]\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\srates[0]\r\n
+\s\s\s\selif\sattained_age\s&gt;\sage[N-1]\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\srates[N-1]\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN\s-\s1\r\n
+\s\s\s\s\s\s\s\sif\sattained_age\s=\sage[i]\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\srates[i]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\s\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="mortality_rate_1" type="real" shape="*" />
+    <input name="mortality_rate_2" type="real" shape="*" />
+    <input name="policy_inforce_ind_bop" type="int" modifier="Cashflow" />
+    <input name="death_event_randu" type="real" shape="*" modifier="Cashflow" />
+    <input name="disable_mortality" type="bool" />
+    <input name="is_joint_policy" type="bool" />
+    <input name="marriage_divorce_randu" type="real" modifier="Cashflow" />
+    <input name="systematic_wd_start_time" type="bool" modifier="Cashflow" />
+    <input name="policy_age_1" type="int" shape="*" />
+    <input name="policy_age_2" type="int" shape="*" />
+    <input name="marriage_divorce_rates" type="composite">
+      <field name="age" type="int" shape="*" />
+      <field name="marriage_rate" type="real" shape="*" />
+      <field name="divorce_rate" type="real" shape="*" />
+    </input>
+    <input name="mortality_rate_1_spouse" type="real" shape="*" />
+    <input name="policy_age_1_spouse" type="int" shape="*" />
+    <input name="mawa_id" type="int" />
+    <input name="pip_id" type="int" />
+    <input name="glb_mawa_rate" type="composite" shape="*">
+      <field name="mawa_id" type="int" />
+      <field name="mawa_rate" type="real" shape="*" />
+    </input>
+    <input name="glb_pip_rate" type="composite" shape="*">
+      <field name="pip_id" type="int" />
+      <field name="pip_rate" type="real" shape="*" />
+    </input>
+    <input name="mawa_rate_idx" type="int" />
+    <input name="is_flex" type="bool" />
+    <input name="pip_rate_idx" type="int" />
+    <input name="min_joint_age" type="int" shape="*" />
+    <input name="disable_flex" type="bool" />
+    <input name="flex_mawa_id" type="int" />
+    <input name="flex_pip_id" type="int" />
+    <input name="is_anniversary" type="bool" shape="*" />
+    <input name="flex_mawa_rate_single_idx" type="int" />
+    <input name="flex_pip_rate_single_idx" type="int" />
+    <input name="flex_mawa_rate_joint_idx" type="int" />
+    <input name="flex_pip_rate_joint_idx" type="int" />
+    <input name="systematic_withdrawal_started" type="bool" modifier="Cashflow" />
+    <input name="disable_confinement_rider" type="bool" />
+    <input name="disable_dual_mortality" type="bool" />
+    <input name="time" type="real" shape="*" description="The beginning of the time period (in year)" />
+    <input name="time_dt" type="real" shape="*" description="The length of the time period (in year)" />
+    <input name="proj_date" type="date_t" shape="*" description="The date of the beginning of the time period" />
+    <input name="conf_event_randu" type="real" shape="*" modifier="Cashflow" />
+    <input name="recovery_event_randu" type="real" shape="*" modifier="Cashflow" />
+    <input name="AIG_mort_1" type="real" shape="*" />
+    <input name="AIG_mort_2" type="real" shape="*" />
+    <input name="issue_age_1" type="int" />
+    <input name="issue_age_2" type="int" />
+    <input name="confinement_rate_annual_1" type="composite">
+      <field name="incidence_rate" type="real" shape="*,*" />
+      <field name="recovery_rate" type="real" shape="*,*" />
+      <field name="c_mortality_rate" type="real" shape="*,*" />
+      <field name="nc_mortality_rate" type="real" shape="*,*" />
+      <field name="benefit_utilization_rate" type="real" />
+    </input>
+    <input name="conf_benefit_util_randu" type="real" modifier="Cashflow" />
+    <input name="confinement_rate_annual_2" type="composite">
+      <field name="incidence_rate" type="real" shape="*,*" />
+      <field name="recovery_rate" type="real" shape="*,*" />
+      <field name="c_mortality_rate" type="real" shape="*,*" />
+      <field name="nc_mortality_rate" type="real" shape="*,*" />
+      <field name="benefit_utilization_rate" type="real" />
+    </input>
+    <input name="confinement_rate_annual_1_spouse" type="composite">
+      <field name="incidence_rate" type="real" shape="*,*" />
+      <field name="recovery_rate" type="real" shape="*,*" />
+      <field name="c_mortality_rate" type="real" shape="*,*" />
+      <field name="nc_mortality_rate" type="real" shape="*,*" />
+      <field name="benefit_utilization_rate" type="real" />
+    </input>
+    <input name="is_confinement_eligible" type="bool" />
+    <input name="issue_age_1_spouse" type="int" />
+    <input name="is_confined" type="bool" />
+    <input name="apply_lad" type="bool" />
+    <input name="is_after_maturity_date" type="bool" modifier="Cashflow" />
+    <input name="living_benefit_elected" type="bool" />
+    <input name="lad_mawa_amount" type="real" modifier="Cashflow" />
+    <input name="lad_pip_amount" type="real" modifier="Cashflow" />
+  </inputs>
+  <results>
+    <result name="launch_db_this_period" ref="=Projection.launch_db_this_period" />
+    <result name="policy_inforce_ind_eop" ref="=Projection.policy_inforce_ind_eop" />
+    <result name="mawp_flex_last_anniversary" ref="=Projection.mawp_flex_last_anniversary" />
+    <result name="pipp_flex_last_anniversary" ref="=Projection.pipp_flex_last_anniversary" />
+    <result name="mawp_flex" ref="=Projection.mawp_flex" />
+    <result name="pipp_flex" ref="=Projection.pipp_flex" />
+    <result name="confined_this_period" ref="=Projection.confined_this_period" />
+    <result name="confinement_benefit_util_bool" ref="=Projection.confinement_benefit_util_bool" />
+  </results>
+  <calculations>
+    <table name="Projection" type="CashFlow">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="confine_prob_1" datatype="real" />
+        <c name="confine_prob_2" datatype="real" />
+        <c name="confine_prob_1_spouse" datatype="real" />
+        <c name="is_person_1_confined" datatype="bool" />
+        <c name="is_person_2_confined" datatype="bool" />
+        <c name="confine_age_1" datatype="int" />
+        <c name="confine_age_2" datatype="int" />
+        <c name="confine_age_1_spouse" datatype="int" />
+        <c name="confine_time_1" datatype="real" />
+        <c name="confine_time_2" datatype="real" />
+        <c name="confine_time_1_spouse" datatype="real" />
+        <c name="dual_mortality_rate_1" datatype="real" />
+        <c name="dual_mortality_rate_2" datatype="real" />
+        <c name="dual_mortality_rate_1_spouse" datatype="real" />
+        <c name="recover_prob_1" datatype="real" />
+        <c name="recover_prob_2" datatype="real" />
+        <c name="recover_prob_1_spouse" datatype="real" />
+        <c name="is_person_1_recovered" datatype="bool" />
+        <c name="is_person_2_recovered" datatype="bool" />
+        <c name="confined_this_period" datatype="bool" />
+        <c name="death_prob_1" datatype="real" />
+        <c name="death_prob_2" datatype="real" />
+        <c name="person_1_death_this_period" datatype="bool" />
+        <c name="is_person_1_alive" datatype="bool" />
+        <c name="person_2_death_this_period" datatype="bool" />
+        <c name="is_person_2_alive" datatype="bool" />
+        <c name="lad_mawa" datatype="real" />
+        <c name="lad_pip" datatype="real" />
+        <c name="launch_db_this_period" datatype="bool" />
+        <c name="policy_inforce_ind_eop" datatype="int" />
+        <c name="single_joint_bop" datatype="int" />
+        <c name="marriage_rate" datatype="real" />
+        <c name="randu" datatype="real" />
+        <c name="divorce_rate" datatype="real" />
+        <c name="flex_start_time" datatype="bool" />
+        <c name="single_joint_eop" datatype="int" />
+        <c name="has_single_flexed_to_joint" datatype="bool" />
+        <c name="mawp_flex" datatype="real" />
+        <c name="pipp_flex" datatype="real" />
+        <c name="mawp_flex_last_anniversary" datatype="real" />
+        <c name="pipp_flex_last_anniversary" datatype="real" />
+        <c name="confinement_benefit_util_bool" datatype="bool" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="confine_prob_1">annual_rate\s=\sconfinement_rate_annual_1.incidence_rate[max(min(issue_age_1-50,65),0),\smin(policy_age_1[step]\s-\sissue_age_1,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="confine_prob_2">annual_rate\s=\sconfinement_rate_annual_2.incidence_rate[max(min(issue_age_2-50,65),0),\smin(policy_age_2[step]\s-\sissue_age_2,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="confine_prob_1_spouse">annual_rate\s=\sconfinement_rate_annual_1_spouse.incidence_rate[max(min(issue_age_1_spouse-50,65),0),\smin(policy_age_1[step]\s-\sissue_age_1,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="is_person_1_confined">//\swhen\sdatabase\shas\sboth\sperson's\sconfined\sstatus,\swill\supdate\sthis\sformula\r\n
+=\sis_confined</c>
+            <c name="is_person_2_confined">//\swhen\sdatabase\shas\sboth\sperson's\sconfined\sstatus,\swill\supdate\sthis\sformula\r\n
+=\sFalse</c>
+            <c name="confine_age_1">=\spolicy_age_1[step]</c>
+            <c name="confine_age_2">=\spolicy_age_2[step]</c>
+            <c name="confine_age_1_spouse">=\spolicy_age_1_spouse[step]</c>
+            <c name="confine_time_1">//\swhen\sdatabase\shas\sthe\sconfined\sdate\sdata,\swill\supdate\sthis\sformula\r\n
+=\stime[step]</c>
+            <c name="confine_time_2">//\swhen\sdatabase\shas\sthe\sconfined\sdate\sdata,\swill\supdate\sthis\sformula\r\n
+=\stime[step]</c>
+            <c name="confine_time_1_spouse">//\swhen\sdatabase\shas\sthe\sconfined\sdate\sdata,\swill\supdate\sthis\sformula\r\n
+=\stime[step]</c>
+            <c name="dual_mortality_rate_1">0</c>
+            <c name="dual_mortality_rate_2">0</c>
+            <c name="dual_mortality_rate_1_spouse">0</c>
+            <c name="recover_prob_1">elapsed_year\s=\sfloor(time[step]\s-\sconfine_time_1)\s\s/*change\st\sin\syear\sto\smonthly\s*/\r\n
+\r\n
+annual_rate\s=\sconfinement_rate_annual_1.recovery_rate[max(min(confine_age_1-50,65),0),\smin(elapsed_year,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="recover_prob_2">elapsed_year\s=\sfloor(time[step]\s-\sconfine_time_2)\s\s/*change\st\sin\syear\sto\smonthly\s*/\r\n
+\r\n
+annual_rate\s=\sconfinement_rate_annual_2.recovery_rate[max(min(confine_age_2-50,65),0),\smin(elapsed_year,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="recover_prob_1_spouse">elapsed_year\s=\sfloor(time[step]\s-\sconfine_time_1)\s\s/*change\st\sin\syear\sto\smonthly\s*/\r\n
+\r\n
+annual_rate\s=\sconfinement_rate_annual_1_spouse.recovery_rate[max(min(confine_age_1_spouse-50,65),0),\smin(elapsed_year,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="is_person_1_recovered">=\sFalse\r\n
+\s\s\s\s</c>
+            <c name="is_person_2_recovered">=\sFalse</c>
+            <c name="confined_this_period">if\sis_person_1_confined\sor\sis_person_2_confined\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+else\s\r\n
+\s\s\s\sreturn\sFalse\r\n
+end</c>
+            <c name="death_prob_1">if\s!disable_confinement_rider\sand\s!disable_dual_mortality\sand\sis_confinement_eligible\sthen\r\n
+\s\s\s\sreturn\sdual_mortality_rate_1\r\n
+else\s\r\n
+\s\s\s\sreturn\smortality_rate_1[step]\r\n
+end</c>
+            <c name="death_prob_2">if\s!disable_confinement_rider\sand\s!disable_dual_mortality\sand\sis_confinement_eligible\sthen\r\n
+\s\s\s\sreturn\sdual_mortality_rate_2\r\n
+else\s\r\n
+\s\s\s\sreturn\smortality_rate_2[step]\r\n
+end</c>
+            <c name="person_1_death_this_period">=\sFalse</c>
+            <c name="is_person_1_alive">=\sTrue</c>
+            <c name="person_2_death_this_period">=\sFalse</c>
+            <c name="is_person_2_alive">=\sis_joint_policy</c>
+            <c name="lad_mawa">=\slad_mawa_amount</c>
+            <c name="lad_pip">=\slad_pip_amount</c>
+            <c name="launch_db_this_period">=\sFalse</c>
+            <c name="policy_inforce_ind_eop">=\spolicy_inforce_ind_bop</c>
+            <c name="single_joint_bop">/*\r\n
+0\sfor\sboth\sdied\sor\ssingle\sperson\sdied\r\n
+1\sfor\sperson_1\scovered\r\n
+2\sfor\sperson_2\scovered\r\n
+3\sfor\sjoint\r\n
+*/\r\n
+if\s!is_person_1_alive\sand\s!is_person_2_alive\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+elif\sis_person_1_alive\sand\s!is_person_2_alive\sthen\r\n
+\s\s\s\sreturn\s1\r\n
+elif\s!is_person_1_alive\sand\sis_person_2_alive\sthen\r\n
+\s\s\s\sreturn\s2\r\n
+else\r\n
+\s\s\s\sreturn\s3\r\n
+end\r\n
+</c>
+            <c name="marriage_rate">/*\r\n
+single_joint_bop:\r\n
+0\sfor\sboth\sdied\r\n
+1\sfor\sperson_1\ssingle\r\n
+2\sfor\sperson_2\ssingle\r\n
+3\sfor\sjoint\r\n
+*/\r\n
+if\ssingle_joint_bop\s=\s0\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+elif\ssingle_joint_bop\s=\s1\sthen\s\r\n
+\s\s\s\sreturn\smarriage_divorce_rate(policy_age_1[step],\smarriage_divorce_rates.age,\smarriage_divorce_rates.marriage_rate)\r\n
+elif\ssingle_joint_bop\s=\s2\sthen\s\r\n
+\s\s\s\sreturn\smarriage_divorce_rate(policy_age_2[step],\smarriage_divorce_rates.age,\smarriage_divorce_rates.marriage_rate)\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="randu">=marriage_divorce_randu</c>
+            <c name="divorce_rate">/*\r\n
+single_joint_bop:\r\n
+0\sfor\sboth\sdied\r\n
+1\sfor\sperson_1\ssingle\r\n
+2\sfor\sperson_2\ssingle\r\n
+3\sfor\sjoint\r\n
+*/\r\n
+if\ssingle_joint_bop\s=\s3\sthen\s\r\n
+\s\s\s\sreturn\smarriage_divorce_rate(max(policy_age_1[step],\spolicy_age_2[step]),\smarriage_divorce_rates.age,\smarriage_divorce_rates.divorce_rate)\r\n
+else\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="flex_start_time">=\sFalse\r\n
+\r\n
+</c>
+            <c name="single_joint_eop">/*\r\n
+single_joint_eop:\r\n
+0\sfor\sboth\sdied\sor\ssingle\sperson\sdied\r\n
+1\sfor\sperson_1\scovered\r\n
+2\sfor\sperson_2\scovered\r\n
+3\sfor\sjoint\r\n
+*/\r\n
+if\sis_flex\sand\s!disable_flex\sand\sflex_start_time\sthen\s\r\n
+\s\s\s\s//joint\spolicy,\sone\sperson\sdied,\sthe\sother\swill\slose\sflex\sfeature\sand\sstay\ssingle\scovered\r\n
+\s\s\s\s//single\spolicy,\sif\sget\smarried,\schoose\sjoint\scoverage\r\n
+\s\s\s\sif\ssingle_joint_bop\s=\s1\sor\ssingle_joint_bop\s=\s2\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\siif(is_joint_policy,\ssingle_joint_bop,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\siif(compare(marriage_divorce_randu\s&lt;=\smarriage_rate,\s1e-10),\s3,\ssingle_joint_bop))\r\n
+\s\s\s\selif\ssingle_joint_bop\s=\s3\sthen\r\n
+\s\s\s\s\s//joint\spolicy,\sboth\salive,\sif\sdivorced,\s50/50\ssingle\scoverage\r\n
+\s\s\s\s\s\s\sif\scompare(marriage_divorce_randu\s&lt;=\sdivorce_rate\s/\s2,\s1e-10)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\sreturn\s1\r\n
+\s\s\s\s\s\s\selif\scompare(marriage_divorce_randu\s&lt;=\sdivorce_rate,\s1e-10)\sthen\s\r\n
+\s\s\s\s\s\s\s\s\s\sreturn\s2\r\n
+\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\sreturn\s3\r\n
+\s\s\s\s\s\s\send\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\ssingle_joint_bop\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\ssingle_joint_bop\r\n
+end\r\n
+</c>
+            <c name="has_single_flexed_to_joint">=\sFalse</c>
+            <c name="mawp_flex">/*\r\n
+Maximum\sannual\swithdrawal\spercentage\r\n
+*/\r\n
+if\s!is_flex\sor\sdisable_flex\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+if\ssingle_joint_eop\s=\s3\sthen\r\n
+\s\s\s\sreturn\sglb_mawa_rate[flex_mawa_rate_joint_idx].mawa_rate[min(120,min_joint_age[step])]\r\n
+elif\ssingle_joint_eop\s=\s1\sor\ssingle_joint_eop\s=\s2\sthen\r\n
+\s\s\s\sreturn\sglb_mawa_rate[flex_mawa_rate_single_idx].mawa_rate[min(120,min_joint_age[step])]\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+</c>
+            <c name="pipp_flex">/*\r\n
+Protected\sincome\spayment\spercentage\r\n
+*/\r\n
+if\s!is_flex\sor\sdisable_flex\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+if\ssingle_joint_eop\s=\s3\sthen\r\n
+\s\s\s\sreturn\sglb_pip_rate[flex_pip_rate_joint_idx].pip_rate[min(120,min_joint_age[step])]\r\n
+elif\ssingle_joint_eop\s=\s1\sor\ssingle_joint_eop\s=\s2\sthen\r\n
+\s\s\s\sreturn\sglb_pip_rate[flex_pip_rate_single_idx].pip_rate[min(120,min_joint_age[step])]\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+</c>
+            <c name="mawp_flex_last_anniversary">=\smawp_flex</c>
+            <c name="pipp_flex_last_anniversary">=\spipp_flex</c>
+            <c name="confinement_benefit_util_bool">=\siif(compare(conf_benefit_util_randu\s&lt;=\sconfinement_rate_annual_1.benefit_utilization_rate,\r\n
+\s\s\s\s\s\s\s\s1e-10),\sTrue,\sFalse)</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=prev(step)+1</c>
+            <c name="confine_prob_1">annual_rate\s=\sconfinement_rate_annual_1.incidence_rate[max(min(issue_age_1-50,65),0),\smin(policy_age_1[step]\s-\sissue_age_1,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="confine_prob_2">annual_rate\s=\sconfinement_rate_annual_2.incidence_rate[max(min(issue_age_2-50,65),0),\smin(policy_age_2[step]\s-\sissue_age_2,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="confine_prob_1_spouse">annual_rate\s=\sconfinement_rate_annual_1_spouse.incidence_rate[max(min(issue_age_1_spouse-50,65),0),\smin(policy_age_1[step]\s-\sissue_age_1,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="is_person_1_confined">if\s!is_confinement_eligible\sor\sdisable_confinement_rider\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+elif\sprev(is_person_1_confined)\s=\sTrue\sand\sprev(is_person_1_recovered)\s=\sFalse\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+else\s\r\n
+\s\s\s\sreturn\siif(compare(conf_event_randu[0]\s&lt;\sconfine_prob_1,\s1e-10),\sTrue,\sFalse)\r\n
+end</c>
+            <c name="is_person_2_confined">if\s!is_confinement_eligible\sor\sdisable_confinement_rider\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+//\sconfined\sperson\scannot\sjoin\sthe\spolicy\r\n
+elif\sprev(single_joint_bop)\s=\s1\sand\sprev(single_joint_eop)\s=\s3\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+elif\sprev(is_person_2_confined)\s=\sTrue\sand\sprev(is_person_2_recovered)\s=\sFalse\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+elif\sprev(has_single_flexed_to_joint)\sthen\r\n
+\s\s\s\sreturn\siif(compare(conf_event_randu[1]\s&lt;\sconfine_prob_1_spouse,\s1e-10),\sTrue,\sFalse)\r\n
+else\s\r\n
+\s\s\s\sreturn\siif(compare(conf_event_randu[1]\s&lt;\sconfine_prob_2,\s1e-10),\sTrue,\sFalse)\r\n
+end</c>
+            <c name="confine_age_1">if\sprev(is_person_1_confined)\s=\sFalse\sand\sis_person_1_confined\s=\sTrue\sthen\r\n
+\s\s\s\sreturn\spolicy_age_1[step]\r\n
+else\r\n
+\s\s\s\sreturn\sprev(confine_age_1)\r\n
+end</c>
+            <c name="confine_age_2">if\sprev(is_person_2_confined)\s=\sFalse\sand\sis_person_2_confined\s=\sTrue\sthen\r\n
+\s\s\s\sreturn\spolicy_age_2[step]\r\n
+else\r\n
+\s\s\s\sreturn\sprev(confine_age_2)\r\n
+end</c>
+            <c name="confine_age_1_spouse">if\sprev(has_single_flexed_to_joint)\sand\sprev(is_person_2_confined)\s=\sFalse\sand\sis_person_2_confined\s=\sTrue\sthen\r\n
+\s\s\s\sreturn\spolicy_age_1_spouse[step]\r\n
+else\r\n
+\s\s\s\sreturn\sprev(confine_age_1_spouse)\r\n
+end</c>
+            <c name="confine_time_1">if\sprev(is_person_1_confined)\s=\sFalse\sand\sis_person_1_confined\s=\sTrue\sthen\r\n
+\s\s\s\sreturn\stime[step]\r\n
+else\r\n
+\s\s\s\sreturn\sprev(confine_time_1)\r\n
+end</c>
+            <c name="confine_time_2">if\sprev(is_person_2_confined)\s=\sFalse\sand\sis_person_2_confined\s=\sTrue\sthen\r\n
+\s\s\s\sreturn\stime[step]\r\n
+else\r\n
+\s\s\s\sreturn\sprev(confine_time_2)\r\n
+end</c>
+            <c name="confine_time_1_spouse">if\sprev(has_single_flexed_to_joint)\sand\sprev(is_person_2_confined)\s=\sFalse\sand\sis_person_2_confined\s=\sTrue\sthen\r\n
+\s\s\s\sreturn\stime[step]\r\n
+else\r\n
+\s\s\s\sreturn\sprev(confine_time_1_spouse)\r\n
+end</c>
+            <c name="dual_mortality_rate_1">elapsed_year_since_confined\s=\sfloor(time[step]\s-\sconfine_time_1)\r\n
+elapsed_year_since_taped\s=\sfloor(time[step]-time[0])\r\n
+\r\n
+policy_age_taped\s=\spolicy_age_1[0]\r\n
+\r\n
+c_mort\s=\sconfinement_rate_annual_1.c_mortality_rate[max(min(confine_age_1-50,65),0),min(elapsed_year_since_confined,59)]\r\n
+nc_mort\s=\sconfinement_rate_annual_1.nc_mortality_rate[max(min(policy_age_taped-50,65),0),min(elapsed_year_since_taped,59)]\r\n
+\r\n
+return\siif(is_person_1_confined,1-(1-c_mort)^time_dt[step],1-(1-nc_mort)^time_dt[step])</c>
+            <c name="dual_mortality_rate_2">elapsed_year_since_confined\s=\sfloor(time[step]\s-\sconfine_time_2)\r\n
+elapsed_year_since_taped\s=\sfloor(time[step]-time[0])\r\n
+\r\n
+policy_age_taped\s=\spolicy_age_2[0]\r\n
+\r\n
+c_mort\s=\sconfinement_rate_annual_2.c_mortality_rate[max(min(confine_age_2-50,65),0),min(elapsed_year_since_confined,59)]\r\n
+nc_mort\s=\sconfinement_rate_annual_2.nc_mortality_rate[max(min(policy_age_taped-50,65),0),min(elapsed_year_since_taped,59)]\r\n
+\r\n
+return\siif(is_person_2_confined,1-(1-c_mort)^time_dt[step],1-(1-nc_mort)^time_dt[step])</c>
+            <c name="dual_mortality_rate_1_spouse">elapsed_year_since_confined\s=\sfloor(time[step]\s-\sconfine_time_1_spouse)\r\n
+elapsed_year_since_taped\s=\sfloor(time[step]-time[0])\r\n
+\r\n
+policy_age_taped\s=\spolicy_age_1_spouse[0]\r\n
+\r\n
+c_mort\s=\sconfinement_rate_annual_1_spouse.c_mortality_rate[max(min(confine_age_1_spouse-50,65),0),min(elapsed_year_since_confined,59)]\r\n
+nc_mort\s=\sconfinement_rate_annual_1_spouse.nc_mortality_rate[max(min(policy_age_taped-50,65),0),min(elapsed_year_since_taped,59)]\r\n
+\r\n
+return\siif(is_person_2_confined,1-(1-c_mort)^time_dt[step],1-(1-nc_mort)^time_dt[step])</c>
+            <c name="recover_prob_1">elapsed_year\s=\sfloor(time[step]\s-\sconfine_time_1)\s\s/*change\st\sin\syear\sto\smonthly\s*/\r\n
+\r\n
+annual_rate\s=\sconfinement_rate_annual_1.recovery_rate[max(min(confine_age_1-50,65),0),\smin(elapsed_year,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="recover_prob_2">elapsed_year\s=\sfloor(time[step]\s-\sconfine_time_2)\s\s/*change\st\sin\syear\sto\smonthly\s*/\r\n
+\r\n
+annual_rate\s=\sconfinement_rate_annual_2.recovery_rate[max(min(confine_age_2-50,65),0),\smin(elapsed_year,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="recover_prob_1_spouse">elapsed_year\s=\sfloor(time[step]\s-\sconfine_time_1)\s\s/*change\st\sin\syear\sto\smonthly\s*/\r\n
+\r\n
+annual_rate\s=\sconfinement_rate_annual_1_spouse.recovery_rate[max(min(confine_age_1_spouse-50,65),0),\smin(elapsed_year,59)]\r\n
+\r\n
+return\s1-(1-annual_rate)^time_dt[step]</c>
+            <c name="is_person_1_recovered">if\sis_person_1_confined\s=\sTrue\sand\scompare(recovery_event_randu[0]\s&lt;\srecover_prob_1,1e-10)\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+else\r\n
+\s\s\s\sreturn\sFalse\r\n
+end</c>
+            <c name="is_person_2_recovered">if\s!is_person_2_confined\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+elif\sprev(has_single_flexed_to_joint)\sthen\r\n
+\s\s\s\sreturn\scompare(recovery_event_randu[1]\s&lt;\srecover_prob_1_spouse,1e-10)\r\n
+else\r\n
+\s\s\s\sreturn\scompare(recovery_event_randu[1]\s&lt;\srecover_prob_2,1e-10)\r\n
+end\r\n
+\s\s\s\s</c>
+            <c name="confined_this_period">if\sis_person_1_confined\sor\sis_person_2_confined\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+else\s\r\n
+\s\s\s\sreturn\sFalse\r\n
+end</c>
+            <c name="death_prob_1">if\s!disable_confinement_rider\sand\s!disable_dual_mortality\sand\sis_confinement_eligible\sthen\r\n
+\s\s\s\sreturn\sdual_mortality_rate_1\r\n
+else\s\r\n
+\s\s\s\sreturn\smortality_rate_1[step]\r\n
+end</c>
+            <c name="death_prob_2">if\s!disable_confinement_rider\sand\s!disable_dual_mortality\sand\sis_confinement_eligible\sthen\r\n
+\s\s\s\sreturn\siif(prev(has_single_flexed_to_joint),\sdual_mortality_rate_1_spouse,\sdual_mortality_rate_2)\r\n
+else\s\r\n
+\s\s\s\sreturn\siif(prev(has_single_flexed_to_joint),\smortality_rate_1_spouse[step],\smortality_rate_2[step])\r\n
+end</c>
+            <c name="person_1_death_this_period">if\sdisable_mortality\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+//\sjoint\sflex\sto\ssingle\r\n
+if\sprev(single_joint_bop)\s=\s3\sand\sprev(single_joint_eop)\s=\s2\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+else\r\n
+\s\s\s\sreturn\siif(prev(is_person_1_alive),\s\r\n
+\s\s\s\s\s\s\s\scompare(death_event_randu[0]\s&lt;=\sdeath_prob_1,\s1e-8),\sFalse)\r\n
+end</c>
+            <c name="is_person_1_alive">=\siif(!prev(is_person_1_alive),\sFalse,\s!person_1_death_this_period)\r\n
+</c>
+            <c name="person_2_death_this_period">if\sdisable_mortality\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+//\sjoint\sflex\sto\ssingle\slast\speriod\r\n
+if\sprev(single_joint_bop)\s=\s3\sand\sprev(single_joint_eop)\s=\s1\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+//\snatural\sdeath\r\n
+else\r\n
+\s\s\s\sreturn\siif(prev(is_person_2_alive)\sor\s(prev(single_joint_bop)\s=\s1\sand\sprev(single_joint_eop)\s=\s3),\r\n
+\s\s\s\s\s\s\s\scompare(death_event_randu[1]\s&lt;=\sdeath_prob_2,\s1e-8),\sFalse)\r\n
+end</c>
+            <c name="is_person_2_alive">//\ssingle\sflex\sto\sjoint\sand\snot\sdie\sthis\speriod\r\n
+if\sprev(single_joint_bop)\s=\s1\sand\sprev(single_joint_eop)\s=\s3\sand\s!person_2_death_this_period\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+else\r\n
+\s\s\s\sreturn\siif(!prev(is_person_2_alive),\sFalse,\s!person_2_death_this_period)\r\n
+end</c>
+            <c name="lad_mawa">=\slad_mawa_amount</c>
+            <c name="lad_pip">=\slad_pip_amount</c>
+            <c name="launch_db_this_period">=\siif(apply_lad\sand\sis_after_maturity_date\sand\sliving_benefit_elected\r\n
+\s\s\s\sand\scompare(prev(lad_mawa)\s!=\s0,\s1e-03)\sand\scompare(prev(lad_pip)\s!=\s0,\s1e-03),\sFalse,\s\r\n
+\s\s\s\s(policy_inforce_ind_bop\s==\s1)\sand\s!is_person_1_alive\sand\s!is_person_2_alive)</c>
+            <c name="policy_inforce_ind_eop">if\spolicy_inforce_ind_bop\s==\s0\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+return\siif(launch_db_this_period,\s0,\s1)</c>
+            <c name="single_joint_bop">/*\r\n
+0\sfor\sboth\sdied\sor\ssingle\sperson\sdied\r\n
+1\sfor\sperson_1\scovered\r\n
+2\sfor\sperson_2\scovered\r\n
+3\sfor\sjoint\r\n
+*/\r\n
+if\s!is_person_1_alive\sand\s!is_person_2_alive\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+elif\sis_person_1_alive\sand\s!is_person_2_alive\sthen\r\n
+\s\s\s\sreturn\s1\r\n
+elif\s!is_person_1_alive\sand\sis_person_2_alive\sthen\r\n
+\s\s\s\sreturn\s2\r\n
+else\r\n
+\s\s\s\sreturn\s3\r\n
+end</c>
+            <c name="marriage_rate">/*\r\n
+single_joint_bop:\r\n
+0\sfor\sboth\sdied\r\n
+1\sfor\sperson_1\ssingle\r\n
+2\sfor\sperson_2\ssingle\r\n
+3\sfor\sjoint\r\n
+*/\r\n
+if\ssingle_joint_bop\s=\s0\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+elif\ssingle_joint_bop\s=\s1\sthen\s\r\n
+\s\s\s\sreturn\smarriage_divorce_rate(policy_age_1[step],\smarriage_divorce_rates.age,\smarriage_divorce_rates.marriage_rate)\r\n
+elif\ssingle_joint_bop\s=\s2\sthen\s\r\n
+\s\s\s\sreturn\smarriage_divorce_rate(policy_age_2[step],\smarriage_divorce_rates.age,\smarriage_divorce_rates.marriage_rate)\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="randu">=prev(randu)</c>
+            <c name="divorce_rate">/*\r\n
+single_joint_bop:\r\n
+0\sfor\sboth\sdied\r\n
+1\sfor\sperson_1\ssingle\r\n
+2\sfor\sperson_2\ssingle\r\n
+3\sfor\sjoint\r\n
+*/\r\n
+if\ssingle_joint_bop\s=\s3\sthen\s\r\n
+\s\s\s\sreturn\smarriage_divorce_rate(max(policy_age_1[step],\spolicy_age_2[step]),\smarriage_divorce_rates.age,\smarriage_divorce_rates.divorce_rate)\r\n
+else\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="flex_start_time">=\siif(systematic_wd_start_time,True,False)\r\n
+\r\n
+\r\n
+\r\n
+</c>
+            <c name="single_joint_eop">/*\r\n
+single_joint_eop:\r\n
+0\sfor\sboth\sdied\sor\ssingle\sperson\sdied\r\n
+1\sfor\sperson_1\scovered\r\n
+2\sfor\sperson_2\scovered\r\n
+3\sfor\sjoint\r\n
+*/\r\n
+if\sis_flex\sand\s!disable_flex\sand\sflex_start_time\sthen\s\r\n
+\s\s\s\s//joint\spolicy,\sone\sperson\sdied,\sthe\sother\swill\slose\sflex\sfeature\sand\sstay\ssingle\scovered\r\n
+\s\s\s\s//single\spolicy,\sif\sget\smarried,\schoose\sjoint\scoverage\r\n
+\s\s\s\sif\ssingle_joint_bop\s=\s1\sor\ssingle_joint_bop\s=\s2\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\siif(is_joint_policy,\ssingle_joint_bop,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\siif(compare(randu\s&lt;=\smarriage_rate,\s1e-10),\s3,\ssingle_joint_bop))\r\n
+\s\s\s\selif\ssingle_joint_bop\s=\s3\sthen\r\n
+\s\s\s\s\s//joint\spolicy,\sboth\salive,\sif\sdivorced,\s50/50\ssingle\scoverage\r\n
+\s\s\s\s\s\s\sif\scompare(randu\s&lt;=\sdivorce_rate\s/\s2,\s1e-10)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\sreturn\s1\r\n
+\s\s\s\s\s\s\selif\scompare(randu\s&lt;=\sdivorce_rate,\s1e-10)\sthen\s\r\n
+\s\s\s\s\s\s\s\s\s\sreturn\s2\r\n
+\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\sreturn\s3\r\n
+\s\s\s\s\s\s\send\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\ssingle_joint_bop\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\ssingle_joint_bop\r\n
+end\r\n
+</c>
+            <c name="has_single_flexed_to_joint">=\siif(prev(has_single_flexed_to_joint),\sTrue,\r\n
+\s\s\s\ssingle_joint_bop\s=\s1\sand\ssingle_joint_eop\s=\s3)</c>
+            <c name="mawp_flex">/*\r\n
+Maximum\sannual\swithdrawal\spercentage\r\n
+*/\r\n
+if\s!is_flex\sor\sdisable_flex\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+if\ssingle_joint_eop\s=\s3\sthen\s\r\n
+\s\s\s\sreturn\sglb_mawa_rate[flex_mawa_rate_joint_idx].mawa_rate[min(120,min_joint_age[step])]\r\n
+elif\ssingle_joint_eop\s=\s1\sor\ssingle_joint_eop\s=\s2\sthen\r\n
+\s\s\s\sreturn\sglb_mawa_rate[flex_mawa_rate_single_idx].mawa_rate[min(120,min_joint_age[step])]\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="pipp_flex">/*\r\n
+Protected\sincome\spayment\spercentage\r\n
+*/\r\n
+if\s!is_flex\sor\sdisable_flex\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+if\ssingle_joint_eop\s=\s3\sthen\r\n
+\s\s\s\sreturn\sglb_pip_rate[flex_pip_rate_joint_idx].pip_rate[min(120,min_joint_age[step])]\r\n
+elif\ssingle_joint_eop\s=\s1\sor\ssingle_joint_eop\s=\s2\sthen\r\n
+\s\s\s\sreturn\sglb_pip_rate[flex_pip_rate_single_idx].pip_rate[min(120,min_joint_age[step])]\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+</c>
+            <c name="mawp_flex_last_anniversary">=\siif(is_anniversary[step\s-\s1],\sprev(mawp_flex),\sprev(mawp_flex_last_anniversary))</c>
+            <c name="pipp_flex_last_anniversary">=\siif(is_anniversary[step\s-\s1],\sprev(pipp_flex),\sprev(pipp_flex_last_anniversary))</c>
+            <c name="confinement_benefit_util_bool">=prev(confinement_benefit_util_bool)</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="confined_this_period" formattype="General" width="80" />
+      <c name="confinement_benefit_util_bool" formattype="General" width="80" />
+      <c name="confine_age_1" formattype="General" width="80" />
+      <c name="confine_age_1_spouse" formattype="General" width="80" />
+      <c name="confine_age_2" formattype="General" width="80" />
+      <c name="confine_prob_1" formattype="General" width="132" />
+      <c name="confine_prob_1_spouse" formattype="General" width="80" />
+      <c name="confine_prob_2" formattype="General" width="80" />
+      <c name="confine_time_1" formattype="General" width="80" />
+      <c name="confine_time_1_spouse" formattype="General" width="80" />
+      <c name="confine_time_2" formattype="General" width="80" />
+      <c name="death_prob_1" formattype="General" width="106" />
+      <c name="death_prob_2" formattype="General" width="80" />
+      <c name="divorce_rate" formattype="General" width="80" />
+      <c name="dual_mortality_rate_1" formattype="General" width="80" />
+      <c name="dual_mortality_rate_1_spouse" formattype="General" width="80" />
+      <c name="dual_mortality_rate_2" formattype="General" width="80" />
+      <c name="flex_start_time" formattype="General" width="154" />
+      <c name="has_single_flexed_to_joint" formattype="General" width="80" />
+      <c name="is_person_1_alive" formattype="General" width="110" />
+      <c name="is_person_1_confined" formattype="General" width="80" />
+      <c name="is_person_1_recovered" formattype="General" width="80" />
+      <c name="is_person_2_alive" formattype="General" width="154" />
+      <c name="is_person_2_confined" formattype="General" width="80" />
+      <c name="is_person_2_recovered" formattype="General" width="80" />
+      <c name="lad_mawa" formattype="General" width="80" />
+      <c name="lad_pip" formattype="General" width="80" />
+      <c name="launch_db_this_period" formattype="General" width="80" />
+      <c name="marriage_rate" formattype="General" width="96" />
+      <c name="mawp_flex" formattype="General" width="80" />
+      <c name="mawp_flex_last_anniversary" formattype="General" width="80" />
+      <c name="person_1_death_this_period" formattype="General" width="158.2" />
+      <c name="person_2_death_this_period" formattype="General" width="203" />
+      <c name="pipp_flex" formattype="General" width="80" />
+      <c name="pipp_flex_last_anniversary" formattype="General" width="80" />
+      <c name="policy_inforce_ind_eop" formattype="General" width="72" />
+      <c name="randu" formattype="General" width="80" />
+      <c name="recover_prob_1" formattype="General" width="80" />
+      <c name="recover_prob_1_spouse" formattype="General" width="80" />
+      <c name="recover_prob_2" formattype="General" width="80" />
+      <c name="single_joint_bop" formattype="General" width="142" />
+      <c name="single_joint_eop" formattype="General" width="139" />
+      <c name="step" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>
