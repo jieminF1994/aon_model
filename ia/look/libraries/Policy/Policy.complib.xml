@@ -1,0 +1,1263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="Policy" version="master" format-version="20" description="Policy information">
+  <UserUDFs>
+    <udf name="get_withdrawal_charge_period">/*\r\n
+Return\sthe\snumber\sof\syears\sthat\shave\sto\spass\sbefore\swithdrawal\scharges\sbecome\szero.\r\n
+*/\r\n
+\r\n
+int\sget_withdrawal_charge_period(real[N]\swithdrawal_charge_percent)\r\n
+\r\n
+\s\s\s\sreal\swcp\r\n
+\s\s\s\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN-1\r\n
+\s\s\s\s\s\s\s\swcp\s=\swithdrawal_charge_percent[i]\r\n
+\s\s\s\s\s\s\s\sif\scompare(wcp\s==\s0,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\si\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\r\n
+\s\s\s\s$result\s=\sN\r\n
+\s\s\s\s\s\s\s\s\r\n
+end</udf>
+    <udf name="find_index">int\sfind_index(int[N]\sarg,\sint\svalue)\r\n
+\s\s\s\s$result\s=\s-1\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN\s-\s1\r\n
+\s\s\s\s\s\s\s\sif\sarg[i]\s==\svalue\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\si\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="interp_spot">/*\sComputes\sthe\szero\srates\s\\(R(t)\\)\sat\s\\(t\\)\sby\slinearly\sinterpolating\sbetween\sthe\stwo\stenors\sclosest\sto\st.\r\n
+$$R((1-a)t_i+at_{i+1})\s=\s\\frac{(1-a)R(t_i)t_i+aR(t_{i+1})t_{i+1}}{(1-a)t_i+at_{i+1}}$$\r\n
+*/\r\n
+real\sinterp_spot(real\st,\sreal[N]\stenors,\sreal[N]\sspot_curve)\r\n
+\s\s\s\sreal[N]\slog_df\r\n
+\s\s\s\sreal\sforward_infinity\r\n
+\s\s\s\sreal\slog_df_infinity\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN-1\r\n
+\s\s\s\s\s\s\s\slog_df[i]\s=\sspot_curve[i]\s*\stenors[i]\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s//\suse\sflat\sforward\srate\safter\s30\syears\r\n
+\s\s\s\sforward_infinity\s=\s(log_df[N-2]\s-\slog_df[N-1])\s/\s(tenors[N-1]\s-\stenors[N-2])\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(t\s&lt;=\stenors[0],\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sspot_curve[0]\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sif\scompare(t\s&gt;=\stenors[N-1],\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\slog_df_infinity\s=\slog_df[N-1]\s-\sforward_infinity\s*\s(t\s-\stenors[N-1])\r\n
+\s\s\s\s\s\s\s\s$result\s=\slog_df_infinity\s/\st\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\sinterp1(t,\stenors,\slog_df)\s/\st\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="policy_year" type="int" shape="*" description="The number of year from the policy issue date" />
+    <input name="n_step" type="int" description="The total number of steps" />
+    <input name="is_joint_policy" type="bool" description="True if it is an account of a joint policy" />
+    <input name="min_joint_age" type="int" shape="*" description="Minimum age of persons covered by the policy" />
+    <input name="FullSurrender_2018" type="composite" description="Base lapse rate schedule">
+      <field name="probability" type="real" shape="*,*" />
+      <field name="surrender_charge_period" type="int" />
+    </input>
+    <input name="PremiumEnhancementRecapture" type="composite" description="Premium enhancement recapture schedule">
+      <field name="schedule" type="real" shape="*" />
+    </input>
+    <input name="policy_age1" type="int" shape="*" />
+    <input name="policy_age2" type="int" shape="*" />
+    <input name="issue_date" type="date_t" />
+    <input name="projection_date" type="date_t" shape="*" />
+    <input name="is_anniversary" type="bool" shape="*" />
+    <input name="initial_premium" type="real" />
+    <input name="premium_enhancment" type="real" />
+    <input name="investment_account" type="int" description="The interest credit type of the account" />
+    <input name="issue_age_1" type="int" />
+    <input name="issue_age_2" type="int" />
+    <input name="shock_period_years_after_surrender_charge" type="int" />
+    <input name="next_crediting_renewal_year" type="int" />
+    <input name="FullSurrender_2019" type="composite" description="Base lapse rate schedule">
+      <field name="probability" type="real" shape="*,*" />
+      <field name="surrender_charge_period" type="int" />
+    </input>
+    <input name="mortality_2018" type="composite" shape="*" description="Mortality parameters of the first person">
+      <field name="BaseRates" type="real" shape="*" />
+      <field name="Scale_G2" type="real" shape="*" />
+      <field name="Mult_GLB" type="real" shape="*" />
+      <field name="Mult_no_GLB" type="real" shape="*" />
+    </input>
+    <input name="mortality_2019" type="composite" shape="*" description="Mortality parameters of the first person">
+      <field name="BaseRates" type="real" shape="*" />
+      <field name="Scale_G2" type="real" shape="*" />
+      <field name="Mult_GLB" type="real" shape="*" />
+      <field name="Mult_no_GLB" type="real" shape="*" />
+      <field name="Mult_GLB_X5" type="real" shape="*" />
+      <field name="Mult_no_GLB_X5" type="real" shape="*" />
+    </input>
+    <input name="use_2019_q3_mortality_assumptions" type="bool" />
+    <input name="use_2019_q3_lapse_assumptions" type="bool" />
+    <input name="is_annexus_product" type="bool" />
+    <input name="is_5th_anniversary" type="bool" shape="*" />
+    <input name="glb_mawa_rate" type="composite" shape="*">
+      <field name="mawa_id" type="int" />
+      <field name="mawa_rate" type="real" shape="*" />
+    </input>
+    <input name="glb_pip_rate" type="composite" shape="*">
+      <field name="pip_id" type="int" />
+      <field name="pip_rate" type="real" shape="*" />
+    </input>
+    <input name="glb_info" type="composite" shape="*">
+      <field name="glb_id" type="int" />
+      <field name="income_credit_period" type="int" />
+      <field name="net_income_credit" type="bool" />
+      <field name="rider_type" type="int" />
+      <field name="is_flex" type="int" />
+      <field name="doubling_income_base" type="bool" />
+      <field name="no_income_growth_after_wd" type="bool" />
+    </input>
+    <input name="glb_id" type="int" />
+    <input name="gmwb_fee_id" type="int" />
+    <input name="gmwb_fee" type="composite" shape="*">
+      <field name="GMWB_FEE_ID" type="int" />
+      <field name="FEE_PERCENT" type="real" />
+    </input>
+    <input name="mawa_id" type="int" />
+    <input name="pip_id" type="int" />
+    <input name="surrender_charge_id" type="int" />
+    <input name="surrender_charge" type="composite" shape="*">
+      <field name="surrender_charge_id" type="int" />
+      <field name="surrender_charge_rate" type="real" shape="*" />
+    </input>
+    <input name="is_after_valuation_date" type="bool" shape="*" />
+    <input name="mva_period" type="int" />
+    <input name="mortality_gaap" type="composite" shape="*">
+      <field name="BaseRates" type="real" shape="*" />
+      <field name="Scale_G2" type="real" shape="*" />
+      <field name="Mult_GLB" type="real" shape="*" />
+      <field name="Mult_no_GLB" type="real" shape="*" />
+    </input>
+    <input name="FullSurrender_gaap" type="composite">
+      <field name="probability" type="real" shape="*,*" />
+      <field name="surrender_charge_period" type="int" />
+    </input>
+    <input name="disable_rider_fee" type="bool" />
+    <input name="mortality_margin" type="real" />
+    <input name="lapse_margin" type="real" />
+    <input name="tape_date" type="date_t" />
+    <input name="flex_mawa_id_single" type="int" />
+    <input name="flex_pip_id_single" type="int" />
+    <input name="flex_mawa_id_joint" type="int" />
+    <input name="flex_pip_id_joint" type="int" />
+    <input name="gender_1" type="int" />
+    <input name="gender_2" type="int" />
+    <input name="income_percentage_increase" type="real" />
+    <input name="policy_duration" type="int" shape="*" />
+    <input name="mortality_at_issue" type="composite" description="Mortality parameters of the first person">
+      <field name="BaseRates" type="real" shape="*,*" />
+      <field name="Scale_G2" type="real" shape="*,*" />
+      <field name="Mult_GLB" type="real" shape="*,*" />
+      <field name="Mult_no_GLB" type="real" shape="*,*" />
+    </input>
+    <input name="use_at_issue_assumptions" type="bool" />
+    <input name="base_lapse_rate_at_issue" type="composite">
+      <field name="surrender_charge_period" type="int" shape="*" />
+      <field name="rate_gmwb" type="real" shape="*,*" />
+      <field name="rate_gmdb_0_69" type="real" shape="*,*" />
+      <field name="rate_gmdb_70" type="real" shape="*,*" />
+    </input>
+    <input name="npa_at_issue" type="real" shape="*,*" />
+    <input name="total_spread" type="real" shape="*,*" />
+    <input name="t" type="real" shape="*" />
+    <input name="Time_dt" type="real" shape="*" />
+    <input name="income_percentage_at_tape" type="real" />
+    <input name="is_guardian" type="bool" />
+    <input name="systematic_withdrawal_started" type="bool" />
+    <input name="year_since_issue" type="int" shape="*" />
+    <input name="MaturityAge" type="int" />
+    <input name="MaturityAge_guardian" type="int" />
+    <input name="first_partial_withdrawal_enum" type="int" />
+    <input name="mwv_info" type="composite" shape="*">
+      <field name="mwv_id" type="int" />
+      <field name="mwv_percentage_1" type="real" />
+      <field name="mwv_percentage_2" type="real" />
+      <field name="mwv_rate_1" type="real" />
+      <field name="mwv_rate_2" type="real" />
+    </input>
+    <input name="mwv_id" type="int" />
+    <input name="is_annexus_10yr" type="bool" />
+    <input name="is_annexus_5yr" type="bool" />
+    <input name="is_annexus" type="bool" />
+    <input name="mortality_2023" type="composite" shape="*" description="Mortality parameters of the first person">
+      <field name="BaseRates" type="real" shape="*" />
+      <field name="Scale_G2" type="real" shape="*" />
+      <field name="Mult_GLB" type="real" shape="*" />
+      <field name="Mult_no_GLB" type="real" shape="*" />
+      <field name="Mult_GLB_X5" type="real" shape="*" />
+      <field name="Mult_no_GLB_X5" type="real" shape="*" />
+    </input>
+    <input name="mortality_2024" type="composite" shape="*" description="Mortality parameters of the first person">
+      <field name="BaseRates" type="real" shape="*" />
+      <field name="Scale_G2" type="real" shape="*" />
+      <field name="Mult_GLB" type="real" shape="*" />
+      <field name="Mult_no_GLB" type="real" shape="*" />
+      <field name="Mult_GLB_X5" type="real" shape="*" />
+      <field name="Mult_no_GLB_X5" type="real" shape="*" />
+    </input>
+    <input name="glip_id" type="int" />
+    <input name="use_2023_q3_mortality_assumptions" type="bool" />
+    <input name="issue_age_guardian_ny" type="int" />
+    <input name="glb_income_percentage_guardian" type="composite" shape="*">
+      <field name="glip_id" type="int" />
+      <field name="income_percentage" type="real" shape="*,*" />
+    </input>
+    <input name="disable_rate_setting" type="bool" />
+    <input name="no_rate_setting" type="bool" />
+    <input name="is_6th_anniversary" type="bool" shape="*" />
+    <input name="is_10th_anniversary" type="bool" shape="*" />
+    <input name="use_2024_q3_mortality_assumptions" type="bool" />
+    <input name="StrategyType" type="composite" shape="*">
+      <field name="investment_account" type="int" />
+      <field name="crediting_term" type="int" />
+      <field name="crediting_term_post_rate_setting" type="int" />
+      <field name="index_id" type="int" />
+    </input>
+    <input name="FullSurrender_2025" type="composite">
+      <field name="surrender_charge_period" type="int" />
+      <field name="probability" type="real" shape="*,*" />
+    </input>
+    <input name="use_2025_q3_base_lapse" type="bool" />
+    <input name="use_2025_q3_lapse_skew" type="bool" />
+    <input name="shock_lapse_skew_factor" type="real" shape="*" />
+    <input name="months_since_issue" type="int" shape="*" />
+    <input name="npa_nippon_life" type="real" shape="*,*" />
+    <input name="npa_risk_margin_ap" type="real" />
+    <input name="npa_risk_margin_lb" type="real" />
+    <input name="is_secure_cap" type="bool" />
+    <input name="pricing_projection_date" type="date_t" description="Pricing projection month anchor from inforce" />
+    <input name="pricing_issue_date" type="date_t" description="Pricing issue month anchor from inforce" />
+    <input name="pricing_maturity_step" type="int" description="Pricing t_high maturity step" />
+    <input name="issue_age_for_maturity" type="int" description="Older applicable issue age for joint-policy maturity" />
+    <input name="maturity_age" type="int" description="Policy maturity age" />
+    <input name="primary_tail_step" type="int" description="Pricing primary tail period" />
+    <input name="maturity_benefit_min_years" type="int" description="Minimum maturity-benefit projection years" />
+  </inputs>
+  <results>
+    <result name="perr" ref="Computation.perr" description="Premium enhancement recapture rate" />
+    <result name="wcp" ref="Computation.wcp&#xD;&#xA;" description="Withdrawal charge percentage" />
+    <result name="mawp" ref="Computation.mawp&#xD;&#xA;" description="Maximum annual withdrawal percentage" />
+    <result name="pipp" ref="Computation.pipp" description="Protected income payment percentage" />
+    <result name="base_lapse" ref="Computation.base_lapse" description="Base lapse rate" />
+    <result name="rider_fee" ref="LivingBenefitParams.fee" description="Living benefit rider fee" />
+    <result name="rider_keep_the_diff" ref="LivingBenefitParams.income_credit_keep_diff" description="True if keeping the income base growth difference when calculating income base" />
+    <result name="is_rider_multiplier" ref="LivingBenefitParams.is_rider_multiplier" description="True if rider multiplier" />
+    <result name="rider_income_period" ref="LivingBenefitParams.income_credit_period" description="Income credit period" />
+    <result name="withdrawal_charge_period" ref="=Dictionary.withdrawal_charge_period" description="Withdrawal charge period" />
+    <result name="living_benefit_elected" ref="=LivingBenefitParams.living_benefit_elected" description="True if the account with living benefit" />
+    <result name="yrs_until_wcp_end" ref="=Computation.yrs_until_wcp_end" description="Years until the end of the withdrawal charges." />
+    <result name="yrs_until_scp_end" ref="=Computation.yrs_until_scp_end" description="Years until the end of the surrender charges." />
+    <result name="mawp_last_anniversary" ref="=Computation.mawp_last_anniversary" />
+    <result name="pipp_last_anniversary" ref="=Computation.pipp_last_anniversary" />
+    <result name="guaranteed_minimum_income_base" ref="=LivingBenefitParams.guaranteed_minimum_income_base" />
+    <result name="accumulated_gmwb_fee_paid" ref="=LivingBenefitParams.accumulated_gmwb_fee_paid" />
+    <result name="is_rider_new_multiplier" ref="=LivingBenefitParams.is_rider_new_multiplier" />
+    <result name="crediting_term" ref="=Dictionary.crediting_term" />
+    <result name="reset_rate_now" ref="=Computation.reset_rate_now" />
+    <result name="credit_interest_now" ref="=Computation.credit_interest_now" />
+    <result name="surrender_charge_period_ind" ref="=Computation.surrender_charge_period_ind" />
+    <result name="surrender_charge_spike_period_ind" ref="=Computation.surrender_charge_spike_period_ind" />
+    <result name="equity_idx" ref="=Dictionary.equity_idx" />
+    <result name="doubling_terminated" ref="=Computation.doubling_terminated" />
+    <result name="mortality_base_rate_1" ref="=MortalityRate.BaseRates_1" />
+    <result name="mortality_mult_glb_1" ref="=MortalityRate.Mult_GLB_1" />
+    <result name="mortality_scale_g2_1" ref="=MortalityRate.Scale_G2_1" />
+    <result name="mortality_base_rate_2" ref="=MortalityRate.BaseRates_2" />
+    <result name="mortality_mult_glb_2" ref="=MortalityRate.Mult_GLB_2" />
+    <result name="mortality_scale_g2_2" ref="=MortalityRate.Scale_G2_2" />
+    <result name="mortality_mult_no_glb_1" ref="=MortalityRate.Mult_no_GLB_1" />
+    <result name="mortality_mult_no_glb_2" ref="=MortalityRate.Mult_no_GLB_2" />
+    <result name="surrender_charge_period" ref="=Dictionary.surrender_charge_period" />
+    <result name="pro_rata_factor" ref="=Computation.pro_rata_factor" />
+    <result name="crediting_term_post_ratesetting" ref="=Dictionary.crediting_term_post_ratesetting" />
+    <result name="yrs_until_mva_end" ref="=Computation.yrs_until_mva_end" />
+    <result name="mva_period_ind" ref="=Computation.mva_period_ind" />
+    <result name="mawa_rate_idx" ref="=Dictionary.mawa_rate_idx" />
+    <result name="pip_rate_idx" ref="=Dictionary.pip_rate_idx" />
+    <result name="is_flex" ref="=LivingBenefitParams.is_flex" />
+    <result name="flex_mawa_rate_single_idx" ref="=Dictionary.flex_mawa_rate_single_idx" />
+    <result name="flex_pip_rate_single_idx" ref="=Dictionary.flex_pip_rate_single_idx" />
+    <result name="min_issue_age" ref="=Dictionary.min_issue_age" />
+    <result name="years_since_issue" ref="=Dictionary.years_since_issue" />
+    <result name="year_fraction_since_last_anniversary" ref="=Dictionary.year_fraction_since_last_anniversary" />
+    <result name="flex_mawa_rate_joint_idx" ref="=Dictionary.flex_mawa_rate_joint_idx" />
+    <result name="flex_pip_rate_joint_idx" ref="=Dictionary.flex_pip_rate_joint_idx" />
+    <result name="mortality_base_rate_1_spouse" ref="=MortalityRate.BaseRates_1_spouse" />
+    <result name="mortality_mult_glb_1_spouse" ref="=MortalityRate.Mult_GLB_1_spouse" />
+    <result name="mortality_mult_no_glb_1_spouse" ref="=MortalityRate.Mult_no_GLB_1_spouse" />
+    <result name="mortality_scale_g2_1_spouse" ref="=MortalityRate.Scale_G2_1_spouse" />
+    <result name="gender_1_spouse" ref="=Dictionary.gender_1_spouse" />
+    <result name="issue_age_1_spouse" ref="=Dictionary.issue_age_1_spouse" />
+    <result name="no_income_growth_after_wd" ref="=LivingBenefitParams.no_income_growth_after_wd" />
+    <result name="is_rider_income_builder" ref="=LivingBenefitParams.is_rider_income_builder" />
+    <result name="income_percentage" ref="=Computation.income_percentage" />
+    <result name="npa_spread_df_at_issue" ref="=Computation.npa_spread_df_at_issue" />
+    <result name="survivor_base_lapse" ref="=Computation.survivor_base_lapse" />
+    <result name="guardian_rider_cap" ref="=LivingBenefitParams.guardian_rider_cap" />
+    <result name="quota_share" ref="=Dictionary.quota_share" />
+    <result name="npa_spread_at_issue_zero_table" ref="=Computation.npa_spread_at_issue_zero_table" />
+    <result name="after_maturity_at_val_date" ref="=Dictionary.after_maturity_at_val_date" />
+    <result name="EarliestFWPolYr" ref="=Dictionary.EarliestFWPolYr" />
+    <result name="is_qualified" ref="=Dictionary.is_qualified" />
+    <result name="first_credit_term_passed" ref="=Computation.first_credit_term_passed" />
+    <result name="traded_index" ref="=Dictionary.traded_index" />
+    <result name="hybrid_index" ref="=Dictionary.hybrid_index" />
+    <result name="npa_total_spread_df" ref="=Computation.npa_total_spread_df" />
+    <result name="npa_total_spread_zero_table" ref="=Computation.npa_total_spread_zero_table" />
+    <result name="lapse_skew_factor" ref="=Computation.lapse_skew_factor" />
+    <result name="npa_spread_df_nippon_life" ref="=Computation.npa_spread_df_nippon_life" />
+    <result name="npa_spread_nippon_life_zero_table" ref="=Computation.npa_spread_nippon_life_zero_table" />
+    <result name="npa_risk_margin" ref="=LivingBenefitParams.npa_risk_margin" />
+    <result name="pricing_start_elapsed_months" ref="=Dictionary.pricing_start_elapsed_months" description="Pricing months since issue at projection start" />
+    <result name="pricing_commencement_step" ref="=Dictionary.pricing_commencement_step" description="First Pricing commencement boundary" />
+    <result name="pricing_maturity_step_value" ref="=Dictionary.pricing_maturity_step_value" description="Stable Pricing maturity step" />
+    <result name="pricing_maturity_benefit_step" ref="=Dictionary.pricing_maturity_benefit_step" description="Stable Pricing maturity-benefit trigger step" />
+  </results>
+  <calculations>
+    <table name="Dictionary" type="KeyValue">
+      <c name="pricing_start_elapsed_months" datatype="int">=(pricing_projection_date.year-pricing_issue_date.year)*12+pricing_projection_date.month-pricing_issue_date.month+1</c>
+      <c name="pricing_commencement_step" datatype="int">=max(0,-pricing_start_elapsed_months)</c>
+      <c name="pricing_maturity_step_value" datatype="int">=pricing_maturity_step</c>
+      <c name="pricing_maturity_benefit_step" datatype="int">=max(min(primary_tail_step,(maturity_age-issue_age_for_maturity)*12-pricing_start_elapsed_months),maturity_benefit_min_years*12)</c>
+      <c name="min_issue_age" datatype="int">=\siif(is_joint_policy,\smin(issue_age_1,\sissue_age_2),\sissue_age_1)</c>
+      <c name="crediting_term" datatype="int">//\swe\streat\s5\syear\sSPX\sP2P\scap\sas\s1\syear\sin\sthe\srate\ssetting\sto\sget\r\n
+//\sits\sfifth\syear\sannual\scap,\sfor\sthe\sgas\sstation\srule\scalculation.\r\n
+=StrategyType[find_index(StrategyType.investment_account,investment_account)].crediting_term</c>
+      <c name="crediting_term_post_ratesetting" datatype="int">//\swe\streat\s5\syear\sSPX\sP2P\scap\sas\s1\syear\sin\sthe\srate\ssetting\sto\sget\r\n
+//\sits\sfifth\syear\sannual\scap,\sfor\sthe\sgas\sstation\srule\scalculation.\r\n
+=StrategyType[find_index(StrategyType.investment_account,investment_account)].crediting_term_post_rate_setting</c>
+      <c name="surrender_charge_period" datatype="int">=\siif(use_2019_q3_lapse_assumptions,\sFullSurrender_2019.surrender_charge_period,\r\n
+\s\s\s\sFullSurrender_2018.surrender_charge_period)</c>
+      <c name="lapse_table_len" datatype="int">/*\r\n
+The\slapse\stables\sare\sdefined\sfor\sup\sto\s12\syears.\r\n
+After\sthat,\suse\sthe\slapse\srate\sat\s12\syears.\r\n
+*/\r\n
+=\siif(use_at_issue_assumptions,\s18,\r\n
+\s\s\s\siif(use_2019_q3_lapse_assumptions,\slen(FullSurrender_2019.probability[:,0]),\r\n
+\s\s\s\slen(FullSurrender_2018.probability[:,0])))</c>
+      <c name="equity_idx" datatype="int">//\sspx:\s0,\smlsb:\s1,\spimco:\s2,\smxea:\s3,\srty:\s4,\sab:\s5,\smseh:\s6,\spimco_gem:\s7,\r\n
+//\sspx_rc:\s8,\slegg\smason:\s9,\saqr:\s10,\sab_global:11,\spimbap:\s12,\snasdaq:\s13,\sdfa:\s14,\ssptr:\s15,\sinvesco:\s16,\sjpm\sadapt\smom:\s17;\sjpm\sadapt\squal:\s18;\sjpm\sascend:\s19\r\n
+=StrategyType[find_index(StrategyType.investment_account,investment_account)].index_id</c>
+      <c name="EarliestFWPolYr" datatype="int">/*\r\n
+The\searliest\syear\sfor\sfree\swithdrawal\r\n
+*/\r\n
+\r\n
+1</c>
+      <c name="withdrawal_charge_schedule_len" datatype="int">/*\r\n
+The\swithdrawal\scharge\spercentage\stables\sare\sdefined\sfor\sup\sto\s12\syears.\r\n
+*/\r\n
+\r\n
+=\slen(surrender_charge[surrender_charge_id].surrender_charge_rate)</c>
+      <c name="withdrawal_charge_period" datatype="int">=\sget_withdrawal_charge_period(surrender_charge[surrender_charge_id].surrender_charge_rate)</c>
+      <c name="withdrawal_charge_period_end_date" datatype="date_t">=\sdate_add_months(issue_date,\s12\s*\swithdrawal_charge_period)</c>
+      <c name="surrender_charge_period_end_date" datatype="date_t">=\sdate_add_months(issue_date,\s12\s*\ssurrender_charge_period)</c>
+      <c name="mva_period_end_date" datatype="date_t">=\sdate_add_months(issue_date,\s12\s*\smva_period)</c>
+      <c name="next_index_valuation_date" datatype="date_t">year\s=\sissue_date.year\s+\snext_crediting_renewal_year\s-\s1\r\n
+\r\n
+return\sdate(year,\r\n
+\s\s\s\s\s\s\s\sissue_date.month,\r\n
+\s\s\s\s\s\s\s\siif(issue_date.month=2\sand\sissue_date.day=29\sand\syear%4!=0,\s28,\sissue_date.day))</c>
+      <c name="last_index_valuation_date" datatype="date_t">if\sinvestment_account\s=\s11\sand\snext_index_valuation_date.year\s-\sissue_date.year\s&lt;=\s5\sthen\r\n
+\s\s\s\sreturn\sissue_date\r\n
+else\r\n
+\s\s\s\syear\s=\snext_index_valuation_date.year\s-\screditing_term\r\n
+\s\s\s\sreturn\sdate(year,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sissue_date.month,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\siif(issue_date.month=2\sand\sissue_date.day=29\sand\syear%4!=0,\s28,\sissue_date.day))\r\n
+endif</c>
+      <c name="years_since_issue" datatype="real">=\sday_count_30(issue_date,\stape_date)\s/\s360.0</c>
+      <c name="year_fraction_since_last_anniversary" datatype="real">=\syears_since_issue\s-\sfloor(years_since_issue)</c>
+      <c name="is_annexus" datatype="bool">=\sis_annexus_product</c>
+      <c name="mawa_rate_idx" datatype="int">=find_index(glb_mawa_rate.mawa_id,\smawa_id)</c>
+      <c name="pip_rate_idx" datatype="int">=find_index(glb_pip_rate.pip_id,\spip_id)</c>
+      <c name="surrender_charge_idx" datatype="int">if\ssurrender_charge_id\s==\s-1\sthen\r\n
+\s\s\s\sreturn\s-1\r\n
+else\r\n
+\s\s\s\sreturn\sfind_index(surrender_charge.surrender_charge_id,\ssurrender_charge_id)\r\n
+end</c>
+      <c name="flex_mawa_rate_single_idx" datatype="int">=find_index(glb_mawa_rate.mawa_id,\sflex_mawa_id_single)</c>
+      <c name="flex_mawa_rate_joint_idx" datatype="int">=find_index(glb_mawa_rate.mawa_id,\sflex_mawa_id_joint)</c>
+      <c name="flex_pip_rate_single_idx" datatype="int">=find_index(glb_pip_rate.pip_id,\sflex_pip_id_single)</c>
+      <c name="flex_pip_rate_joint_idx" datatype="int">=find_index(glb_pip_rate.pip_id,\sflex_pip_id_joint)</c>
+      <c name="gender_1_spouse" datatype="int">=\siif(gender_1\s=\s0,\s1,\s0)</c>
+      <c name="issue_age_1_spouse" datatype="int">=\siif(gender_1\s=\s0,\sissue_age_1\s-\s2,\sissue_age_1\s+\s2)</c>
+      <c name="base_lapse_row_idx" datatype="int">=\sfind_index(base_lapse_rate_at_issue.surrender_charge_period,\ssurrender_charge_period)</c>
+      <c name="after_maturity_at_val_date" datatype="bool">=\smax(issue_age_1,\sissue_age_2)\s&gt;=\siif(is_guardian,\sMaturityAge_guardian,\sMaturityAge)</c>
+      <c name="is_qualified" datatype="bool">switch\sfirst_partial_withdrawal_enum\r\n
+\s\s\s\scase\s2:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s3:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s6:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s7:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s9:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\sTrue\r\n
+end</c>
+      <c name="quota_share" datatype="real">=iif(is_guardian,\s0.8,\s1)</c>
+      <c name="traded_index" datatype="int">switch\sequity_idx\r\n
+\s\s\s\scase\s0:\s//\sspx\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s3:\s//\smxea\r\n
+\s\s\s\s\s\s\s\sreturn\s1\r\n
+\s\s\s\scase\s4:\s//\srty\r\n
+\s\s\s\s\s\s\s\sreturn\s2\r\n
+\s\s\s\scase\s13:\s//\snasdaq\r\n
+\s\s\s\s\s\s\s\sreturn\s3\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s-1\r\n
+end</c>
+      <c name="hybrid_index" datatype="int">\r\n
+switch\sequity_idx\r\n
+\s\s\s\scase\s1:\s//\smlsb\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s2:\s//\spimco\r\n
+\s\s\s\s\s\s\s\sreturn\s1\r\n
+\s\s\s\scase\s5:\s//\sab\r\n
+\s\s\s\s\s\s\s\sreturn\s4\r\n
+\s\s\s\scase\s6:\s//\smseh\r\n
+\s\s\s\s\s\s\s\sreturn\s2\r\n
+\s\s\s\scase\s7:\s//\spimco_gem\r\n
+\s\s\s\s\s\s\s\sreturn\s3\r\n
+\s\s\s\scase\s8:\s//\sspx_rc\r\n
+\s\s\s\s\s\s\s\sreturn\s7\r\n
+\s\s\s\scase\s9:\s//\slm\r\n
+\s\s\s\s\s\s\s\sreturn\s6\s\s\r\n
+\s\s\s\scase\s10:\s//\saqr\r\n
+\s\s\s\s\s\s\s\sreturn\s5\r\n
+\s\s\s\scase\s11:\s//\sab_global\r\n
+\s\s\s\s\s\s\s\sreturn\s10\r\n
+\s\s\s\scase\s12:\s//\spimbap\r\n
+\s\s\s\s\s\s\s\sreturn\s9\r\n
+\s\s\s\scase\s14:\s//\sdfa\r\n
+\s\s\s\s\s\s\s\sreturn\s11\r\n
+\s\s\s\scase\s16:\s//\sinvesco\r\n
+\s\s\s\s\s\s\s\sreturn\s12\r\n
+\s\s\s\scase\s17:\s//\sjpm\smom\r\n
+\s\s\s\s\s\s\s\sreturn\s13\r\n
+\s\s\s\scase\s18:\s//jpm\squal\r\n
+\s\s\s\s\s\s\s\sreturn\s14\r\n
+\s\s\s\scase\s19:\s//jpm\sasc\r\n
+\s\s\s\s\s\s\s\sreturn\s15\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s-1\r\n
+end</c>
+    </table>
+    <table name="LivingBenefitParams" type="KeyValue">
+      <c name="glb_idx" datatype="int">=find_index(glb_info.glb_id,\sglb_id)</c>
+      <c name="gmwb_fee_idx" datatype="int">if\sgmwb_fee_id\s==\s-1\sthen\r\n
+\s\s\s\sreturn\s-1\r\n
+else\r\n
+\s\s\s\sreturn\sfind_index(gmwb_fee.gmwb_fee_id,\sgmwb_fee_id)\r\n
+end</c>
+      <c name="living_benefit_elected" datatype="bool">/*\r\n
+True\sif\sthe\spolicy\shas\sa\sliving\sbenefit\srider\r\n
+*/\r\n
+=\s!(glb_info[glb_idx].rider_type\s==\s0)\r\n
+</c>
+      <c name="is_rider_multiplier" datatype="bool">/*\r\n
+True\sif\sthe\sliving\sbenefit\srider\stype\sis\smultiplier.\r\n
+*/\r\n
+\r\n
+=\sglb_info[glb_idx].rider_type\s&gt;\s1</c>
+      <c name="is_rider_new_multiplier" datatype="bool">/*\r\n
+True\sif\sthe\sliving\sbenefit\srider\stype\sis\smodified\smultiplier.\r\n
+*/\r\n
+\r\n
+=\sglb_info[glb_idx].rider_type\s=\s3</c>
+      <c name="is_rider_income_builder" datatype="bool">=\sglb_info[glb_idx].rider_type\s&gt;=\s4</c>
+      <c name="is_flex" datatype="bool">=\sglb_info[glb_idx].is_flex\s=\s1</c>
+      <c name="fee" datatype="real">/*\r\n
+Living\sbenefit\srider\sfee\r\n
+*/\r\n
+if\sdisable_rider_fee\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+elif\sgmwb_fee_idx\s==\s-1\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sgmwb_fee[gmwb_fee_idx].fee_percent\r\n
+end</c>
+      <c name="income_credit_keep_diff" datatype="bool">/*\r\n
+True\sif\skeeping\sthe\sdifference\sbetween\r\n
+the\sincome\sbase\sgrowth\sand\sthe\swithdrawal\swhen\scalculating\sincome\sbase,\r\n
+depends\son\sliving\sbenefit\stype.\r\n
+*/\r\n
+=\sglb_info[glb_idx].net_income_credit</c>
+      <c name="double_min_income_base" datatype="bool">/*\r\n
+not\sapply\sfor\sLBM,\sand\sLB\sissued\safter\s9/14/2020\r\n
+*/\r\n
+\r\n
+=\siif(glb_info[glb_idx].doubling_income_base,\sTrue,\sFalse)</c>
+      <c name="income_credit_period" datatype="int">/*\r\n
+Income\scredit\speriod\r\n
+*/\r\n
+\r\n
+=\sglb_info[glb_idx].income_credit_period\r\n
+</c>
+      <c name="guaranteed_minimum_income_base" datatype="real">/*\r\n
+not\sapply\sfor\sLBM,\sor\sPSP\sLB\sissued\safter\s9/12/2017\r\n
+*/\r\n
+\r\n
+=\siif(double_min_income_base,\s2\s*\s(initial_premium\s-\spremium_enhancment),\s0)</c>
+      <c name="years_since_issue" datatype="int">=\syear_since_issue[0]</c>
+      <c name="accumulated_gmwb_fee_paid" datatype="real">/*\r\n
+accumulated\sgwmb\sfee\spaid\son\stape\sdate\r\n
+*/\r\n
+\r\n
+=\syears_since_issue\s*\sfee\s*\sinitial_premium</c>
+      <c name="no_income_growth_after_wd" datatype="bool">=\sglb_info[glb_idx].no_income_growth_after_wd</c>
+      <c name="guardian_rider_cap" datatype="real">=3</c>
+      <c name="is_rider_guardian_ny" datatype="bool">=\sglb_info[glb_idx].rider_type\s=\s6</c>
+      <c name="glip_idx" datatype="int">=\sfind_index(glb_income_percentage_guardian.glip_id,\sglip_id)</c>
+      <c name="npa_risk_margin" datatype="real">=\siif(living_benefit_elected,\snpa_risk_margin_lb,\snpa_risk_margin_ap)</c>
+    </table>
+    <table name="MortalityRate" type="Computation">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="BaseRates_1" datatype="real" />
+        <c name="Mult_GLB_1" datatype="real" />
+        <c name="Mult_no_GLB_1" datatype="real" />
+        <c name="Scale_G2_1" datatype="real" />
+        <c name="BaseRates_2" datatype="real" />
+        <c name="Mult_GLB_2" datatype="real" />
+        <c name="Mult_no_GLB_2" datatype="real" />
+        <c name="Scale_G2_2" datatype="real" />
+        <c name="BaseRates_1_spouse" datatype="real" />
+        <c name="Mult_GLB_1_spouse" datatype="real" />
+        <c name="Mult_no_GLB_1_spouse" datatype="real" />
+        <c name="Scale_G2_1_spouse" datatype="real" />
+      </columns>
+      <row-groups>
+        <rg name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=\s0</c>
+            <c name="BaseRates_1">=\siif(use_at_issue_assumptions,\smortality_at_issue.BaseRates[step,\sgender_1],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_1].BaseRates[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_1].BaseRates[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_1].BaseRates[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_1].BaseRates[step]))))\s*\smortality_margin</c>
+            <c name="Mult_GLB_1">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[gender_1].Mult_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[gender_1].Mult_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[gender_1].Mult_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_GLB[step,\sgender_1],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_1].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_1].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_1].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_1].Mult_GLB[step]))))\r\n
+end</c>
+            <c name="Mult_no_GLB_1">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[gender_1].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[gender_1].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[gender_1].Mult_no_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_no_GLB[step,\sgender_1],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_1].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_1].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_1].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_1].Mult_no_GLB[step]))))\r\n
+end</c>
+            <c name="Scale_G2_1">=\siif(use_at_issue_assumptions,\smortality_at_issue.Scale_G2[step,\sgender_1],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_1].Scale_G2[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_1].Scale_G2[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_1].Scale_G2[step],\r\n
+\s\s\s\smortality_2018[gender_1].Scale_G2[step]))))</c>
+            <c name="BaseRates_2">=\siif(use_at_issue_assumptions,\smortality_at_issue.BaseRates[step,\sgender_2],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_2].BaseRates[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_2].BaseRates[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_2].BaseRates[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_2].BaseRates[step]))))\s*\smortality_margin</c>
+            <c name="Mult_GLB_2">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[gender_2].Mult_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[gender_2].Mult_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[gender_2].Mult_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_GLB[step,\sgender_2],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_2].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_2].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_2].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_2].Mult_GLB[step]))))\r\n
+end</c>
+            <c name="Mult_no_GLB_2">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[gender_2].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[gender_2].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[gender_2].Mult_no_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_no_GLB[step,\sgender_2],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_2].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_2].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_2].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_2].Mult_no_GLB[step]))))\r\n
+end</c>
+            <c name="Scale_G2_2">=\siif(use_at_issue_assumptions,\smortality_at_issue.Scale_G2[step,\sgender_2],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_2].Scale_G2[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_2].Scale_G2[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_2].Scale_G2[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_2].Scale_G2[step]))))</c>
+            <c name="BaseRates_1_spouse">=\siif(use_at_issue_assumptions,\smortality_at_issue.BaseRates[step,\sDictionary.gender_1_spouse],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[Dictionary.gender_1_spouse].BaseRates[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[Dictionary.gender_1_spouse].BaseRates[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[Dictionary.gender_1_spouse].BaseRates[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[Dictionary.gender_1_spouse].BaseRates[step]))))\s*\smortality_margin</c>
+            <c name="Mult_GLB_1_spouse">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[Dictionary.gender_1_spouse].Mult_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[Dictionary.gender_1_spouse].Mult_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[Dictionary.gender_1_spouse].Mult_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_GLB[step,\sDictionary.gender_1_spouse],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[Dictionary.gender_1_spouse].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[Dictionary.gender_1_spouse].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[Dictionary.gender_1_spouse].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[Dictionary.gender_1_spouse].Mult_GLB[step]))))\r\n
+end</c>
+            <c name="Mult_no_GLB_1_spouse">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[Dictionary.gender_1_spouse].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[Dictionary.gender_1_spouse].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[Dictionary.gender_1_spouse].Mult_no_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_no_GLB[step,\sDictionary.gender_1_spouse],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[Dictionary.gender_1_spouse].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[Dictionary.gender_1_spouse].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[Dictionary.gender_1_spouse].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[Dictionary.gender_1_spouse].Mult_no_GLB[step]))))\r\n
+end</c>
+            <c name="Scale_G2_1_spouse">=\siif(use_at_issue_assumptions,\smortality_at_issue.Scale_G2[step,\sDictionary.gender_1_spouse],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[Dictionary.gender_1_spouse].Scale_G2[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[Dictionary.gender_1_spouse].Scale_G2[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[Dictionary.gender_1_spouse].Scale_G2[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[Dictionary.gender_1_spouse].Scale_G2[step]))))</c>
+          </columns>
+        </rg>
+        <rg name="rg1">
+          <repeat>120</repeat>
+          <columns>
+            <c name="step">=\sprev(step)\s+\s1</c>
+            <c name="BaseRates_1">=\siif(use_at_issue_assumptions,\smortality_at_issue.BaseRates[step,\sgender_1],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_1].BaseRates[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_1].BaseRates[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_1].BaseRates[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_1].BaseRates[step]))))\s*\smortality_margin</c>
+            <c name="Mult_GLB_1">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[gender_1].Mult_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[gender_1].Mult_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[gender_1].Mult_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_GLB[step,\sgender_1],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_1].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_1].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_1].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_1].Mult_GLB[step]))))\r\n
+end</c>
+            <c name="Mult_no_GLB_1">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[gender_1].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[gender_1].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[gender_1].Mult_no_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_no_GLB[step,\sgender_1],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_1].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_1].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_1].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_1].Mult_no_GLB[step]))))\r\n
+end</c>
+            <c name="Scale_G2_1">=\siif(use_at_issue_assumptions,\smortality_at_issue.Scale_G2[step,\sgender_1],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_1].Scale_G2[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_1].Scale_G2[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_1].Scale_G2[step],\r\n
+\s\s\s\smortality_2018[gender_1].Scale_G2[step]))))</c>
+            <c name="BaseRates_2">=\siif(use_at_issue_assumptions,\smortality_at_issue.BaseRates[step,\sgender_2],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_2].BaseRates[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_2].BaseRates[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_2].BaseRates[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_2].BaseRates[step]))))\s*\smortality_margin</c>
+            <c name="Mult_GLB_2">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[gender_2].Mult_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[gender_2].Mult_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[gender_2].Mult_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_GLB[step,\sgender_2],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_2].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_2].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_2].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_2].Mult_GLB[step]))))\r\n
+end</c>
+            <c name="Mult_no_GLB_2">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[gender_2].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[gender_2].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[gender_2].Mult_no_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_no_GLB[step,\sgender_2],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_2].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_2].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_2].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_2].Mult_no_GLB[step]))))\r\n
+end</c>
+            <c name="Scale_G2_2">=\siif(use_at_issue_assumptions,\smortality_at_issue.Scale_G2[step,\sgender_2],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[gender_2].Scale_G2[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[gender_2].Scale_G2[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[gender_2].Scale_G2[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[gender_2].Scale_G2[step]))))</c>
+            <c name="BaseRates_1_spouse">=\siif(use_at_issue_assumptions,\smortality_at_issue.BaseRates[step,\sDictionary.gender_1_spouse],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[Dictionary.gender_1_spouse].BaseRates[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[Dictionary.gender_1_spouse].BaseRates[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[Dictionary.gender_1_spouse].BaseRates[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[Dictionary.gender_1_spouse].BaseRates[step]))))\s*\smortality_margin</c>
+            <c name="Mult_GLB_1_spouse">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[Dictionary.gender_1_spouse].Mult_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[Dictionary.gender_1_spouse].Mult_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[Dictionary.gender_1_spouse].Mult_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_GLB[step,\sDictionary.gender_1_spouse],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[Dictionary.gender_1_spouse].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[Dictionary.gender_1_spouse].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[Dictionary.gender_1_spouse].Mult_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[Dictionary.gender_1_spouse].Mult_GLB[step]))))\r\n
+end</c>
+            <c name="Mult_no_GLB_1_spouse">if\sDictionary.is_annexus\sthen\r\n
+\s\s\s\sif\suse_2024_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2024[Dictionary.gender_1_spouse].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selif\suse_2023_q3_mortality_assumptions\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2023[Dictionary.gender_1_spouse].Mult_no_GLB_X5[step]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smortality_2019[Dictionary.gender_1_spouse].Mult_no_GLB_X5[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\siif(use_at_issue_assumptions,\smortality_at_issue.Mult_no_GLB[step,\sDictionary.gender_1_spouse],\r\n
+\s\s\s\s\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[Dictionary.gender_1_spouse].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[Dictionary.gender_1_spouse].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[Dictionary.gender_1_spouse].Mult_no_GLB[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[Dictionary.gender_1_spouse].Mult_no_GLB[step]))))\r\n
+end</c>
+            <c name="Scale_G2_1_spouse">=\siif(use_at_issue_assumptions,\smortality_at_issue.Scale_G2[step,\sDictionary.gender_1_spouse],\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_2024[Dictionary.gender_1_spouse].Scale_G2[step],\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_2023[Dictionary.gender_1_spouse].Scale_G2[step],\r\n
+\s\s\s\siif(use_2019_q3_mortality_assumptions,\smortality_2019[Dictionary.gender_1_spouse].Scale_G2[step],\r\n
+\s\s\s\s\s\s\s\smortality_2018[Dictionary.gender_1_spouse].Scale_G2[step]))))</c>
+          </columns>
+        </rg>
+      </row-groups>
+    </table>
+    <table name="Computation" type="Computation">
+      <column-groups>
+        <g name="g1" repeat-count="12" />
+        <g name="g2" repeat-count="12" />
+        <g name="g3" repeat-count="12" />
+      </column-groups>
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="policy_yr" datatype="int" />
+        <c name="reset_rate_now" datatype="bool" />
+        <c name="credit_interest_now" datatype="bool" />
+        <c name="first_credit_term_passed" datatype="bool" />
+        <c name="last_crediting_date" datatype="date_t" />
+        <c name="next_crediting_date" datatype="date_t" />
+        <c name="pro_rata_factor" datatype="real" />
+        <c name="perr" datatype="real" />
+        <c name="wcp" datatype="real" />
+        <c name="mawp" datatype="real" />
+        <c name="pipp" datatype="real" />
+        <c name="income_percentage" datatype="real" />
+        <c name="mawp_last_anniversary" datatype="real" />
+        <c name="pipp_last_anniversary" datatype="real" />
+        <c name="base_lapse" datatype="real" />
+        <c name="base_lapse_in_period" datatype="real" />
+        <c name="survivor_base_lapse" datatype="real" />
+        <c name="mva_period_ind" datatype="bool" />
+        <c name="yrs_until_mva_end" datatype="real" />
+        <c name="surrender_charge_period_ind" datatype="bool" />
+        <c name="surrender_charge_spike_period_ind" datatype="bool" />
+        <c name="lapse_skew_factor" datatype="real" />
+        <c name="yrs_until_wcp_end" datatype="real" />
+        <c name="yrs_until_scp_end" datatype="real" />
+        <c name="doubling_terminated" datatype="bool" />
+        <c name="npa_spread_at_issue" datatype="real" />
+        <c name="npa_spread_df_at_issue" datatype="real" />
+        <c name="npa_spread_nippon_life" datatype="real" />
+        <c name="npa_spread_df_nippon_life" datatype="real" />
+        <c name="npa_spread_at_issue_t_plus_tau" datatype="real" group="g1" />
+        <c name="npa_spread_at_issue_dfs" datatype="real" group="g1" />
+        <c name="npa_spread_at_issue_zero_table" datatype="real" group="g1" />
+        <c name="npa_spread_nippon_life_t_plus_tau" datatype="real" group="g3" />
+        <c name="npa_spread_nippon_life_dfs" datatype="real" group="g3" />
+        <c name="npa_spread_nippon_life_zero_table" datatype="real" group="g3" />
+        <c name="npa_total_spread" datatype="real" />
+        <c name="npa_total_spread_df" datatype="real" />
+        <c name="npa_total_spread_t_plus_tau" datatype="real" group="g2" />
+        <c name="npa_total_spread_dfs" datatype="real" group="g2" />
+        <c name="npa_total_spread_zero_table" datatype="real" group="g2" />
+      </columns>
+      <row-groups>
+        <rg name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+0</c>
+            <c name="policy_yr">=policy_year[step]</c>
+            <c name="reset_rate_now">=\sFalse</c>
+            <c name="credit_interest_now">=\sFalse</c>
+            <c name="first_credit_term_passed">=\sFalse</c>
+            <c name="last_crediting_date">=\sDictionary.last_index_valuation_date</c>
+            <c name="next_crediting_date">=\sDictionary.next_index_valuation_date</c>
+            <c name="pro_rata_factor">=\siif(credit_interest_now,\s1,\r\n
+\s\s\s\sday_count_int(last_crediting_date,\sprojection_date[step])\s*\s1.0\r\n
+\s\s\s\s/\sday_count_int(last_crediting_date,\snext_crediting_date))</c>
+            <c name="perr">/*\r\n
+Premium\senhancement\srecapture\srate\r\n
+*/\r\n
+\r\n
+py\s=\spolicy_year[step]\r\n
+return\siif(py\s&lt;\s13,\sPremiumEnhancementRecapture.schedule[py],\s0)</c>
+            <c name="wcp">/*\r\n
+Withdrawal\scharge\spercentage\r\n
+*/\r\n
+\r\n
+=\ssurrender_charge[Dictionary.surrender_charge_idx].surrender_charge_rate[min(policy_year[step],\sDictionary.withdrawal_charge_schedule_len)\s-\s1]</c>
+            <c name="mawp">/*\r\n
+Maximum\sannual\swithdrawal\spercentage\r\n
+*/\r\n
+\r\n
+if\smawa_id\s==\s-1\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sglb_mawa_rate[Dictionary.mawa_rate_idx].mawa_rate[min(120,min_joint_age[step])]\r\n
+end\r\n
+</c>
+            <c name="pipp">/*\r\n
+Protected\sincome\spayment\spercentage\r\n
+*/\r\n
+if\spip_id\s==\s-1\sthen\r\n
+\s\s\s\sreturn\s0\s\r\n
+else\r\n
+\s\s\s\sreturn\sglb_pip_rate[Dictionary.pip_rate_idx].pip_rate[min(120,min_joint_age[step])]\r\n
+end</c>
+            <c name="income_percentage">if\sglip_id\s==\s-1\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+elif\sLivingBenefitParams.is_rider_guardian_ny\sthen\r\n
+\s\s\s\s//\sissue\sage\sstarts\sfrom\s50,\smax\spolicy\sduration\sfor\sthe\stable\sis\s50\r\n
+\s\s\s\sreturn\sglb_income_percentage_guardian[LivingBenefitParams.glip_idx].income_percentage[issue_age_guardian_ny\s-\s50,\smin(50,\spolicy_duration[step])]\r\n
+else\r\n
+\s\s\s\sreturn\sincome_percentage_at_tape\r\n
+end</c>
+            <c name="mawp_last_anniversary">=\smawp</c>
+            <c name="pipp_last_anniversary">=\spipp</c>
+            <c name="base_lapse">/*\r\n
+Base\slapse\srate\r\n
+*/\r\n
+//use\sat\sissue\slapse\stable\r\n
+if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\sgmdb_above_70\s=\sFalse\r\n
+\s\s\s\sif\s!LivingBenefitParams.living_benefit_elected\sand\smax(issue_age_1,\sissue_age_2)\s&gt;=\s70\sthen\r\n
+\s\s\s\s\s\s\s\sgmdb_above_70\s=\sTrue\r\n
+\s\s\s\send\r\n
+\s\s\s\sif\sLivingBenefitParams.living_benefit_elected\sthen\r\n
+\s\s\s\s\s\s\s\srate\s=\sbase_lapse_rate_at_issue.rate_gmwb[Dictionary.base_lapse_row_idx,\smin(policy_year[step],\sDictionary.lapse_table_len)\s-\s1]\r\n
+\s\s\s\selif\sgmdb_above_70\sthen\r\n
+\s\s\s\s\s\s\s\srate\s=\sbase_lapse_rate_at_issue.rate_gmdb_70[Dictionary.base_lapse_row_idx,\smin(policy_year[step],\sDictionary.lapse_table_len)\s-\s1]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\srate\s=\sbase_lapse_rate_at_issue.rate_gmdb_0_69[Dictionary.base_lapse_row_idx,\smin(policy_year[step],\sDictionary.lapse_table_len)\s-\s1]\r\n
+\s\s\s\send\r\n
+\s\s\s\sreturn\srate\s*\slapse_margin\r\n
+\r\n
+//use\sat\svaluation\sdate\slapse\stable\r\n
+else\r\n
+\s\s\s\scolumn\s=\s0\r\n
+\s\s\s\sif\s!LivingBenefitParams.living_benefit_elected\sand\smax(issue_age_1,\sissue_age_2)\s&gt;=\s70\sthen\r\n
+\s\s\s\s\s\s\s\scolumn\s=\s1\r\n
+\s\s\s\send\r\n
+\s\s\s\sreturn\siif(use_2025_q3_base_lapse,\sFullSurrender_2025.probability[min(policy_year[step],\sDictionary.lapse_table_len)\s-\s1,column],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sFullSurrender_2019.probability[min(policy_year[step],\sDictionary.lapse_table_len)\s-\s1,column],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sFullSurrender_2018.probability[min(policy_year[step],\sDictionary.lapse_table_len)\s-\s1,column]))\s*\slapse_margin\r\n
+end</c>
+            <c name="base_lapse_in_period">=\s1\s-\s(1\s-\sbase_lapse)\s^\sTime_dt[step]</c>
+            <c name="survivor_base_lapse">=\s1</c>
+            <c name="mva_period_ind">=\spolicy_yr\s&lt;=\smva_period</c>
+            <c name="yrs_until_mva_end">=\sday_count_int(projection_date[step],\sDictionary.mva_period_end_date)\s/\s365.25</c>
+            <c name="surrender_charge_period_ind">=\spolicy_yr\s&lt;=\sDictionary.surrender_charge_period</c>
+            <c name="surrender_charge_spike_period_ind">=\s(policy_year[step]\s&gt;\sDictionary.surrender_charge_period)\r\n
+\s\s\s\sand\s(policy_year[step]\s&lt;=\sDictionary.surrender_charge_period\r\n
+\s\s\s\s+\sshock_period_years_after_surrender_charge)</c>
+            <c name="lapse_skew_factor">if\suse_2025_q3_lapse_skew\sand\ssurrender_charge_spike_period_ind\sthen\r\n
+\s\s\s\smonth_idx\s=\smonths_since_issue[step]\s%\s12\r\n
+\s\s\s\sreturn\sshock_lapse_skew_factor[month_idx]\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="yrs_until_wcp_end">=\sday_count_int(projection_date[step],\sDictionary.withdrawal_charge_period_end_date)\s/\s365.25</c>
+            <c name="yrs_until_scp_end">=\sday_count_int(projection_date[step],\sDictionary.surrender_charge_period_end_date)\s/\s365.25</c>
+            <c name="doubling_terminated">=\sLivingBenefitParams.living_benefit_elected\sand\r\n
+\s\s\s\s(policy_year[step]\s&gt;\sLivingBenefitParams.income_credit_period)\r\n
+\s\s\s\sand\sLivingBenefitParams.double_min_income_base</c>
+            <c name="npa_spread_at_issue">=\sinterp_spot(t[step],\snpa_at_issue[:,\s0],\snpa_at_issue[:,\s1])\s+\sLivingBenefitParams.npa_risk_margin</c>
+            <c name="npa_spread_df_at_issue">=\sexp(-t[step]\s*\snpa_spread_at_issue)</c>
+            <c name="npa_spread_nippon_life">=\sinterp_spot(t[step],\snpa_nippon_life[:,\s0],\snpa_nippon_life[:,\s1])</c>
+            <c name="npa_spread_df_nippon_life">=\sexp(-t[step]\s*\snpa_spread_nippon_life)</c>
+            <c name="npa_spread_at_issue_t_plus_tau">=\sinterp_spot(\r\n
+\s\s\s\st[step]\s+\snpa_at_issue[$index,\s0],\s\r\n
+\s\s\s\snpa_at_issue[:,\s0],\s\r\n
+\s\s\s\snpa_at_issue[:,\s1]\r\n
+\s\s\s\s)\s+\sLivingBenefitParams.npa_risk_margin</c>
+            <c name="npa_spread_at_issue_dfs">=\sexp(-(t[step]\s+\snpa_at_issue[$index,\s0])\s*\snpa_spread_at_issue_t_plus_tau)\s/\snpa_spread_df_at_issue</c>
+            <c name="npa_spread_at_issue_zero_table">=\s-log(npa_spread_at_issue_dfs)\s/\snpa_at_issue[$index,\s0]</c>
+            <c name="npa_spread_nippon_life_t_plus_tau">=\sinterp_spot(\r\n
+\s\s\s\st[step]\s+\snpa_nippon_life[$index,\s0],\s\r\n
+\s\s\s\snpa_nippon_life[:,\s0],\s\r\n
+\s\s\s\snpa_nippon_life[:,\s1]\r\n
+\s\s\s\s)</c>
+            <c name="npa_spread_nippon_life_dfs">=\sexp(-(t[step]\s+\snpa_nippon_life[$index,\s0])\s*\snpa_spread_nippon_life_t_plus_tau)\s/\snpa_spread_df_nippon_life</c>
+            <c name="npa_spread_nippon_life_zero_table">=\s-log(npa_spread_nippon_life_dfs)\s/\snpa_nippon_life[$index,\s0]</c>
+            <c name="npa_total_spread">=\sinterp_spot(t[step],\stotal_spread[:,\s0],\stotal_spread[:,\s1])</c>
+            <c name="npa_total_spread_df">=\sexp(-t[step]\s*\snpa_total_spread)</c>
+            <c name="npa_total_spread_t_plus_tau">=\sinterp_spot(\r\n
+\s\s\s\st[step]\s+\stotal_spread[$index,\s0],\s\r\n
+\s\s\s\stotal_spread[:,\s0],\s\r\n
+\s\s\s\stotal_spread[:,\s1]\r\n
+\s\s\s\s)</c>
+            <c name="npa_total_spread_dfs">=\sexp(-(t[step]\s+\stotal_spread[$index,\s0])\s*\snpa_total_spread_t_plus_tau)\s/\snpa_total_spread_df</c>
+            <c name="npa_total_spread_zero_table">=\s-log(npa_total_spread_dfs)\s/\stotal_spread[$index,\s0]</c>
+          </columns>
+        </rg>
+        <rg name="rg2">
+          <repeat>=n_step</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=\sprev(step)\s+\s1</c>
+            <c name="policy_yr">=policy_year[step]</c>
+            <c name="reset_rate_now">if\sis_secure_cap\sthen\r\n
+\s\s\s\sreturn\siif(policy_year[step]\s&gt;\sDictionary.withdrawal_charge_period,\sis_anniversary[step],\sFalse)\r\n
+endif\r\n
+if\sis_annexus_10yr\sthen\r\n
+\s\s\s\sif\spolicy_year[step]\s&lt;\s11\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\send\r\n
+elif\sinvestment_account\s==\s11\sor\sinvestment_account\s==\s57\sthen\s//\sBASE\s5y\sSPX\r\n
+\s\s\s\sif\spolicy_year[step]\s&lt;\snext_crediting_renewal_year\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\sendif\r\n
+elif\sinvestment_account\s==\s67\sor\sinvestment_account\s==\s69\sthen\r\n
+//to\svalue\s6-\syear\sSPX\sput/call\soptions\sin\soption\sgrid\r\n
+\s\s\s\sif\spolicy_year[step]\s&lt;\s7\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\sendif\r\n
+elif\sis_annexus_5yr\sthen\r\n
+\s\s\s\sif\spolicy_year[step]\s&lt;\s16\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_5th_anniversary[step]\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sif\sDictionary.crediting_term_post_ratesetting\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sand\spolicy_year[step]\s&gt;=\snext_crediting_renewal_year\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sand\s(policy_year[step]\s-\snext_crediting_renewal_year)\s%\sDictionary.crediting_term_post_ratesetting\s==\s0\r\n
+\s\s\s\send\r\n
+end</c>
+            <c name="credit_interest_now">/*\r\n
+For\s5y\screditing\sstrategy,\sinvestment\saccount\s6,\sthe\sfirst\scredit\shappens\son\s5th\sanniversary,\sand\sthen\r\n
+it\sbecomes\s1y.\r\n
+\r\n
+For\s10x2,\sthe\sfirst\scredit\shappens\son\s10th\sanniversary,\sand\sthen\r\n
+it\sbecomes\s1y.\r\n
+\r\n
+For\s5x1\screditing\sstrategy,\sthe\sfirst\scredit\shappens\son\s5th\sanniversary,\sand\sthen\r\n
+it\sbecomes\s1y.\r\n
+\r\n
+For\srepeating\s5x1\screditng\sstrategy\s,\sthree\sconsecutive\s5x1\sfollowed\sby\s1yr\sPTP.\r\n
+*/\r\n
+if\sis_secure_cap\sthen\r\n
+\s\s\s\sreturn\sis_anniversary[step]\r\n
+endif\r\n
+if\sinvestment_account\s==\s11\sor\sinvestment_account\s==\s57\sthen\s//\sBASE\s5y\sSPX\r\n
+\s\s\s\sif\spolicy_year[step]\s&lt;\snext_crediting_renewal_year\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\selif\sdisable_rate_setting\sor\sno_rate_setting\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sis_5th_anniversary[step]\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\sendif\r\n
+elif\sinvestment_account\s==\s67\sor\sinvestment_account\s==\s69\sthen\r\n
+//to\svalue\s6-\syear\sSPX\sput/call\soptions\sin\soption\sgrid\r\n
+\s\s\s\sif\spolicy_year[step]\s&lt;\s7\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\selif\sdisable_rate_setting\sor\sno_rate_setting\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\sis_6th_anniversary[step]\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\sendif\r\n
+elif\sis_annexus_5yr\sthen\r\n
+\s\s\s\sif\spolicy_year[step]\s&lt;\s16\sor\sdisable_rate_setting\sor\sno_rate_setting\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_5th_anniversary[step]\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\sendif\r\n
+elif\sis_annexus_10yr\sthen\r\n
+\s\s\s\sif\spolicy_year[step]\s&lt;\s11\sor\sdisable_rate_setting\sor\sno_rate_setting\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_10th_anniversary[step]\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreturn\sis_anniversary[step]\r\n
+\s\s\s\sendif\r\n
+else\r\n
+\s\s\s\sreturn\sreset_rate_now\r\n
+endif</c>
+            <c name="first_credit_term_passed">if\s!prev(first_credit_term_passed)\sthen\r\n
+\s\s\s\sreturn\sprev(credit_interest_now)\r\n
+else\r\n
+\s\s\s\sreturn\sprev(first_credit_term_passed)\r\n
+end</c>
+            <c name="last_crediting_date">=\siif(prev(credit_interest_now),\sprev(next_crediting_date),\sprev(last_crediting_date))\s</c>
+            <c name="next_crediting_date">=\siif(prev(credit_interest_now),\s\r\n
+\s\s\s\sdate(prev(next_crediting_date).year\s+\siif(first_credit_term_passed,\sDictionary.crediting_term_post_ratesetting,Dictionary.crediting_term),\s\r\n
+\s\s\s\sprev(next_crediting_date).month,\sprev(next_crediting_date).day),\r\n
+\s\s\s\sprev(next_crediting_date))\s</c>
+            <c name="pro_rata_factor">=\siif(credit_interest_now,\s1,\r\n
+\s\s\s\sday_count_int(last_crediting_date,\sprojection_date[step])\s*\s1.0\r\n
+\s\s\s\s/\sday_count_int(last_crediting_date,\snext_crediting_date))</c>
+            <c name="perr">/*\r\n
+Premium\senhancement\srecapture\srate\r\n
+*/\r\n
+\r\n
+py\s=\spolicy_year[step]\r\n
+return\siif(py\s&lt;\s12,\sPremiumEnhancementRecapture.schedule[py],\s0)</c>
+            <c name="wcp">/*\r\n
+Withdrawal\scharge\spercentage\r\n
+*/\r\n
+\r\n
+=\ssurrender_charge[Dictionary.surrender_charge_idx].surrender_charge_rate[min(policy_year[step],\sDictionary.withdrawal_charge_schedule_len)\s-\s1]</c>
+            <c name="mawp">/*\r\n
+Maximum\sannual\swithdrawal\spercentage\r\n
+*/\r\n
+\r\n
+if\smawa_id\s==\s-1\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sglb_mawa_rate[Dictionary.mawa_rate_idx].mawa_rate[min(120,min_joint_age[step])]\r\n
+end</c>
+            <c name="pipp">/*\r\n
+Protected\sincome\spayment\spercentage\r\n
+*/\r\n
+if\spip_id\s==\s-1\sthen\r\n
+\s\s\s\sreturn\s0\s\r\n
+else\r\n
+\s\s\s\sreturn\sglb_pip_rate[Dictionary.pip_rate_idx].pip_rate[min(120,min_joint_age[step])]\r\n
+end</c>
+            <c name="income_percentage">if\sglip_id\s==\s-1\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+elif\sLivingBenefitParams.is_rider_guardian_ny\sthen\r\n
+\s\s\s\s//\sissue\sage\sstarts\sfrom\s50,\smax\spolicy\sduration\sfor\sthe\stable\sis\s50\r\n
+\s\s\s\sreturn\sglb_income_percentage_guardian[LivingBenefitParams.glip_idx].income_percentage[issue_age_guardian_ny\s-\s50,\smin(50,\spolicy_duration[step])]\r\n
+else\r\n
+\s\s\s\sreturn\sprev(income_percentage)\s+\siif(is_anniversary[step]\sand\spolicy_yr\s&lt;=\sLivingBenefitParams.income_credit_period,income_percentage_increase,\s0)\r\n
+end</c>
+            <c name="mawp_last_anniversary">=\siif(is_anniversary[step\s-\s1],\sprev(mawp),\sprev(mawp_last_anniversary))</c>
+            <c name="pipp_last_anniversary">=\siif(is_anniversary[step\s-\s1],\sprev(pipp),\sprev(pipp_last_anniversary))</c>
+            <c name="base_lapse">/*\r\n
+Base\slapse\srate\r\n
+*/\r\n
+//use\sat\sissue\slapse\stable\r\n
+if\suse_at_issue_assumptions\sthen\r\n
+\s\s\s\sgmdb_above_70\s=\sFalse\r\n
+\s\s\s\sif\s!LivingBenefitParams.living_benefit_elected\sand\smax(issue_age_1,\sissue_age_2)\s&gt;=\s70\sthen\r\n
+\s\s\s\s\s\s\s\sgmdb_above_70\s=\sTrue\r\n
+\s\s\s\send\r\n
+\s\s\s\sif\sLivingBenefitParams.living_benefit_elected\sthen\r\n
+\s\s\s\s\s\s\s\srate\s=\sbase_lapse_rate_at_issue.rate_gmwb[Dictionary.base_lapse_row_idx,\smin(policy_year[step],\sDictionary.lapse_table_len)\s-\s1]\r\n
+\s\s\s\selif\sgmdb_above_70\sthen\r\n
+\s\s\s\s\s\s\s\srate\s=\sbase_lapse_rate_at_issue.rate_gmdb_70[Dictionary.base_lapse_row_idx,\smin(policy_year[step],\sDictionary.lapse_table_len)\s-\s1]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\srate\s=\sbase_lapse_rate_at_issue.rate_gmdb_0_69[Dictionary.base_lapse_row_idx,\smin(policy_year[step],\sDictionary.lapse_table_len)\s-\s1]\r\n
+\s\s\s\send\r\n
+\s\s\s\sreturn\srate\s*\slapse_margin\r\n
+\r\n
+//use\sat\svaluation\sdate\slapse\stable\r\n
+else\r\n
+\s\s\s\scolumn\s=\s0\r\n
+\s\s\s\sif\s!LivingBenefitParams.living_benefit_elected\sand\smax(issue_age_1,\sissue_age_2)\s&gt;=\s70\sthen\r\n
+\s\s\s\s\s\s\s\scolumn\s=\s1\r\n
+\s\s\s\send\r\n
+\s\s\s\sreturn\siif(use_2025_q3_base_lapse,\sFullSurrender_2025.probability[min(policy_year[step],\sDictionary.lapse_table_len)\s-\s1,column],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\siif(use_2019_q3_lapse_assumptions,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sFullSurrender_2019.probability[min(policy_year[step],\sDictionary.lapse_table_len)\s-\s1,column],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sFullSurrender_2018.probability[min(policy_year[step],\sDictionary.lapse_table_len)\s-\s1,column]))\s*\slapse_margin\r\n
+end</c>
+            <c name="base_lapse_in_period">=\s1\s-\s(1\s-\sbase_lapse)\s^\sTime_dt[step]</c>
+            <c name="survivor_base_lapse">=\sprev(survivor_base_lapse)\s*\s(1\s-\sbase_lapse_in_period)</c>
+            <c name="mva_period_ind">=\sprev(policy_yr)\s&lt;=\smva_period</c>
+            <c name="yrs_until_mva_end">=\sday_count_int(projection_date[step],\sDictionary.mva_period_end_date)\s/\s365.25</c>
+            <c name="surrender_charge_period_ind">=\spolicy_yr\s&lt;=\sDictionary.surrender_charge_period</c>
+            <c name="surrender_charge_spike_period_ind">=\s(policy_year[step]\s&gt;\sDictionary.surrender_charge_period)\r\n
+\s\s\s\sand\s(policy_year[step]\s&lt;=\sDictionary.surrender_charge_period\r\n
+\s\s\s\s+\sshock_period_years_after_surrender_charge)</c>
+            <c name="lapse_skew_factor">if\suse_2025_q3_lapse_skew\sand\ssurrender_charge_spike_period_ind\sthen\r\n
+\s\s\s\smonth_idx\s=\smonths_since_issue[step]\s%\s12\r\n
+\s\s\s\sreturn\sshock_lapse_skew_factor[month_idx]\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="yrs_until_wcp_end">=\sday_count_int(projection_date[step],\sDictionary.withdrawal_charge_period_end_date)\s/\s365.25</c>
+            <c name="yrs_until_scp_end">=\sday_count_int(projection_date[step],\sDictionary.surrender_charge_period_end_date)\s/\s365.25</c>
+            <c name="doubling_terminated">=\sLivingBenefitParams.living_benefit_elected\sand\r\n
+\s\s\s\s(policy_year[step]\s&gt;\sLivingBenefitParams.income_credit_period)\r\n
+\s\s\s\sand\sLivingBenefitParams.double_min_income_base</c>
+            <c name="npa_spread_at_issue">=\sinterp_spot(t[step],\snpa_at_issue[:,\s0],\snpa_at_issue[:,\s1])\s+\sLivingBenefitParams.npa_risk_margin</c>
+            <c name="npa_spread_df_at_issue">=\sexp(-t[step]\s*\snpa_spread_at_issue)</c>
+            <c name="npa_spread_nippon_life">=\sinterp_spot(t[step],\snpa_nippon_life[:,\s0],\snpa_nippon_life[:,\s1])</c>
+            <c name="npa_spread_df_nippon_life">=\sexp(-t[step]\s*\snpa_spread_nippon_life)</c>
+            <c name="npa_spread_at_issue_t_plus_tau">=\sinterp_spot(\r\n
+\s\s\s\st[step]\s+\snpa_at_issue[$index,\s0],\s\r\n
+\s\s\s\snpa_at_issue[:,\s0],\s\r\n
+\s\s\s\snpa_at_issue[:,\s1]\r\n
+\s\s\s\s)\s+\sLivingBenefitParams.npa_risk_margin</c>
+            <c name="npa_spread_at_issue_dfs">=\sexp(-(t[step]\s+\snpa_at_issue[$index,\s0])\s*\snpa_spread_at_issue_t_plus_tau)\s/\snpa_spread_df_at_issue</c>
+            <c name="npa_spread_at_issue_zero_table">=\s-log(npa_spread_at_issue_dfs)\s/\snpa_at_issue[$index,\s0]</c>
+            <c name="npa_spread_nippon_life_t_plus_tau">=\sinterp_spot(\r\n
+\s\s\s\st[step]\s+\snpa_nippon_life[$index,\s0],\s\r\n
+\s\s\s\snpa_nippon_life[:,\s0],\s\r\n
+\s\s\s\snpa_nippon_life[:,\s1]\r\n
+\s\s\s\s)</c>
+            <c name="npa_spread_nippon_life_dfs">=\sexp(-(t[step]\s+\snpa_nippon_life[$index,\s0])\s*\snpa_spread_nippon_life_t_plus_tau)\s/\snpa_spread_df_nippon_life</c>
+            <c name="npa_spread_nippon_life_zero_table">=\s-log(npa_spread_nippon_life_dfs)\s/\snpa_nippon_life[$index,\s0]</c>
+            <c name="npa_total_spread">=\sinterp_spot(t[step],\stotal_spread[:,\s0],\stotal_spread[:,\s1])</c>
+            <c name="npa_total_spread_df">=\sexp(-t[step]\s*\snpa_total_spread)</c>
+            <c name="npa_total_spread_t_plus_tau">=\sinterp_spot(\r\n
+\s\s\s\st[step]\s+\stotal_spread[$index,\s0],\s\r\n
+\s\s\s\stotal_spread[:,\s0],\s\r\n
+\s\s\s\stotal_spread[:,\s1]\r\n
+\s\s\s\s)</c>
+            <c name="npa_total_spread_dfs">=\sexp(-(t[step]\s+\stotal_spread[$index,\s0])\s*\snpa_total_spread_t_plus_tau)\s/\snpa_total_spread_df</c>
+            <c name="npa_total_spread_zero_table">=\s-log(npa_total_spread_dfs)\s/\stotal_spread[$index,\s0]</c>
+          </columns>
+        </rg>
+      </row-groups>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Computation:Computation">
+      <c name="base_lapse_in_period" formattype="General" width="99.3333333333334" />
+      <c name="credit_interest_now" formattype="General" width="133" />
+      <c name="doubling_terminated" formattype="General" width="80" />
+      <c name="first_credit_term_passed" formattype="General" width="150.4" />
+      <c name="income_percentage" formattype="General" width="80" />
+      <c name="lapse_skew_factor" formattype="General" width="80" />
+      <c name="last_crediting_date" formattype="General" width="122.016666666667" />
+      <c name="mawp_last_anniversary" formattype="General" width="80" />
+      <c name="mva_period_ind" formattype="General" width="80" />
+      <c name="next_crediting_date" formattype="General" width="120.8" />
+      <c name="npa_spread_at_issue" formattype="General" width="80" />
+      <c name="npa_spread_at_issue_dfs[0]" formattype="General" width="80" />
+      <c name="npa_spread_at_issue_t_plus_tau[0]" formattype="General" width="80" />
+      <c name="npa_spread_at_issue_zero_table[0]" formattype="General" width="80" />
+      <c name="npa_spread_df_at_issue" formattype="General" width="80" />
+      <c name="npa_spread_df_nippon_life" formattype="General" width="80" />
+      <c name="npa_spread_nippon_life" formattype="General" width="80" />
+      <c name="npa_spread_nippon_life_dfs[0]" formattype="General" width="80" />
+      <c name="npa_spread_nippon_life_t_plus_tau[0]" formattype="General" width="80" />
+      <c name="npa_spread_nippon_life_zero_table[0]" formattype="General" width="80" />
+      <c name="npa_total_spread" formattype="General" width="80" />
+      <c name="npa_total_spread_df" formattype="General" width="80" />
+      <c name="npa_total_spread_dfs[0]" formattype="General" width="80" />
+      <c name="npa_total_spread_t_plus_tau[0]" formattype="General" width="80" />
+      <c name="npa_total_spread_zero_table[0]" formattype="General" width="80" />
+      <c name="pipp_last_anniversary" formattype="General" width="80" />
+      <c name="policy_yr" formattype="General" width="80" />
+      <c name="pro_rata_factor" formattype="General" width="140.8" />
+      <c name="reset_rate_now" formattype="General" width="102.22222222222229" />
+      <c name="surrender_charge_period_ind" formattype="General" width="80" />
+      <c name="surrender_charge_spike_period_ind" formattype="General" width="80" />
+      <c name="survivor_base_lapse" formattype="General" width="80" />
+      <c name="yrs_until_mva_end" formattype="General" width="80" />
+      <c name="yrs_until_scp_end" formattype="General" width="80" />
+      <c name="yrs_until_wcp_end" formattype="General" width="80" />
+    </view>
+    <view name="Computation:MortalityRate">
+      <c name="BaseRates_1" formattype="General" width="80" />
+      <c name="BaseRates_1_spouse" formattype="General" width="80" />
+      <c name="BaseRates_2" formattype="General" width="80" />
+      <c name="Mult_GLB_1" formattype="General" width="80" />
+      <c name="Mult_GLB_1_spouse" formattype="General" width="80" />
+      <c name="Mult_GLB_2" formattype="General" width="80" />
+      <c name="Mult_no_GLB_1" formattype="General" width="80" />
+      <c name="Mult_no_GLB_1_spouse" formattype="General" width="80" />
+      <c name="Mult_no_GLB_2" formattype="General" width="80" />
+      <c name="Scale_G2_1" formattype="General" width="80" />
+      <c name="Scale_G2_1_spouse" formattype="General" width="80" />
+      <c name="Scale_G2_2" formattype="General" width="80" />
+      <c name="step" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

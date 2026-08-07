@@ -1,0 +1,1001 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="InverseGamma" version="master" format-version="20" description="Equity ESG using Inverse Gamma model">
+  <UserUDFs>
+    <udf name="time_dependent_parameter">real\stime_dependent_parameter(real[N,M]\stenor,\sreal[N,L]\svalue,\sreal\stime_t,\sint\sindex,\sint\slinear_interp_flag)\r\n
+\s\s\s\s//\sfunction\sreturn\sthe\stime\sdependent\smodel\sparameter\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sinitial_time\s=\stenor[0,0]\r\n
+\s\s\s\sreal\send_time\s=\stenor[N-1,0]\r\n
+\s\s\s\sreal\stenor_first\r\n
+\s\s\s\sreal\stenor_second\r\n
+\s\s\s\sreal\svalue_first\r\n
+\s\s\s\sreal\svalue_second\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(time_t\s&lt;=\sinitial_time,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\svalue[0,index]\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\selif\scompare(time_t\s&gt;=\send_time,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\svalue[N-1,index]\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sfor\si\s=\s0\sto\sN-2\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(time_t\s&gt;=\stenor[i,0],\s1e-6)\sand\scompare(time_t\s&lt;=\stenor[i+1,0],\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\stenor_first\s=\stenor[i,0]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\stenor_second\s=\stenor[i+1,0]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svalue_first\s=\svalue[i,index]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svalue_second\s=\svalue[i+1,index]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sif\slinear_interp_flag\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\svalue_first\s+\s(value_second\s-\svalue_first)\s/\s(tenor_second\s-\stenor_first)\s*\s(time_t\s-\stenor_first)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\svalue_first\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\r\n
+\r\n
+end</udf>
+    <udf name="get_interpolation_index">//\sAssume\svector\sis\snon-negativem,\ssorted\sup\sto\sindex\s\sj\sand\spadded\swith\s0s\sfrom\s\r\n
+//\sj\sto\sthe\send\sof\svector\r\n
+int\sget_interpolation_index(real\sval,\sreal[N]\sv,\sint\smax_index)\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(val\s&gt;=\sv[max_index],\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\smax_index\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s1\sto\smax_index\r\n
+\s\s\s\s\s\s\s\sif\scompare(val\s&lt;\sv[i],\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\si\s-\s1\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\s\s\s\s$result\s=\smax_index\r\n
+end</udf>
+    <udf name="cliquet_option_price">real\scliquet_option_price(real\sr,\sreal\sq,\sreal\svol,\sreal\scap)\r\n
+\r\n
+\s\s\s\sreal\st\s=\s0.083333\r\n
+\s\s\s\sreal\sMaturity\s=\s1\s\s\s/*\sMaturity\s=\sT\s*/\r\n
+\s\s\s\sreal\scost\s=\sr-q\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sd\s=\s(log(1+cap)\s-\s((cost\s-\s0.5*vol^2)*t))/(vol*sqrt(t))\r\n
+\s\s\s\sreal\snorm_d\s=\s0.5*(1\s-\serf(-d/sqrt(2)))\r\n
+\s\s\s\sreal\snorm_d_ext\s=\s0.5*(1\s-\serf(-(d-vol*sqrt(t))/sqrt(2)))\r\n
+\s\s\s\sreal\snorm_d_2ext\s=\s0.5*(1\s-\serf(-(d-2*vol*sqrt(t))/sqrt(2)))\r\n
+\r\n
+\s\s\s\sreal\sg_d\s=\sexp(2*cost*t+vol^2*t)*norm_d_2ext\s-\s2*exp(cost*t)*norm_d_ext+norm_d\r\n
+\s\s\s\sreal\sExp_Rt\s=\scap*(1-norm_d)\s+\sexp(cost*t)*norm_d_ext\s-\snorm_d\r\n
+\s\s\s\sreal\sExp_Rt_sq\s=\scap^2*(1-norm_d)+g_d\r\n
+\r\n
+\s\s\s\sreal\sm\s=\s1\s+\s12*Exp_Rt\r\n
+\s\s\s\sreal\sm2_s2\s=\s1\s+\s2*12*Exp_Rt\s+\s(132*Exp_Rt^2\s+\s12*Exp_Rt_sq)\r\n
+\r\n
+\s\s\s\sreal\smu\s=\s(m-1)/Maturity\r\n
+\s\s\s\sreal\ssigma\s=\ssqrt(m2_s2/Maturity\s-\s(1+mu^2*Maturity^2\s+\s2*mu*Maturity)/Maturity)\r\n
+\r\n
+\s\s\s\sreal\sstau\s=\ssqrt(Maturity)\r\n
+\s\s\s\sreal\sPVr\s=\sexp(-r*Maturity)\r\n
+\s\s\s\sreal\sa\s=\s((mu*Maturity)/(sigma*stau))\r\n
+\s\s\s\sreal\sPhi_a\s=\s0.5*(1-erf(-a/sqrt(2)))\r\n
+\s\s\s\sreal\sChi_a\s=\s1/(sqrt(2*pi))*exp((-a^2)/2)\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\sPVr*(mu*Maturity*Phi_a\s+\ssigma*sqrt(Maturity)*Chi_a)\r\n
+\r\n
+\r\n
+end</udf>
+    <udf name="compute_black_scholes">real\scompute_black_scholes(real\sS,\sreal\sK,\sreal\sr,\sreal\sT,\sreal\svol,\sreal\sq)\r\n
+\r\n
+\s\r\n
+\s\s\s\sreal\sd1\s=\s1/(vol*sqrt(T))*(log(S/K)\s+\s(r\s-\sq\s+\s0.5*vol^2)*T)\r\n
+\s\s\s\sreal\sd2\s=\sd1\s-\svol*sqrt(T)\r\n
+\s\s\s\sreal\sF\s=\sS*exp((r-q)*T)\r\n
+\s\s\s\sreal\sN_d1\s=\s(1+erf(d1/sqrt(2)))/2\r\n
+\s\s\s\sreal\sN_d2\s=\s(1+erf(d2/sqrt(2)))/2\r\n
+\s\s\s\sreal\sCall_BS\s=\sexp(-r*T)*(F*N_d1\s-\sK*N_d2)\r\n
+\s\s\s\s$result\s=\sCall_BS/S\r\n
+\s\s\s\s\r\n
+\s\s\s\s\r\n
+end</udf>
+    <udf name="compute_cut_off_strike">int\scompute_cut_off_strike(real[N]\sOption_Prices,\sint\sN_Values)\r\n
+\s\s\s\sint\smax_index\s=\sN_Values-2\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\smax_index\r\n
+\s\s\s\s\s\s\s\sif\scompare(Option_Prices[i]\s&lt;\sOption_Prices[i+1],\s1e-06)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\si\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\s\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\s\s\s\s$result\s=\smax_index\s+\s1\r\n
+end</udf>
+    <udf name="copy_array">real[N]\scopy_array(real[N]\sarr)\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN\s-\s1\r\n
+\s\s\s\s\s\s\s\s$result[i]\s=\sarr[i]\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="interp1_constant">/*\r\n
+Linear\sinterpolation\sfunction\swith\sflat\sextension\sout\sof\sthe\srange\r\n
+*/\r\n
+\r\n
+real\sinterp1_constant(real\st,\sreal[N]\sx_orig,\sreal[N]\sy_orig)\r\n
+\s\s\s\sreal[N]\sx\r\n
+\s\s\s\sreal[N]\sy\s\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\sx_orig[1]\s&lt;\sx_orig[0]\sthen\r\n
+\s\s\s\s\s\s\s\sx\s=\sreverse_array(x_orig)\r\n
+\s\s\s\s\s\s\s\sy\s=\sreverse_array(y_orig)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sx\s=\scopy_array(x_orig)\r\n
+\s\s\s\s\s\s\s\sy\s=\scopy_array(y_orig)\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\st\s&lt;=\sx[0]\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sy[0]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\sinterp1(t,x,y)\r\n
+\s\s\s\send\r\n
+\r\n
+end</udf>
+    <udf name="inverse_gamma_option_price">real\sinverse_gamma_option_price(real\sS0,\sreal\sStrike,\sreal\sr,\sreal\sT,\sreal\sk,\sreal\stheta_AA,\sreal\slambda,\sreal\sxi,\sreal\srho,\sreal\sv_0_AA,\sreal\sq)\r\n
+\r\n
+\s\s\s\s\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sv_0\s=\sv_0_AA\s*\sxi\r\n
+\s\s\s\sreal\stheta\s=\stheta_AA\s*\sxi\r\n
+\r\n
+\s\s\s\sreal\sx0\s=\slog(S0)\r\n
+\r\n
+\s\s\s\s/*\sDefine\sOmega(a,T)\s=\sintegral\sfrom\s0\sto\sT\sexp(at)*v_{0,t}^2\sdt\r\n
+\s\s\s\s\sDefine\sh(k,T)\s=\sintegral\sfrom\s0\sto\sT\st*exp(kt)*v_{0,t}^2\sdt\s\s\s*/\r\n
+\r\n
+\s\s\s\sreal\sOmega_0\s=\s(v_0\s-\stheta)^2/(-2*k)*(exp(-2*k*T)-1)\s+\s2*theta*(v_0\s-\stheta)/(-k)*(exp(-k*T)-1)\s+\stheta^2*T\r\n
+\s\s\s\sreal\sOmega_k\s=\s(v_0\s-\stheta)^2/(-k)*(exp(-k*T)\s-\s1)\s+\s2*theta*(v_0\s-\stheta)*T\s+\stheta^2/(k)*(exp(k*T)-1)\r\n
+\s\s\s\sreal\sOmega_2k\s=\s(v_0\s-\stheta)^2*T\s+\s2*theta*(v_0\s-\stheta)/k*(exp(k*T)-1)\s+\stheta^2/(2*k)*(exp(2*k*T)\s-\s1)\r\n
+\s\s\s\sreal\sOmega_neg_k\s=\s(v_0\s-\stheta)^2/(-3*k)*(exp(-3*k*T)-1)\s+\stheta*(v_0\s-\stheta)/(-k)*(exp(-2*k*T)\s-\s1)\s+\stheta^2/(-k)*(exp(-k*T)\s-1)\r\n
+\s\s\s\sreal\sOmega_neg_2k\s=\s(v_0\s-\stheta)^2/(-4*k)*(exp(-4*k*T)-1)\s+\s2*theta*(v_0\s-\stheta)/(-3*k)*(exp(-3*k*T)\s-\s1)\s+\stheta^2/(-2*k)*(exp(-2*k*T)-1)\r\n
+\r\n
+\s\s\s\sreal\sh_k\s=\s(v_0\s-\stheta)^2/(-k)*(exp(-k*T)*T\s+\sexp(-k*T)/k\s-\s1/k)\s+\stheta*(v_0\s-\stheta)*T^2\s+\stheta^2/k*(exp(k*T)*T\s-\sexp(k*T)/k\s+\s1/k)\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sphi\s=\sOmega_0\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sa_0\s=\slambda^2/(-2*k)*(exp(-2*k*T)*Omega_2k\s-\sOmega_0)\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sa_1\s=\s2*rho*lambda*(v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_k\s-\sOmega_neg_k)\s+\s2*rho*lambda*theta/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)\r\n
+\r\n
+\s\s\s\sreal\sX_1\s=\s(2*rho*lambda)^2*(v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*((v_0\s-\stheta)/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)\s+\stheta*(T*Omega_k\s-\sh_k))\s-\s((v_0\s-\stheta)/(-3*k)*(exp(-3*k*T)*Omega_k\s-\sOmega_neg_2k)\s+\stheta/(-2*k)*(exp(-2*k*T)*Omega_k\s-\sOmega_neg_k)))\s+\s(2*rho*lambda)^2*theta/(-k)*(exp(-k*T)*((v_0\s-\stheta)/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)\s+\stheta*(T*Omega_k\s-\sh_k))\s-\s((v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_k\s-\sOmega_neg_k)\s+\stheta/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)))\r\n
+\s\s\s\sreal\sX_2\s=\s2*(rho*lambda)^2/(-2*k)*(exp(-2*k*T)*((v_0\s-\stheta)^2/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)\s+\s2*theta*(v_0\s-\stheta)*(T*Omega_k\s-\sh_k)\s+\stheta^2/k*(exp(k*T)*Omega_k\s-\sOmega_2k))\s-\s((v_0\s-\stheta)^2/(-3*k)*(exp(-3*k*T)*Omega_k\s-\sOmega_neg_2k)\s+\s2*theta*(v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_k\s-\sOmega_neg_k)\s+\stheta^2/(-k)*(exp(-k*T)*Omega_k\s-\sOmega_0)))\r\n
+\r\n
+\s\s\s\sreal\sa_2\s=\sX_1\s+\sX_2\s\r\n
+\r\n
+\s\s\s\sreal\sb_0\s=\s4*lambda^2*(v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*((v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_2k\s-\sOmega_0)\s+\stheta/(-k)*(exp(-k*T)*Omega_2k\s-\sOmega_k))\s-\s((v_0\s-\stheta)/(-4*k)*(exp(-4*k*T)*Omega_2k\s-\sOmega_neg_2k)\s+\stheta/(-3*k)*(exp(-3*k*T)*Omega_2k\s-\sOmega_neg_k)))\s+\s4*lambda^2*theta/(-k)*(exp(-k*T)*((v_0\s-\stheta)/(-2*k)*(exp(-2*k*T)*Omega_2k\s-\sOmega_0)\s+\stheta/(-k)*(exp(-k*T)*Omega_2k\s-\sOmega_k))\s-\s((v_0\s-\stheta)/(-3*k)*(exp(-3*k*T)*Omega_2k\s-\sOmega_neg_k)\s+\stheta/(-2*k)*(exp(-2*k*T)*Omega_2k\s-\sOmega_0)))\r\n
+\r\n
+\s\s\s\sreal\sb_2\s=\sa_1^2/2\r\n
+\r\n
+\s\s\s\s/*\sDerivatives\sPart\s*/\r\n
+\r\n
+\s\s\s\sreal\sx\s=\sx0\r\n
+\s\s\s\sreal\sy\s=\sphi\r\n
+\s\s\s\sreal\sS\s=\sexp(x)\r\n
+\r\n
+\s\s\s\sreal\sC\s=\slog(S/Strike)\s+\s(r-q)*T\r\n
+\s\s\s\sreal\sd1\s=\sC/sqrt(y)\s+\ssqrt(y)/2\r\n
+\s\s\s\sreal\sd2\s=\sd1\s-\ssqrt(y)\r\n
+\s\s\s\sreal\ssigma\s=\ssqrt(y)/sqrt(T)\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sN_d1\s=\s(1+erf(d1/sqrt(2)))/2\r\n
+\s\s\s\sreal\sN_d2\s=\s(1+erf(d2/sqrt(2)))/2\r\n
+\s\s\s\sreal\sN_neg_d1\s=\s(1+erf(-d1/sqrt(2)))/2\s\s\s\s\r\n
+\s\s\s\sreal\sN_neg_d2\s=\s(1+erf(-d2/sqrt(2)))/2\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\sN_p1_d1\s=\sexp(-d1^2/2)/sqrt(2*pi)\r\n
+\s\s\s\sreal\sN_p2_d1\s=\sN_p1_d1*(-d1)\r\n
+\s\s\s\sreal\sN_p3_d1\s=\sN_p1_d1*(d1^2\s-\s1)\r\n
+\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sP_ss\s=\sN_p1_d1*exp(-q*T)/(S*sigma*sqrt(T))\r\n
+\r\n
+\s\s\s\sreal\sP_sigma\s=\sS*exp(-q*T)*N_p1_d1*sqrt(T)\r\n
+\r\n
+\s\s\s\sreal\sP_sy\s=\sN_p1_d1*exp(-q*T)*(-C*y^(-1.5)/2\s+\s0.25*y^(-0.5))\r\n
+\s\s\s\sreal\sP_ssy\s=\sN_p2_d1*exp(-q*T)*(-C*y^(-2)/(2*S)\s+\s0.25*y^(-1)/S)\s+\sN_p1_d1*exp(-q*T)*(-(0.5)*y^(-1.5)/S)\r\n
+\s\s\s\sreal\sP_syy\s=\sN_p2_d1*exp(-q*T)*(-C*0.5*y^(-1.5)\s+\s0.25*y^(-0.5))^2\s+\sN_p1_d1*exp(-q*T)*(3*C*0.25*y^(-2.5)\s-\s0.125*y^(-1.5))\r\n
+\s\s\s\sreal\sP_ssyy\s=\sN_p3_d1*exp(-q*T)*(-C*0.5*y^(-1.5)+0.25*y^(-0.5))*(-C*0.5*y^(-2)/S\s+\s0.25*y^(-1)/S)\s+\sN_p2_d1*exp(-q*T)*(C*y^(-3)/S\s-\s0.25*y^(-2)/S)\s+\sN_p2_d1*exp(-q*T)*(-C*y^(-1.5)*0.5\s+\s0.25*y^(-0.5))*(-0.5*y^(-1.5)/S)\s+\sN_p1_d1*exp(-q*T)*(0.75*y^(-2.5)/S)\r\n
+\r\n
+\r\n
+\s\s\s\sreal\sP\s=\sStrike*exp(-r*T)*N_neg_d2\s-\sS*exp(-q*T)*N_neg_d1\r\n
+\s\s\s\sreal\sP_y\s=\sS*exp(-q*T)*N_p1_d1*0.5/sqrt(y)\r\n
+\s\s\s\sreal\sP_xy\s=\sP_sy*exp(x)\r\n
+\s\s\s\sreal\sP_xxy\s=\sP_ssy*exp(2*x)\s+\sP_sy*exp(x)\r\n
+\s\s\s\sreal\sP_yy\s=\sS*exp(-q*T)*N_p2_d1*(-C*0.25*y^(-2)\s+\s0.125*y^(-1))\s+\sS*exp(-q*T)*N_p1_d1*(-0.25*y^(-1.5))\r\n
+\s\s\s\sreal\sP_xxyy\s=\sP_ssyy*exp(2*x)\s+\sP_syy*exp(x)\r\n
+\r\n
+\r\n
+\s\s\s\s$result\s=\sP\s+\sa_0*P_y\s+\sa_1*P_xy\s+\sa_2*P_xxy\s+\sb_0*P_yy\s+\sb_2*P_xxyy\s\r\n
+\r\n
+\s\s\s\sif\sis_nan($result)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\send\r\n
+\r\n
+end</udf>
+    <udf name="reverse_array">real[N]\sreverse_array(real[N]\sarr)\s\s\s\r\n
+\s\s\s\sfor\si=0\sto\sN-1\r\n
+\s\s\s\s\s\s\s\s$result[N\s-\s1\s-\si]\s=\sarr[i]\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="integral_average">real\sintegral_average(real[N,M]\stenor,\sreal[N,L]\svalue,\sreal\st_start,\sreal\st_end,\sint\sindex,\sbool\sdo_square)\r\n
+\s\s\s\s/*\r\n
+\s\s\s\sFunction\sintegral_average\sis\sto\scompute\sthe\saverage\svalue\sof\sa\scurve\scomposed\sof\stenor\s&amp;\svalue\r\n
+\s\s\s\sSteps:\r\n
+\s\s\s\s\s\s\s\s1.\sCalculate\sthe\sRiemann\sSum\swith\sRetangle\sRule,\se.g.\sSum(value_i\s*\s(t_i+1\s-\st_i))\r\n
+\s\s\s\s\s\s\s\s2.\sDivide\sthe\sRiemann\sSum\sby\sthe\sentire\speriod,\se.g.\sRiemann_Sum\s/\s(t_end\s-\st_start)\r\n
+\s\s\s\sArguments:\r\n
+\s\s\s\s\s\s\s\sreal[N,M]\stenor:\sN\srows\sof\stenors,\sM\scols\sgive\smore\sflexibility\sto\sthe\stenor\svector,\sbut\sonly\sthe\sfirst\scolumn\s(M=0)\swould\sbe\sused\sin\sthe\scalculation.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\stenor\sis\sassumed\sto\sbe\ssorted.\sThe\sinverse\sgamma\sparams\sare\ssorted\sin\sPython.\r\n
+\s\s\s\s\s\s\s\sreal[N,L]\svalue:\sN\srows\sof\svalues,\sL\scols\srepresents\sdifferent\sindices\r\n
+\s\s\s\s\s\s\s\sreal\st_start:\sthe\sstart\sof\sthe\sintegral\speriod\r\n
+\s\s\s\s\s\s\s\sreal\st_end:\sthe\send\sof\sthe\sintegral\speriod\r\n
+\s\s\s\s\s\s\s\sint\sindex:\sindex\sdetermines\swhich\scol\sin\svalue\swould\sbe\sused\sin\sthe\scalculation.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sindex\s&lt;\sL\r\n
+\s\s\s\s\s\s\s\sbool\sdo_square:\sif\sdo_sqaure\sis\strue\s(for\svol\saverage),\sthe\saverage\svalue\sis\scalculated\sbased\son\sthe\ssquare\sof\scurve\svalues\sand\sthen\stake\ssqrt.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sotherwise,\sdo\sregular\sintegral\saverage.\r\n
+\s\s\s\sReturn:\s\r\n
+\s\s\s\s\s\s\s\sa\sreal\snumber,\sthe\saverage\svalue\sover\sthe\sspecified\speriod\sfrom\st_start\sto\st_end\r\n
+\s\s\s\s*/\r\n
+\s\s\s\sint\sidx_start\r\n
+\s\s\s\sint\sidx_end\r\n
+\s\s\s\sreal\sintegral_value\s=\s0\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(t_start\s&gt;=\st_end,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sidx_start\s=\sget_interpolation_index(t_start,\stenor[:,0],\sN-1)\r\n
+\s\s\s\sidx_end\s=\sget_interpolation_index(t_end,\stenor[:,0],\sN-1)\s\s\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\sidx_start\s==\sidx_end\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\svalue[idx_start,index]\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\sdo_square\sthen\r\n
+\s\s\s\s\s\s\s\sfor\si\s=\sidx_start\sto\s(idx_end\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sintegral_value\s=\sintegral_value\s+\svalue[i,index]\s*\svalue[i,index]\s*\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s(tenor[i+1,0]\s-\smax(t_start,\stenor[i,0]))\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\sintegral_value\s=\sintegral_value\s+\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svalue[idx_end,index]\s*\svalue[idx_end,index]\s*\s(t_end\s-\stenor[idx_end,0])\r\n
+\s\s\s\s\s\s\s\s$result\s=\ssqrt(integral_value\s/\s(t_end\s-\st_start))\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sfor\si\s=\sidx_start\sto\s(idx_end\s-\s1)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sintegral_value\s=\sintegral_value\s+\svalue[i,index]\s*\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s(tenor[i+1,0]\s-\smax(t_start,\stenor[i,0]))\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\sintegral_value\s=\sintegral_value\s+\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\svalue[idx_end,index]\s*\s(t_end\s-\stenor[idx_end,0])\r\n
+\s\s\s\s\s\s\s\s$result\s=\sintegral_value\s/\s(t_end\s-\st_start)\r\n
+\s\s\s\send\r\n
+\s\s\s\sreturn\r\n
+\r\n
+end\s</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="time" type="real" shape="*" />
+    <input name="time_dt" type="real" shape="*" />
+    <input name="rg_size" type="int" shape="*" />
+    <input name="is_projection_start" type="bool" shape="*" />
+    <input name="is_shock_step" type="bool" shape="*" />
+    <input name="roll_foward_index" type="int" shape="*" />
+    <input name="randn_equity" type="real" modifier="Cashflow" />
+    <input name="randn_vol" type="real" modifier="Cashflow" />
+    <input name="inv_gamma_params" type="composite">
+      <field name="V_0" type="real" shape="*" />
+      <field name="vol_inf_bs" type="real" shape="*,*" />
+      <field name="reversion" type="real" shape="*,*" />
+      <field name="vol_of_vol" type="real" shape="*,*" />
+      <field name="vol_inf" type="real" shape="*,*" />
+      <field name="div" type="real" shape="*,*" />
+      <field name="div_tenor" type="real" shape="*,*" />
+      <field name="equity_risk_premium" type="real" shape="*,*" />
+      <field name="vol_inf_bs_tenor" type="real" shape="*,*" />
+      <field name="reversion_tenor" type="real" shape="*,*" />
+      <field name="vol_of_vol_tenor" type="real" shape="*,*" />
+      <field name="vol_inf_tenor" type="real" shape="*,*" />
+      <field name="equity_risk_premium_tenor" type="real" shape="*,*" />
+      <field name="funding_spread_tenor" type="real" shape="*,*" />
+      <field name="funding_spread" type="real" shape="*,*" />
+    </input>
+    <input name="market_roll_foward" type="composite" shape="*">
+      <field name="spot" type="real" />
+      <field name="spot_mxea" type="real" />
+      <field name="spot_rty" type="real" />
+      <field name="spot_nasdaq" type="real" />
+      <field name="spot_sptr" type="real" />
+    </input>
+    <input name="market_shocks" type="composite">
+      <field name="spot" type="real" />
+      <field name="spot_mxea" type="real" />
+      <field name="spot_rty" type="real" />
+      <field name="spot_nasdaq" type="real" />
+      <field name="spot_sptr" type="real" />
+    </input>
+    <input name="market_base" type="composite">
+      <field name="spot" type="real" />
+      <field name="spot_mxea" type="real" />
+      <field name="spot_rty" type="real" />
+      <field name="spot_nasdaq" type="real" />
+      <field name="spot_sptr" type="real" />
+    </input>
+    <input name="rates" type="real" modifier="Cashflow" />
+    <input name="rho" type="real" />
+    <input name="otm_strike" type="real" shape="*" />
+    <input name="cliquet_cap" type="real" shape="*" />
+    <input name="swap_rate_1y" type="real" modifier="Cashflow" />
+    <input name="structrued_nav_put_strike_10" type="real" />
+    <input name="is_anniversary_now" type="bool" shape="*" />
+    <input name="ig_strike" type="real" shape="*" />
+    <input name="structured_nav_risk_premia" type="real" />
+    <input name="structured_nav_track_error_vol" type="real" />
+    <input name="structrued_nav_put_strike_20" type="real" />
+    <input name="randn_nasdaq" type="real" modifier="Cashflow" />
+    <input name="randn_nasdaq_vol" type="real" modifier="Cashflow" />
+    <input name="randn_mxea" type="real" modifier="Cashflow" />
+    <input name="randn_mxea_vol" type="real" modifier="Cashflow" />
+    <input name="randn_r2k" type="real" modifier="Cashflow" />
+    <input name="randn_r2k_vol" type="real" modifier="Cashflow" />
+    <input name="rho_nasdaq_vol" type="real" />
+    <input name="rho_r2k_vol" type="real" />
+    <input name="rho_mxea_vol" type="real" />
+    <input name="epsilon_strike" type="real" />
+    <input name="use_sofr" type="bool" />
+    <input name="crediting_term_post_ratesetting" type="int" />
+    <input name="traded_idx" type="int" />
+    <input name="binary_strike" type="real" shape="*" />
+    <input name="risk_free_curve" type="real" shape="*" description="Risk free rates by tenors" modifier="Cashflow" />
+    <input name="declared_parameter" type="real" modifier="Cashflow" />
+    <input name="reset_rate_now" type="bool" shape="*" />
+  </inputs>
+  <results>
+    <result name="spx" ref="=Projection.spx" />
+    <result name="sptr" ref="=Projection.equity_tr" />
+    <result name="diffusion_variance" ref="=Projection.equity_variance" />
+    <result name="mxea" ref="=Projection.mxea " />
+    <result name="rty" ref="=Projection.rty " />
+    <result name="nasdaq" ref="=Projection.nasdaq" />
+    <result name="spx_funding_spread" ref="=Projection.spx_funding_spread" />
+    <result name="ig_atm_call" ref="=Projection.ig_atm_call" />
+    <result name="ig_otm_calls" ref="=Projection.ig_otm_calls" />
+    <result name="spx_q_average" ref="=Computation.spx_q_average" />
+    <result name="ig_trigger_calls" ref="=Projection.ig_trigger_calls" />
+    <result name="diffusion_variance_unclipped_nasdaq" ref="=Projection.equity_variance_nasdaq" />
+    <result name="diffusion_variance_unclipped_mxea" ref="=Projection.equity_variance_mxea" />
+    <result name="diffusion_variance_unclipped_rty" ref="=Projection.equity_variance_rty" />
+    <result name="dividend" ref="=Projection.dividend" />
+    <result name="funding_spread" ref="=Projection.funding_spread" />
+    <result name="ig_otm_calls_adjust" ref="=Projection.ig_otm_calls_adjust" />
+    <result name="ig_renewed_otm_call" ref="=Projection.renewed_otm_call" />
+    <result name="sptr_driftless" ref="=Projection.equity_tr_driftless" />
+    <result name="spx_no_rate" ref="=Projection.spx_no_rate" />
+    <result name="q" ref="=Projection.q" />
+    <result name="ig_vol" ref="=Projection.vol" />
+  </results>
+  <calculations>
+    <table name="dividends" type="Computation">
+      <column-groups>
+        <g name="g1" repeat-count="4" />
+      </column-groups>
+      <columns>
+        <c name="t" datatype="real" />
+        <c name="q" datatype="real" group="g1" />
+      </columns>
+      <row-groups>
+        <rg name="rg1">
+          <repeat>=31</repeat>
+          <columns>
+            <c name="t">=\sinv_gamma_params.div_tenor[$row,\s0]</c>
+            <c name="q">=\sinv_gamma_params.div[$row,\s$index]</c>
+          </columns>
+        </rg>
+      </row-groups>
+    </table>
+    <table name="Computation" type="Computation">
+      <column-groups>
+        <g name="g1" repeat-count="4" />
+        <g name="g2" repeat-count="4" />
+      </column-groups>
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="t" datatype="real" />
+        <c name="k" datatype="real" group="g1" />
+        <c name="lambda_" datatype="real" group="g1" />
+        <c name="theta" datatype="real" group="g1" />
+        <c name="xi" datatype="real" group="g1" />
+        <c name="risk_premium" datatype="real" group="g1" />
+        <c name="q" datatype="real" group="g1" />
+        <c name="k_average" datatype="real" group="g2" />
+        <c name="lambda_average" datatype="real" group="g2" />
+        <c name="xi_average" datatype="real" group="g2" />
+        <c name="q_average" datatype="real" group="g2" />
+        <c name="funding_spread" datatype="real" group="g2" />
+        <c name="spx_q_average" datatype="real" />
+      </columns>
+      <row-groups>
+        <rg name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">0</c>
+            <c name="t">=time[$row]</c>
+            <c name="k">=time_dependent_parameter(inv_gamma_params.reversion_tenor,\sinv_gamma_params.reversion,\st,\s$index,\s0)</c>
+            <c name="lambda_">=time_dependent_parameter(inv_gamma_params.vol_of_vol_tenor,\sinv_gamma_params.vol_of_vol,\st,\s$index,\s0)</c>
+            <c name="theta">=time_dependent_parameter(inv_gamma_params.vol_inf_tenor,\sinv_gamma_params.vol_inf,\st,\s$index,\s0)</c>
+            <c name="xi">=time_dependent_parameter(inv_gamma_params.vol_inf_bs_tenor,\sinv_gamma_params.vol_inf_bs,\st,\s$index,\s0)</c>
+            <c name="risk_premium">=\stime_dependent_parameter(inv_gamma_params.equity_risk_premium_tenor,\sinv_gamma_params.equity_risk_premium,\st,\s$index,\s0)</c>
+            <c name="q">idx\s=\sget_interpolation_index(t,\sdividends.t,\s30)\r\n
+return\sdividends[idx].q[$index]</c>
+            <c name="k_average">=\sintegral_average(inv_gamma_params.reversion_tenor,\sinv_gamma_params.reversion,\st,\st+crediting_term_post_ratesetting,\s$index,\sFalse)</c>
+            <c name="lambda_average">return\sintegral_average(inv_gamma_params.vol_of_vol_tenor,\sinv_gamma_params.vol_of_vol,\st,\st+crediting_term_post_ratesetting,\s$index,\sTrue)</c>
+            <c name="xi_average">return\sintegral_average(inv_gamma_params.vol_inf_bs_tenor,\sinv_gamma_params.vol_inf_bs,\st,\st+crediting_term_post_ratesetting,\s$index,\sTrue)</c>
+            <c name="q_average">return\sintegral_average(inv_gamma_params.div_tenor,\sinv_gamma_params.div,\st,\st+crediting_term_post_ratesetting,\s$index,\sFalse)</c>
+            <c name="funding_spread">return\sintegral_average(inv_gamma_params.funding_spread_tenor,\sinv_gamma_params.funding_spread,\st,\st+crediting_term_post_ratesetting,\s$index,\sFalse)</c>
+            <c name="spx_q_average">=q_average[0]</c>
+          </columns>
+        </rg>
+        <rg name="rg2">
+          <repeat>=rg_size[1]</repeat>
+          <columns>
+            <c name="step">=prev(step)+1</c>
+            <c name="t">=time[$row]</c>
+            <c name="k">=time_dependent_parameter(inv_gamma_params.reversion_tenor,\sinv_gamma_params.reversion,\st,\s$index,\s0)</c>
+            <c name="lambda_">=time_dependent_parameter(inv_gamma_params.vol_of_vol_tenor,\sinv_gamma_params.vol_of_vol,\st,\s$index,\s0)</c>
+            <c name="theta">=time_dependent_parameter(inv_gamma_params.vol_inf_tenor,\sinv_gamma_params.vol_inf,\st,\s$index,\s0)</c>
+            <c name="xi">=time_dependent_parameter(inv_gamma_params.vol_inf_bs_tenor,\sinv_gamma_params.vol_inf_bs,\st,\s$index,\s0)</c>
+            <c name="risk_premium">=\stime_dependent_parameter(inv_gamma_params.equity_risk_premium_tenor,\sinv_gamma_params.equity_risk_premium,\st,\s$index,\s0)</c>
+            <c name="q">idx\s=\sget_interpolation_index(t,\sdividends.t,\s30)\r\n
+return\sdividends[idx].q[$index]</c>
+            <c name="k_average">=\sintegral_average(inv_gamma_params.reversion_tenor,\sinv_gamma_params.reversion,\st,\st+crediting_term_post_ratesetting,\s$index,\sFalse)</c>
+            <c name="lambda_average">return\sintegral_average(inv_gamma_params.vol_of_vol_tenor,\sinv_gamma_params.vol_of_vol,\st,\st+crediting_term_post_ratesetting,\s$index,\sTrue)</c>
+            <c name="xi_average">return\sintegral_average(inv_gamma_params.vol_inf_bs_tenor,\sinv_gamma_params.vol_inf_bs,\st,\st+crediting_term_post_ratesetting,\s$index,\sTrue)</c>
+            <c name="q_average">return\sintegral_average(inv_gamma_params.div_tenor,\sinv_gamma_params.div,\st,\st+crediting_term_post_ratesetting,\s$index,\sFalse)</c>
+            <c name="funding_spread">return\sintegral_average(inv_gamma_params.funding_spread_tenor,\sinv_gamma_params.funding_spread,\st,\st+crediting_term_post_ratesetting,\s$index,\sFalse)</c>
+            <c name="spx_q_average">=q_average[0]</c>
+          </columns>
+        </rg>
+      </row-groups>
+    </table>
+    <table name="Projection" type="CashFlow">
+      <column-groups>
+        <g name="g1" repeat-count="4" />
+        <g name="g4">4\r\n
+//index\s1:\sspx\sindex2:\smxea\sindex3:\sr2k\sindex\s4:\snasdaq</g>
+        <g name="g15">4\r\n
+//index\s1:\sspx\sindex2:\smxea\sindex3:\sr2k\sindex\s4:\snasdaq</g>
+        <g name="g16">4\r\n
+//index\s1:\sspx\sindex2:\smxea\sindex3:\sr2k\sindex\s4:\snasdaq</g>
+        <g name="g2" repeat-count="16" />
+        <g name="g3" repeat-count="3" />
+        <g name="g5" repeat-count="4" />
+        <g name="g6" repeat-count="16" />
+      </column-groups>
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="t" datatype="real" />
+        <c name="dt" datatype="real" />
+        <c name="S" datatype="real" group="g1" />
+        <c name="log_S" datatype="real" group="g1" />
+        <c name="spot_rate" datatype="real" group="g1" />
+        <c name="delta_L" datatype="real" group="g1" />
+        <c name="vol" datatype="real" group="g1" />
+        <c name="bs_vol" datatype="real" group="g1" />
+        <c name="funding_spread" datatype="real" group="g1" />
+        <c name="q" datatype="real" group="g1" />
+        <c name="Wt_S" datatype="real" group="g4" />
+        <c name="Wt_vol" datatype="real" group="g15" />
+        <c name="rho_idx_vol" datatype="real" group="g16" />
+        <c name="spx_no_rate" datatype="real" />
+        <c name="log_S_no_rate" datatype="real" />
+        <c name="spx" datatype="real" />
+        <c name="mxea" datatype="real" />
+        <c name="rty" datatype="real" />
+        <c name="nasdaq" datatype="real" />
+        <c name="equity_tr" datatype="real" />
+        <c name="log_equity_tr" datatype="real" />
+        <c name="equity_tr_driftless" datatype="real" />
+        <c name="log_equity_tr_driftless" datatype="real" />
+        <c name="equity_variance" datatype="real" />
+        <c name="equity_variance_mxea" datatype="real" />
+        <c name="equity_variance_rty" datatype="real" />
+        <c name="equity_variance_nasdaq" datatype="real" />
+        <c name="spx_funding_spread" datatype="real" />
+        <c name="swap_rate" datatype="real" />
+        <c name="div_minus_f" datatype="real" />
+        <c name="ig_atm_call" datatype="real" />
+        <c name="ig_otm_calls" datatype="real" group="g2" />
+        <c name="cut_off_strike" datatype="int" />
+        <c name="ig_otm_calls_adjust" datatype="real" group="g6" />
+        <c name="ig_trigger_calls" datatype="real" group="g3" />
+        <c name="dividend" datatype="real" group="g5" />
+        <c name="renewed_otm_call" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=0</c>
+            <c name="t">=time[step]</c>
+            <c name="dt">=time_dt[step]</c>
+            <c name="S">switch\s$index\r\n
+\s\s\s\scase\s0:\s//\sSPX\r\n
+\s\s\s\s\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot\r\n
+\s\s\s\scase\s1:\s//\sMXEA\r\n
+\s\s\s\s\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_mxea\r\n
+\s\s\s\scase\s2:\s//\sRTY\r\n
+\s\s\s\s\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_rty\r\n
+\s\s\s\scase\s3:\s//nasdaq\r\n
+\s\s\s\s\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_nasdaq\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s1/0\r\n
+end</c>
+            <c name="log_S"></c>
+            <c name="spot_rate">=\siif(use_sofr,\srates\s+\sfunding_spread,\srates)</c>
+            <c name="delta_L"></c>
+            <c name="vol">=\sinv_gamma_params.V_0[$index]</c>
+            <c name="bs_vol">=\sComputation[step].xi[$index]\s*\svol</c>
+            <c name="funding_spread">=\stime_dependent_parameter(inv_gamma_params.funding_spread_tenor,\sinv_gamma_params.funding_spread,\st,\s$index,\s0)</c>
+            <c name="q">=Computation[step].q[$index]</c>
+            <c name="Wt_S">if\s$index\s=\s0\sthen\r\n
+\s\s\s\sreturn\srandn_equity\r\n
+elif\s$index\s=\s1\sthen\r\n
+\s\s\s\sreturn\srandn_mxea\r\n
+elif\s$index\s=\s2\sthen\r\n
+\s\s\s\sreturn\srandn_r2k\r\n
+elif\s$index\s=\s3\sthen\r\n
+\s\s\s\sreturn\srandn_nasdaq\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+\s\s\s\send</c>
+            <c name="Wt_vol">if\s$index\s=\s0\sthen\r\n
+\s\s\s\sreturn\srandn_vol\r\n
+elif\s$index\s=\s1\sthen\r\n
+\s\s\s\sreturn\srandn_mxea_vol\r\n
+elif\s$index\s=\s2\sthen\r\n
+\s\s\s\sreturn\srandn_r2k_vol\r\n
+elif\s$index\s=\s3\sthen\r\n
+\s\s\s\sreturn\srandn_nasdaq_vol\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+\s\s\s\send</c>
+            <c name="rho_idx_vol">if\s$index\s=\s0\sthen\r\n
+\s\s\s\sreturn\srho\r\n
+elif\s$index\s=\s1\sthen\r\n
+\s\s\s\sreturn\srho_mxea_vol\r\n
+elif\s$index\s=\s2\sthen\r\n
+\s\s\s\sreturn\srho_r2k_vol\r\n
+elif\s$index\s=\s3\sthen\r\n
+\s\s\s\sreturn\srho_nasdaq_vol\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+\s\s\s\send</c>
+            <c name="spx_no_rate">return\smarket_roll_foward[roll_foward_index[step]].spot</c>
+            <c name="log_S_no_rate"></c>
+            <c name="spx">=\sS[0]</c>
+            <c name="mxea">=\sS[1]</c>
+            <c name="rty">=\sS[2]</c>
+            <c name="nasdaq">=S[3]</c>
+            <c name="equity_tr">//\sSPTR\r\n
+=\smarket_roll_foward[roll_foward_index[step]].spot_sptr</c>
+            <c name="log_equity_tr">=\slog(market_roll_foward[roll_foward_index[step]].spot_sptr)</c>
+            <c name="equity_tr_driftless">//\sSPTR\r\n
+=\smarket_roll_foward[roll_foward_index[step]].spot_sptr</c>
+            <c name="log_equity_tr_driftless">=\slog(market_roll_foward[roll_foward_index[step]].spot_sptr)</c>
+            <c name="equity_variance">=\sbs_vol[0]\s*\sbs_vol[0]</c>
+            <c name="equity_variance_mxea">=\sbs_vol[1]\s*\sbs_vol[1]</c>
+            <c name="equity_variance_rty">=\sbs_vol[2]\s*\sbs_vol[2]</c>
+            <c name="equity_variance_nasdaq">=\sbs_vol[3]\s*\sbs_vol[3]</c>
+            <c name="spx_funding_spread">=funding_spread[0]</c>
+            <c name="swap_rate">//=swap_rate[find_idx(crediting_term_post_ratesetting),swap_tenors]\r\n
+=iif(crediting_term_post_ratesetting=1,risk_free_curve[1],risk_free_curve[2])</c>
+            <c name="div_minus_f">if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sComputation[step].q_average[traded_idx]\s-\sComputation[step].funding_spread[traded_idx]\r\n
+end</c>
+            <c name="ig_atm_call">if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+K\s=\sS[traded_idx]\r\n
+T\s=\screditing_term_post_ratesetting\r\n
+put_price\s=\sinverse_gamma_option_price(S[traded_idx],K,swap_rate,T,Computation[step].k_average[traded_idx],Computation[step].theta[traded_idx],Computation[step].lambda_average[traded_idx],\sComputation[step].xi_average[traded_idx],\srho,vol[traded_idx],div_minus_f)\r\n
+call_price\s=\sput_price\s+\sS[traded_idx]*exp(-div_minus_f*T)\s-\sK*exp(-swap_rate*T)\r\n
+\r\n
+return\scall_price/S[traded_idx]\r\n
+end</c>
+            <c name="ig_otm_calls">if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+K\s=\sS[traded_idx]\s*\s(1\s+\screditing_term_post_ratesetting\s*\sig_strike[$index])\r\n
+T\s=\screditing_term_post_ratesetting\r\n
+put_price\s=\sinverse_gamma_option_price(S[traded_idx],K,swap_rate,T,Computation[step].k_average[traded_idx],Computation[step].theta[traded_idx],Computation[step].lambda_average[traded_idx],\sComputation[step].xi_average[traded_idx],\srho,vol[traded_idx],div_minus_f)\r\n
+call_price\s=\sput_price\s+\sS[traded_idx]*exp(-div_minus_f*T)\s-\sK*exp(-swap_rate*T)\r\n
+\r\n
+return\smax(call_price/S[traded_idx],0)\r\n
+end</c>
+            <c name="cut_off_strike">=\scompute_cut_off_strike(ig_otm_calls,len(ig_otm_calls))</c>
+            <c name="ig_otm_calls_adjust">/*\sFor\sapproach\s2\s\r\n
+k*\sis\sthe\scut\soff\sstrike\r\n
+If\sk*=200%,\sp\swould\sbe\sf(k*).\sIf\sk*&lt;200%,\sset\sp\sto\sbe\sf(k*)*BS(200%)/\sBS(k*)\r\n
+where\sBS(K)\sis\sthe\sBS\soption\sprice\swith\srespect\sto\sstrike\sK.\s*/\r\n
+if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+if\s$index\s&gt;\scut_off_strike\sthen\s\r\n
+\s\s\scall_price_prev\s=\sig_otm_calls[cut_off_strike]\r\n
+\s\s\sig_strike_prev\s=\sig_strike[cut_off_strike]\r\n
+\s\s\sK_star\s=\sS[traded_idx]\s*\s(1\s+\sig_strike_prev)\r\n
+\s\s\sk_max\s=\sig_strike[len(ig_strike)-1]\r\n
+\s\s\sK_end\s=\sS[traded_idx]\s*\s(1\s+\sk_max)\r\n
+\s\s\sT\s=\screditing_term_post_ratesetting\r\n
+\s\s\sr\s=\sswap_rate\r\n
+\s\s\sif\scompare(compute_black_scholes(S[traded_idx],K_star,r,T,bs_vol[traded_idx],div_minus_f)\s&lt;=0,1E-04)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\selse\r\n
+\s\s\s\s\s\s\s\scall_price_end\s=\scall_price_prev*max(0,compute_black_scholes(S[traded_idx],K_end,r,T,bs_vol[traded_idx],div_minus_f))/compute_black_scholes(S[traded_idx],K_star,r,T,bs_vol[traded_idx],div_minus_f)\s\s\s\r\n
+\s\s\s\s\s\s\s\sig_strike_current\s=\sig_strike[$index]\r\n
+\s\s\s\s\s\s\s\sreturn\s((call_price_end\s-\scall_price_prev)*(ig_strike_current\s-\sk_max))/(k_max-ig_strike_prev)\s+\scall_price_end\r\n
+\s\s\send\r\n
+else\r\n
+\s\s\sreturn\s\sig_otm_calls[$index]\r\n
+end\r\n
+end</c>
+            <c name="ig_trigger_calls">if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sK\s=\sS[traded_idx]\s*\s(1\s+\sbinary_strike[$index])\r\n
+\s\s\s\sSi\s=\sS[traded_idx]\r\n
+\s\s\s\sK_epsilon\s=\sK\s*\s0.99\r\n
+\s\s\s\sT\s=\screditing_term_post_ratesetting\r\n
+\s\s\s\sr\s=\sswap_rate_1y\r\n
+\s\s\s\sk_average_1y\s=\sComputation[step].k_average[traded_idx]\r\n
+\s\s\s\stheta\s=\sComputation[step].theta[traded_idx]\r\n
+\s\s\s\slambda_average_1y\s=\sComputation[step].lambda_average[traded_idx]\r\n
+\s\s\s\sxi_average_1y\s=\sComputation[step].xi_average[traded_idx]\r\n
+\s\s\s\sq_average_1y\s=\sComputation[step].q_average[traded_idx]\s-\sComputation[step].funding_spread[traded_idx]\r\n
+\s\s\s\sput_price_at_K\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_1y,\stheta,\slambda_average_1y,\sxi_average_1y,\srho_idx_vol[traded_idx],\svol[traded_idx],\sq_average_1y)\r\n
+\s\s\s\scall_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_1y*T)\s-\sK*exp(-r*T)\r\n
+\s\s\s\sput_price_at_K_epsilon\s=\sinverse_gamma_option_price(Si,K_epsilon,r,T,k_average_1y,\stheta,\slambda_average_1y,\sxi_average_1y,\srho_idx_vol[traded_idx],\svol[traded_idx],\sq_average_1y)\r\n
+\s\s\s\scall_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\s\s\s\s\r\n
+\s\s\s\sreturn\s100*max(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
+end</c>
+            <c name="dividend">=Computation[step].q[$index]</c>
+            <c name="renewed_otm_call">\r\n
+if\straded_idx\s=\s-1\sor\s!reset_rate_now[step]\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+K\s=\sS[traded_idx]\s*\s(1\s+\screditing_term_post_ratesetting\s*\sdeclared_parameter)\r\n
+T\s=\screditing_term_post_ratesetting\r\n
+put_price\s=\sinverse_gamma_option_price(S[traded_idx],K,swap_rate,T,Computation[step].k_average[traded_idx],Computation[step].theta[traded_idx],Computation[step].lambda_average[traded_idx],\sComputation[step].xi_average[traded_idx],\srho,vol[traded_idx],div_minus_f)\r\n
+call_price\s=\sput_price\s+\sS[traded_idx]*exp(-div_minus_f*T)\s-\sK*exp(-swap_rate*T)\r\n
+\r\n
+return\smax(call_price/S[traded_idx],0)\r\n
+end</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=prev(step)+1</c>
+            <c name="t">=time[step]</c>
+            <c name="dt">=time_dt[step]</c>
+            <c name="S">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\smax(exp(log_S),\s1e-04)\r\n
+else\r\n
+\s\s\s\sif\sis_shock_step[step]\sthen\r\n
+\s\s\s\s\s\s\s\sswitch\s$index\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s0:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_shocks.spot\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s1:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_shocks.spot_mxea\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s2:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_shocks.spot_rty\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s3:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_shocks.spot_nasdaq\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\s1\s/\s0\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\selif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\s\s\s\s\sswitch\s$index\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s0:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s1:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_mxea\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s2:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_rty\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s3:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_nasdaq\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\s1\s/\s0\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sswitch\s$index\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s0:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_base.spot\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s1:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_base.spot_mxea\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s2:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_base.spot_rty\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scase\s3:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\smarket_base.spot_nasdaq\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\s1\s/\s0\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\sendif\r\n
+endif</c>
+            <c name="log_S">prev_log_S\s=\slog(prev(S))\r\n
+vol_t\s=\sprev(bs_vol)\r\n
+q\s=\sComputation[step].q[$index]\r\n
+risk_premium\s=\sComputation[step].risk_premium[$index]\r\n
+\r\n
+return\sprev_log_S\s+\s(spot_rate\s+\srisk_premium\s*\svol_t\s-\sq\s-\s0.5\s*\svol_t\s^\s2)\s*\sdt\r\n
+\s\s\s\s\s\s\s\s+\svol_t\s*\ssqrt(dt)\s*\sprev(Wt_S[$index])</c>
+            <c name="spot_rate">=\siif(use_sofr,\srates\s+\sfunding_spread,\srates)</c>
+            <c name="delta_L">k\s=\sComputation[step].k[$index]\r\n
+lambda\s=\sComputation[step].lambda_[$index]\r\n
+\r\n
+return\s(k\s+\s0.5\s*\slambda\s^\s2)\s*\sdt\s-\slambda\s*\ssqrt(dt)\s*\sprev(Wt_vol[$index])</c>
+            <c name="vol">k\s=\sComputation[step].k[$index]\r\n
+theta\s=\sComputation[step].theta[$index]\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\scompare(delta_L\s==\s0.0,\s1e-6),\r\n
+\s\s\s\sprev(vol)\s*\sexp(-delta_L)\s+\sk\s*\stheta\s*\sdt,\r\n
+\s\s\s\sprev(vol)\s*\sexp(-delta_L)\s+\sk\s*\stheta\s*\s(1\s-\sexp(-delta_L))\s/\sdelta_L\s*\sdt\r\n
+)</c>
+            <c name="bs_vol">=\sComputation[step].xi[$index]\s*\svol</c>
+            <c name="funding_spread">=\stime_dependent_parameter(inv_gamma_params.funding_spread_tenor,\sinv_gamma_params.funding_spread,\st,\s$index,\s0)</c>
+            <c name="q">=Computation[step].q[$index]</c>
+            <c name="Wt_S">if\s$index\s=\s0\sthen\r\n
+\s\s\s\sreturn\srandn_equity\r\n
+elif\s$index\s=\s1\sthen\r\n
+\s\s\s\sreturn\srandn_mxea\r\n
+elif\s$index\s=\s2\sthen\r\n
+\s\s\s\sreturn\srandn_r2k\r\n
+elif\s$index\s=\s3\sthen\r\n
+\s\s\s\sreturn\srandn_nasdaq\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+\s\s\s\send</c>
+            <c name="Wt_vol">if\s$index\s=\s0\sthen\r\n
+\s\s\s\sreturn\srandn_vol\r\n
+elif\s$index\s=\s1\sthen\r\n
+\s\s\s\sreturn\srandn_mxea_vol\r\n
+elif\s$index\s=\s2\sthen\r\n
+\s\s\s\sreturn\srandn_r2k_vol\r\n
+elif\s$index\s=\s3\sthen\r\n
+\s\s\s\sreturn\srandn_nasdaq_vol\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+\s\s\s\send</c>
+            <c name="rho_idx_vol">if\s$index\s=\s0\sthen\r\n
+\s\s\s\sreturn\srho\r\n
+elif\s$index\s=\s1\sthen\r\n
+\s\s\s\sreturn\srho_mxea_vol\r\n
+elif\s$index\s=\s2\sthen\r\n
+\s\s\s\sreturn\srho_r2k_vol\r\n
+elif\s$index\s=\s3\sthen\r\n
+\s\s\s\sreturn\srho_nasdaq_vol\r\n
+else\r\n
+\s\s\s\sreturn\s0\r\n
+\s\s\s\send</c>
+            <c name="spx_no_rate">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\smax(exp(log_S_no_rate),\s1e-04)\r\n
+else\r\n
+\s\s\s\sif\sis_shock_step[step]\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smarket_shocks.spot\r\n
+\s\s\s\selif\sroll_foward_index[step]\s!=\s-1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\smarket_base.spot\r\n
+\s\s\s\sendif\r\n
+end</c>
+            <c name="log_S_no_rate">prev_log_S\s=\slog(prev(spx_no_rate))\r\n
+vol_t\s=\sprev(bs_vol[0])\r\n
+q\s=\sComputation[step].q[0]\r\n
+risk_premium\s=\sComputation[step].risk_premium[0]\r\n
+\r\n
+return\sprev_log_S\s+\s(risk_premium\s*\svol_t\s-\sq\s-\s0.5\s*\svol_t\s^\s2)\s*\sdt\r\n
+\s\s\s\s\s\s\s\s+\svol_t\s*\ssqrt(dt)\s*\sprev(Wt_S[0])</c>
+            <c name="spx">=\sS[0]</c>
+            <c name="mxea">=\sS[1]</c>
+            <c name="rty">=\sS[2]</c>
+            <c name="nasdaq">=S[3]</c>
+            <c name="equity_tr">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\smax(exp(log_equity_tr),\s1e-04)\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_sptr\r\n
+elif\sroll_foward_index[step]!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_sptr\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_sptr\r\n
+endif</c>
+            <c name="log_equity_tr">prev_log_equity_tr\s=\slog(prev(equity_tr))\r\n
+vol_t\s=\sprev(bs_vol[0])\r\n
+risk_premium\s=\sComputation[step].risk_premium[0]\r\n
+\r\n
+return\sprev_log_equity_tr\s+\s(spot_rate[0]\s+\srisk_premium\s*\svol_t\s-\s0.5\s*\svol_t\s^\s2)\s*\sdt\r\n
+\s\s\s\s+\svol_t\s*\ssqrt(dt)\s*\sprev(Wt_S[0])</c>
+            <c name="equity_tr_driftless">if\sis_projection_start[step]\sthen\r\n
+\s\s\s\sreturn\smax(exp(log_equity_tr_driftless),\s1e-04)\r\n
+elif\sis_shock_step[step]\sthen\r\n
+\s\s\s\sreturn\smarket_shocks.spot_sptr\r\n
+elif\sroll_foward_index[step]!=\s-1\sthen\r\n
+\s\s\s\sreturn\smarket_roll_foward[roll_foward_index[step]].spot_sptr\r\n
+else\r\n
+\s\s\s\sreturn\smarket_base.spot_sptr\r\n
+endif</c>
+            <c name="log_equity_tr_driftless">prev_log_equity_tr\s=\slog(prev(equity_tr_driftless))\r\n
+vol_t\s=\sprev(bs_vol[0])\r\n
+risk_premium\s=\sComputation[step].risk_premium[0]\r\n
+\r\n
+return\sprev_log_equity_tr\s+\s(risk_premium\s*\svol_t\s-\s0.5\s*\svol_t\s^\s2)\s*\sdt\r\n
+\s\s\s\s+\svol_t\s*\ssqrt(dt)\s*\sprev(Wt_S[0])</c>
+            <c name="equity_variance">=\sbs_vol[0]\s*\sbs_vol[0]</c>
+            <c name="equity_variance_mxea">=\sbs_vol[1]\s*\sbs_vol[1]</c>
+            <c name="equity_variance_rty">=\sbs_vol[2]\s*\sbs_vol[2]</c>
+            <c name="equity_variance_nasdaq">=\sbs_vol[3]\s*\sbs_vol[3]</c>
+            <c name="spx_funding_spread">=funding_spread[0]</c>
+            <c name="swap_rate">//=swap_rate[find_idx(crediting_term_post_ratesetting),swap_tenors]\r\n
+=iif(crediting_term_post_ratesetting=1,risk_free_curve[1],risk_free_curve[2])</c>
+            <c name="div_minus_f">if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sComputation[step].q_average[traded_idx]\s-\sComputation[step].funding_spread[traded_idx]\r\n
+end</c>
+            <c name="ig_atm_call">if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+K\s=\sS[traded_idx]\r\n
+T\s=\screditing_term_post_ratesetting\r\n
+put_price\s=\sinverse_gamma_option_price(S[traded_idx],K,swap_rate,T,Computation[step].k_average[traded_idx],Computation[step].theta[traded_idx],Computation[step].lambda_average[traded_idx],\sComputation[step].xi_average[traded_idx],\srho,vol[traded_idx],div_minus_f)\r\n
+call_price\s=\sput_price\s+\sS[traded_idx]*exp(-div_minus_f*T)\s-\sK*exp(-swap_rate*T)\r\n
+\r\n
+return\scall_price/S[traded_idx]\r\n
+end</c>
+            <c name="ig_otm_calls">if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+K\s=\sS[traded_idx]\s*\s(1\s+\screditing_term_post_ratesetting\s*\sig_strike[$index])\r\n
+T\s=\screditing_term_post_ratesetting\r\n
+put_price\s=\sinverse_gamma_option_price(S[traded_idx],K,swap_rate,T,Computation[step].k_average[traded_idx],Computation[step].theta[traded_idx],Computation[step].lambda_average[traded_idx],\sComputation[step].xi_average[traded_idx],\srho,vol[traded_idx],div_minus_f)\r\n
+call_price\s=\sput_price\s+\sS[traded_idx]*exp(-div_minus_f*T)\s-\sK*exp(-swap_rate*T)\r\n
+\r\n
+return\smax(call_price/S[traded_idx],0)\r\n
+end</c>
+            <c name="cut_off_strike">=\scompute_cut_off_strike(ig_otm_calls,len(ig_otm_calls))</c>
+            <c name="ig_otm_calls_adjust">/*\sFor\sapproach\s2\s\r\n
+k*\sis\sthe\scut\soff\sstrike\r\n
+If\sk*=200%,\sp\swould\sbe\sf(k*).\sIf\sk*&lt;200%,\sset\sp\sto\sbe\sf(k*)*BS(200%)/\sBS(k*)\r\n
+where\sBS(K)\sis\sthe\sBS\soption\sprice\swith\srespect\sto\sstrike\sK.\s*/\r\n
+if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+if\s$index\s&gt;\scut_off_strike\sthen\s\r\n
+\s\s\scall_price_prev\s=\sig_otm_calls[cut_off_strike]\r\n
+\s\s\sig_strike_prev\s=\sig_strike[cut_off_strike]\r\n
+\s\s\sK_star\s=\sS[traded_idx]\s*\s(1\s+\sig_strike_prev)\r\n
+\s\s\sk_max\s=\sig_strike[len(ig_strike)-1]\r\n
+\s\s\sK_end\s=\sS[traded_idx]\s*\s(1\s+\sk_max)\r\n
+\s\s\sT\s=\screditing_term_post_ratesetting\r\n
+\s\s\sr\s=\sswap_rate\r\n
+\s\s\sif\scompare(compute_black_scholes(S[traded_idx],K_star,r,T,bs_vol[traded_idx],div_minus_f)\s&lt;=0,1E-04)\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\selse\r\n
+\s\s\s\s\s\s\s\scall_price_end\s=\scall_price_prev*max(0,compute_black_scholes(S[traded_idx],K_end,r,T,bs_vol[traded_idx],div_minus_f))/compute_black_scholes(S[traded_idx],K_star,r,T,bs_vol[traded_idx],div_minus_f)\s\s\s\r\n
+\s\s\s\s\s\s\s\sig_strike_current\s=\sig_strike[$index]\r\n
+\s\s\s\s\s\s\s\sreturn\s((call_price_end\s-\scall_price_prev)*(ig_strike_current\s-\sk_max))/(k_max-ig_strike_prev)\s+\scall_price_end\r\n
+\s\s\send\r\n
+else\r\n
+\s\s\sreturn\s\sig_otm_calls[$index]\r\n
+end\r\n
+end</c>
+            <c name="ig_trigger_calls">if\straded_idx\s=\s-1\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sK\s=\sS[traded_idx]\s*\s(1\s+\sbinary_strike[$index])\r\n
+\s\s\s\sSi\s=\sS[traded_idx]\r\n
+\s\s\s\sK_epsilon\s=\sK\s*\s0.99\r\n
+\s\s\s\sT\s=\screditing_term_post_ratesetting\r\n
+\s\s\s\sr\s=\sswap_rate_1y\r\n
+\s\s\s\sk_average_1y\s=\sComputation[step].k_average[traded_idx]\r\n
+\s\s\s\stheta\s=\sComputation[step].theta[traded_idx]\r\n
+\s\s\s\slambda_average_1y\s=\sComputation[step].lambda_average[traded_idx]\r\n
+\s\s\s\sxi_average_1y\s=\sComputation[step].xi_average[traded_idx]\r\n
+\s\s\s\sq_average_1y\s=\sComputation[step].q_average[traded_idx]\s-\sComputation[step].funding_spread[traded_idx]\r\n
+\s\s\s\sput_price_at_K\s=\sinverse_gamma_option_price(Si,K,r,T,k_average_1y,\stheta,\slambda_average_1y,\sxi_average_1y,\srho_idx_vol[traded_idx],\svol[traded_idx],\sq_average_1y)\r\n
+\s\s\s\scall_price_at_K\s=\sput_price_at_K\s+\sSi*exp(-q_average_1y*T)\s-\sK*exp(-r*T)\r\n
+\s\s\s\sput_price_at_K_epsilon\s=\sinverse_gamma_option_price(Si,K_epsilon,r,T,k_average_1y,\stheta,\slambda_average_1y,\sxi_average_1y,\srho_idx_vol[traded_idx],\svol[traded_idx],\sq_average_1y)\r\n
+\s\s\s\scall_price_at_K_epsilon\s=\sput_price_at_K_epsilon\s+\sSi*exp(-q_average_1y*T)\s-\sK_epsilon*exp(-r*T)\r\n
+\s\s\s\s\r\n
+\s\s\s\sreturn\s100*max(0,\scall_price_at_K_epsilon\s-\scall_price_at_K)\s/\sK\r\n
+end</c>
+            <c name="dividend">=Computation[step].q[$index]</c>
+            <c name="renewed_otm_call">\r\n
+if\straded_idx\s=\s-1\sor\s!reset_rate_now[step]\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+K\s=\sS[traded_idx]\s*\s(1\s+\screditing_term_post_ratesetting\s*\sdeclared_parameter)\r\n
+T\s=\screditing_term_post_ratesetting\r\n
+put_price\s=\sinverse_gamma_option_price(S[traded_idx],K,swap_rate,T,Computation[step].k_average[traded_idx],Computation[step].theta[traded_idx],Computation[step].lambda_average[traded_idx],\sComputation[step].xi_average[traded_idx],\srho,vol[traded_idx],div_minus_f)\r\n
+call_price\s=\sput_price\s+\sS[traded_idx]*exp(-div_minus_f*T)\s-\sK*exp(-swap_rate*T)\r\n
+\r\n
+return\smax(call_price/S[traded_idx],0)\r\n
+end</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="bs_vol[0]" formattype="General" width="100" />
+      <c name="cut_off_strike" formattype="General" width="80" />
+      <c name="dividend[0]" formattype="General" width="80" />
+      <c name="div_minus_f" formattype="General" width="80" />
+      <c name="dt" formattype="General" width="80" />
+      <c name="equity_tr" formattype="General" width="80" />
+      <c name="equity_tr_driftless" formattype="General" width="80" />
+      <c name="equity_variance" formattype="General" width="107" />
+      <c name="equity_variance_mxea" formattype="General" width="80" />
+      <c name="equity_variance_rty" formattype="General" width="80" />
+      <c name="funding_spread[0]" formattype="General" width="108.62462462462486" />
+      <c name="ig_atm_call" formattype="General" width="80" />
+      <c name="ig_otm_calls[0]" formattype="General" width="80" />
+      <c name="ig_otm_calls_adjust[0]" formattype="General" width="80" />
+      <c name="ig_trigger_calls[0]" formattype="General" width="80" />
+      <c name="log_equity_tr" formattype="General" width="80" />
+      <c name="log_equity_tr_driftless" formattype="General" width="80" />
+      <c name="log_S_no_rate" formattype="General" width="80" />
+      <c name="mxea" formattype="General" width="80" />
+      <c name="q[0]" formattype="General" width="80" />
+      <c name="renewed_otm_call" formattype="General" width="80" />
+      <c name="rho_idx_vol[0]" formattype="General" width="80" />
+      <c name="rty" formattype="General" width="80" />
+      <c name="S" formattype="General" width="80" />
+      <c name="spx" formattype="General" width="80" />
+      <c name="spx_funding_spread" formattype="General" width="80" />
+      <c name="spx_no_rate" formattype="General" width="80" />
+      <c name="step" formattype="General" width="80" />
+      <c name="swap_rate" formattype="General" width="80" />
+      <c name="t" formattype="General" width="80" />
+      <c name="Wt_S[0]" formattype="General" width="80" />
+      <c name="Wt_vol[0]" formattype="General" width="80" />
+    </view>
+    <view name="Computation:Computation">
+      <c name="funding_spread[0]" formattype="General" width="80" />
+      <c name="k" formattype="General" width="80" />
+      <c name="k_average[0]" formattype="General" width="80" />
+      <c name="lambda_" formattype="General" width="80" />
+      <c name="lambda_average[0]" formattype="General" width="80" />
+      <c name="q" formattype="General" width="80" />
+      <c name="q_average[0]" formattype="General" width="80" />
+      <c name="risk_premium[0]" formattype="General" width="80" />
+      <c name="spx_q_average" formattype="General" width="80" />
+      <c name="step" formattype="General" width="80" />
+      <c name="t" formattype="General" width="80" />
+      <c name="theta" formattype="General" width="80" />
+      <c name="xi" formattype="General" width="80" />
+      <c name="xi_average[0]" formattype="General" width="80" />
+    </view>
+    <view name="Computation:dividends">
+      <c name="q" formattype="General" width="80" />
+      <c name="t[0]" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

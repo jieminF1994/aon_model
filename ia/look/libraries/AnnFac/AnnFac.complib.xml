@@ -1,0 +1,1972 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="AnnFac" version="master" format-version="20" description="Annuity Factor">
+  <UserUDFs>
+    <enum name="lad_output_type_t">enum\slad_output_type_t\r\n
+\s\s\s\sHOST\s=\s0,\r\n
+\s\s\s\sINDEX_CREDIT\s=\s1,\r\n
+\s\s\s\sWITHDRAWAL\s=\s2,\r\n
+\s\s\s\sCLAIM\s=\s3\r\n
+end</enum>
+    <udf name="log_df_func">/*\r\n
+Compute\sthe\szero\srates\sby\slinearly\sinterpolating\sthe\slog\sdiscount\sfactor.\r\n
+*/\r\n
+\r\n
+real\slog_df_func(real\st,\sreal[N]\stenors,\sreal[N]\szerocurve)\r\n
+\s\s\s\sif\scompare(t\s&lt;=\s0,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\selse\s\r\n
+\s\s\s\s\s\s\s\sreal[N]\slog_df\r\n
+\s\s\s\s\s\s\s\sfor\sj\s=\s0\sto\sN-1\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df[j]\s=\s-zerocurve[j]\s*\stenors[j]\s\s\s\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood\r\n
+\s\s\s\s\s\s\s\sint\si\s=\sfind_interp_point(tenors,\st,\s1)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sby\slinear\sinterpolation\r\n
+\s\s\s\s\s\s\s\s$result\s=\sdo_interp1_(t,\stenors[i-1],\stenors[i],\slog_df[i-1],\slog_df[i])\r\n
+\r\n
+\r\n
+\s\s\s\send\r\n
+\s\s\s\r\n
+\r\n
+end</udf>
+    <udf name="ann_fac_func">/*\r\n
+The\sfunction\sof\sannuity\sfactor\swith\srespect\sof\sinterest\srates\sand\ssurvival\sprobabilities.\r\n
+*/\r\n
+\r\n
+real\sann_fac_func(int\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal[N]\stime,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal[N]\ssurvivor,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal[M]\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal[M]\szero_curve,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint\sn_payment,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\scredit,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\smawa_yte,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\spip_ratio)\s\s\s\r\n
+\s\s\s\sif\scompare(survivor[step]\s&lt;=\s0,\s1e-8)\sor\sn_payment\s==\s0\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\st\r\n
+\s\s\s\sreal\sttm\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal\slog_df_upper\s\r\n
+\s\s\s\sreal\slog_df_lower\r\n
+\s\s\s\sreal\stenor_lower\r\n
+\s\s\s\sreal\stenor_upper\r\n
+\s\s\s\sreal\slog_df_interp\r\n
+\s\s\s\sreal\stime_surv_lower\r\n
+\s\s\s\sreal\stime_surv_upper\r\n
+\s\s\s\sreal\ssurv_lower\r\n
+\s\s\s\sreal\ssurv_upper\r\n
+\s\s\s\sreal\ssurv_interp\r\n
+\s\s\s\sint\sd_idx\s=\s1\r\n
+\s\s\s\sint\ss_idx\s=\s1\r\n
+\s\s\s\sreal\smawa_total\r\n
+\s\s\s\sreal\spip_total\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-zero_curve[i]\s*\shw_tenors[i]\s\s\s\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx\s-\s1]\r\n
+\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\stenor_lower\s=\shw_tenors[d_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\sfor\si\s=\s0\sto\sn_payment\s-\s1\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\r\n
+\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&gt;\stime_surv_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ss_idx\s=\sfind_interp_point(time,\st,\ss_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\ssurv_interp\s=\sdo_interp1_(t,\stime_surv_lower,\stime_surv_upper,\ssurv_lower,\ssurv_upper)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&lt;=\smawa_yte,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smawa_total\s=\smawa_total\s+\ssurv_interp\s*\sexp(log_df_interp)\s*\sexp(credit*ttm)\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spip_total\s=\spip_total\s+\ssurv_interp\s*\sexp(log_df_interp)\s*\sexp(credit*ttm)\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//$result\s=\s$result\s+\ssurv_interp\s*\sexp(log_df_interp)\s*\sexp(credit*ttm)\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s(mawa_total\s+\spip_total\s*\spip_ratio)\s/\ssurvivor[step]\s\s//divide\sby\s12\sfor\smonthly\spayments\r\n
+end</udf>
+    <udf name="x5_apv_func">/*\r\n
+This\sfunction\sreturns\sthe\sAPV\sof\sprojected\sliving\sbeneifit,\sgiven\sthe\sincome\sstarts\safter\s\r\n
+X5\screditing\sterm,\si.e.\sthe\sfirst\sincome\swithdrawal\shappens\sduring\sthe\s1\syr\sPTP\speriod\r\n
+*/\r\n
+\r\n
+real\sx5_apv_func(int\sstep,\sreal[N]\stime,\sreal[N]\ssurvivor,\sreal[M]\shw_tenors,\sreal[M]\szero_curve,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sint\sn_payment,\sreal\sIncomeBase,\sreal\soptionBudget,\sreal\smultiplier,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\smawp)\s\s\s\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(survivor[step]\s&lt;=\s0,\s1e-8)\sor\sn_payment\s==\s0\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\st\r\n
+\s\s\s\sreal\sttm\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal\slog_df_upper\s\r\n
+\s\s\s\sreal\slog_df_lower\r\n
+\s\s\s\sreal\stenor_lower\r\n
+\s\s\s\sreal\stenor_upper\r\n
+\s\s\s\sreal\slog_df_interp_new\r\n
+\s\s\s\sreal\slog_df_interp_old\s=\s0\r\n
+\s\s\s\sreal\stime_surv_lower\r\n
+\s\s\s\sreal\stime_surv_upper\r\n
+\s\s\s\sreal\ssurv_lower\r\n
+\s\s\s\sreal\ssurv_upper\r\n
+\s\s\s\sreal\ssurv_interp\r\n
+\s\s\s\sint\sd_idx\s=\s1\r\n
+\s\s\s\sint\ss_idx\s=\s1\r\n
+\s\s\s\sreal\sproj_IncomeBase\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-zero_curve[i]\s*\shw_tenors[i]\s\s\s\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx\s-\s1]\r\n
+\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\stenor_lower\s=\shw_tenors[d_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\sproj_IncomeBase\s=\sIncomeBase\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\sfor\si\s=\s0\sto\sn_payment\s-1\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\r\n
+\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&gt;\stime_surv_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ss_idx\s=\sfind_interp_point(time,\st,\ss_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp_new\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\ssurv_interp\s=\sdo_interp1_(t,\stime_surv_lower,\stime_surv_upper,\ssurv_lower,\ssurv_upper)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sproj_IncomeBase\s=\sproj_IncomeBase*(1\s+\smultiplier*optionBudget*exp(log_df_interp_old)/exp(log_df_interp_new))\r\n
+\s\s\s\s\s\s\s\s$result\s=\s$result\s+\sproj_IncomeBase\s*\smawp\s*\ssurv_interp\s*\sexp(log_df_interp_new)\s\r\n
+\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\slog_df_interp_old\s=\slog_df_interp_new\r\n
+\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s$result\s/\ssurvivor[step]\s\s//divide\sby\s12\sfor\smonthly\spayments\r\n
+end</udf>
+    <udf name="x5_apv_func_2">/*\r\n
+This\sfunction\sreturns\sthe\sAPV\sof\sprojected\sliving\sbeneifit,\sgiven\sthe\sincome\sstarts\sduring\r\n
+X5\screditing\sterm,\si.e.\sthe\sfirst\sincome\swithdrawal\shappens\sduring\sthe\s5x1\speriod\r\n
+*/\r\n
+\r\n
+real\sx5_apv_func_2(int\sstep,\sreal[N]\stime,\sreal[N]\ssurvivor,\sreal[M]\shw_tenors,\sreal[M]\szero_curve,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sint\sn_payment,\sreal\sIncomeBase,\sreal\soptionBudget_1yr,\sreal\smultiplier,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\smawp,\sreal\sstrategy_term_end_year,\sreal\sadj_factor,\sreal\sfair_value)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sif\scompare(survivor[step]\s&lt;=\s0,\s1e-8)\sor\sn_payment\s==\s0\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\st\r\n
+\s\s\s\sreal\sttm\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal\slog_df_upper\s\r\n
+\s\s\s\sreal\slog_df_lower\r\n
+\s\s\s\sreal\stenor_lower\r\n
+\s\s\s\sreal\stenor_upper\r\n
+\s\s\s\sreal\slog_df_interp_new\r\n
+\s\s\s\sreal\slog_df_interp_old\s=\s0\r\n
+\s\s\s\sreal\stime_surv_lower\r\n
+\s\s\s\sreal\stime_surv_upper\r\n
+\s\s\s\sreal\ssurv_lower\r\n
+\s\s\s\sreal\ssurv_upper\r\n
+\s\s\s\sreal\ssurv_interp\r\n
+\s\s\s\sint\sd_idx\s=\s1\r\n
+\s\s\s\sint\ss_idx\s=\s1\r\n
+\s\s\s\sreal\sproj_IncomeBase\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-zero_curve[i]\s*\shw_tenors[i]\s\s\s\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx\s-\s1]\r\n
+\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\stenor_lower\s=\shw_tenors[d_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\sproj_IncomeBase\s=\sIncomeBase\r\n
+\s\s\s\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\sfor\si\s=\s0\sto\sn_payment\s-\s1\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&gt;\stime_surv_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ss_idx\s=\sfind_interp_point(time,\st,\ss_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp_new\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\ssurv_interp\s=\sdo_interp1_(t,\stime_surv_lower,\stime_surv_upper,\ssurv_lower,\ssurv_upper)\r\n
+\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&lt;\sstrategy_term_end_year-0.5,\s1e-8)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s$result\s+\sproj_IncomeBase\s*\smawp\s*\ssurv_interp\s*\sexp(log_df_interp_new)\s\r\n
+\s\s\s\s\s\s\s\selif\scompare(t\s&gt;=\sstrategy_term_end_year-0.5,\s1e-8)\sand\scompare(t\s&lt;\sstrategy_term_end_year+0.5,\s1e-8)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sproj_IncomeBase\s=\sproj_IncomeBase*(1\s+\smultiplier*fair_value*(1-adj_factor)/exp(log_df_interp_new))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s$result\s+\sproj_IncomeBase\s*\smawp\s*\ssurv_interp\s*\sexp(log_df_interp_new)\s\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sproj_IncomeBase\s=\sproj_IncomeBase*(1\s+\smultiplier*optionBudget_1yr*exp(log_df_interp_old)/exp(log_df_interp_new))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s$result\s+\sproj_IncomeBase\s*\smawp\s*\ssurv_interp\s*\sexp(log_df_interp_new)\s\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\slog_df_interp_old\s=\slog_df_interp_new\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s$result\s/\ssurvivor[step]\s\s//divide\sby\s12\sfor\smonthly\spayments\r\n
+end</udf>
+    <udf name="SafeDivide">/*\r\n
+Safe\sdivide\sfunction\sto\savoid\sinvalid\sdivision\r\n
+*/\r\n
+\r\n
+real\sSafeDivide(real\snom,\sreal\sdenom,\sreal\sdefault_val)\r\n
+\s\s\s\sif\s(compare(denom==0,\s1E-8)\sor\scompare(abs(denom)&gt;1E10,\s1E-11))\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sdefault_val\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\sZeroIfSmall(nom/denom)\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="ZeroIfSmall">/*\r\n
+Set\svery\ssmall\snumber\sto\s0\r\n
+*/\r\n
+\r\n
+real\sZeroIfSmall(real\sarg)\r\n
+\r\n
+\s\s\s\sif\s(compare(arg\s==\s0,\s1E-6))\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\sarg\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="x5_apv_db_func">real\sx5_apv_db_func(int\sstep,\sreal[N]\stime,\sreal[N]\ssurvivor,\sreal[M]\shw_tenors,\sreal[M]\szero_curve,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sint\sn_payment,\sreal\sIncomeBase,\sreal\soptionBudget,\sreal\smultiplier,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\smawp,\sreal\sAV,\sreal\sdeath_ben,\sreal\sDF_5pmt,real\sDBFloor)\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\r\n
+\s\s\s\sif\scompare(survivor[step]\s&lt;=\s0,\s1e-8)\sor\sn_payment\s==\s0\sor\scompare(AV\s=\s0,1e-8)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\st\r\n
+\s\s\s\sreal\sttm\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal\slog_df_upper\s\r\n
+\s\s\s\sreal\slog_df_lower\r\n
+\s\s\s\sreal\stenor_lower\r\n
+\s\s\s\sreal\stenor_upper\r\n
+\s\s\s\sreal\slog_df_interp_new\r\n
+\s\s\s\sreal\slog_df_interp_old\s=\s0\r\n
+\s\s\s\sreal\stime_surv_lower\r\n
+\s\s\s\sreal\stime_surv_upper\r\n
+\s\s\s\sreal\ssurv_lower\r\n
+\s\s\s\sreal\ssurv_upper\r\n
+\s\s\s\sreal\ssurv_interp\r\n
+\s\s\s\sint\sd_idx\s=\s1\r\n
+\s\s\s\sint\ss_idx\s=\s1\r\n
+\s\s\s\sreal\sproj_IncomeBase\r\n
+\s\s\s\sreal\sproj_DB\r\n
+\s\s\s\sreal\sproj_DBfloor\s=\sDBFloor\r\n
+\s\s\s\sreal\sMAWA\r\n
+\s\s\s\sreal\sAV_postW\s=\sAV\r\n
+\s\s\s\sreal\sAV_beforeW\r\n
+\s\s\s\sreal\ssurv_interp_prev\s=survivor[step]\s\r\n
+\s\s\s\s\r\n
+\s\s\s\s\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-zero_curve[i]\s*\shw_tenors[i]\s\s\s\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx\s-\s1]\r\n
+\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\stenor_lower\s=\shw_tenors[d_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\sproj_IncomeBase\s=\sIncomeBase\r\n
+\s\s\s\sproj_DB\s=\sdeath_ben\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\sfor\si\s=\s0\sto\sn_payment-1\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\r\n
+\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&gt;\stime_surv_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ss_idx\s=\sfind_interp_point(time,\st,\ss_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp_new\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\ssurv_interp\s=\sdo_interp1_(t,\stime_surv_lower,\stime_surv_upper,\ssurv_lower,\ssurv_upper)\r\n
+\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sproj_IncomeBase\s=\sproj_IncomeBase*(1\s+\smultiplier*optionBudget*\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sexp(log_df_interp_old)/exp(log_df_interp_new))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sAV_beforeW\s=\sAV_postW\s*\s(1\s+\soptionBudget*exp(log_df_interp_old)/exp(log_df_interp_new))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sMAWA\s=\sproj_IncomeBase\s*\smawp\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sAV_postW\s=\smax(0,AV_beforeW\s-\sMAWA)\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(AV_postW=0,1E-6)\sthen\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s$result\s/\ssurvivor[step]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sproj_DB\s=\sproj_DB*AV_postW/AV_beforeW\s*(1\s+\smultiplier*optionBudget*\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sexp(log_df_interp_old)/exp(log_df_interp_new))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sproj_DBfloor\s=\sproj_DBfloor*AV_postW/AV_beforeW\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s$result\s+\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\smax(AV_postW,SafeDivide(DF_5pmt,60,1)*max(proj_DBfloor,proj_DB))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s*(surv_interp_prev\s-\ssurv_interp)*exp(log_df_interp_new)\r\n
+\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\ssurv_interp_prev\s=\ssurv_interp\r\n
+\s\s\s\s\s\s\s\slog_df_interp_old\s=\slog_df_interp_new\r\n
+\r\n
+\r\n
+\s\s\s\send\r\n
+\s\s\s\s//$result\s=\sAV_postW/AV_beforeW\r\n
+\s\s\s\s$result\s=\s$result\s/\ssurvivor[step]\s\s//divide\sby\s12\sfor\smonthly\spayments\r\n
+end\r\n
+\r\n
+</udf>
+    <udf name="x5_apv_db_func_2">real\sx5_apv_db_func_2(int\sstep,\sreal[N]\stime,\sreal[N]\ssurvivor,\sreal[M]\shw_tenors,\sreal[M]\szero_curve,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sint\sn_payment,\sreal\sIncomeBase,\sreal\soptionBudget_1yr,\sreal\smultiplier,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\smawp,\sreal\sAV,\sreal\sdeath_ben,\sreal\sDF_5pmt,real\sDBFloor,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sstrategy_term_end_year,\sreal\sadj_factor,\sreal\sfair_value)\s\s\s\r\n
+\s\s\s\sif\scompare(survivor[step]\s&lt;=\s0,\s1e-8)\sor\sn_payment\s==\s0\sor\scompare(AV\s=\s0,1e-8)\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\st\r\n
+\s\s\s\sreal\sttm\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal\slog_df_upper\s\r\n
+\s\s\s\sreal\slog_df_lower\r\n
+\s\s\s\sreal\stenor_lower\r\n
+\s\s\s\sreal\stenor_upper\r\n
+\s\s\s\sreal\slog_df_upper_st\s\r\n
+\s\s\s\sreal\slog_df_lower_st\s\r\n
+\s\s\s\sreal\stenor_lower_st\s\r\n
+\s\s\s\sreal\stenor_upper_st\s\r\n
+\s\s\s\sreal\slog_df_interp_new\r\n
+\s\s\s\sreal\slog_df_interp_old\s=\s0\r\n
+\s\s\s\sreal\stime_surv_lower\r\n
+\s\s\s\sreal\stime_surv_upper\r\n
+\s\s\s\sreal\ssurv_lower\r\n
+\s\s\s\sreal\ssurv_upper\r\n
+\s\s\s\sreal\ssurv_interp\r\n
+\s\s\s\sint\sd_idx\s=\s1\r\n
+\s\s\s\sint\ss_idx\s=\s1\r\n
+\s\s\s\sint\sst_idx\r\n
+\s\s\s\sreal\sproj_IncomeBase\r\n
+\s\s\s\sreal\sproj_DB\r\n
+\s\s\s\sreal\sproj_DBfloor\r\n
+\s\s\s\sreal\sMAWA\r\n
+\s\s\s\sreal\sAV_postW\s=\sAV\r\n
+\s\s\s\sreal\sAV_beforeW\r\n
+\s\s\s\sreal\ssurv_interp_prev\s=\ssurvivor[step]\r\n
+\s\s\s\sreal\slog_df_interp_st\r\n
+\s\s\s\sreal\st_til_st\r\n
+\s\s\s\sint\sn_step_to_st\r\n
+\s\s\s\s\r\n
+\s\s\s\st_til_st\s=\smax(0,strategy_term_end_year\s-\stime[step])\r\n
+\s\s\s\sn_step_to_st\s=\sround(max(0,strategy_term_end_year+0.5\s-\stime[step]))\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-zero_curve[i]\s*\shw_tenors[i]\s\s\s\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx\s-\s1]\r\n
+\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\stenor_lower\s=\shw_tenors[d_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\sproj_IncomeBase\s=\sIncomeBase\r\n
+\s\s\s\sproj_DB\s=\sdeath_ben\r\n
+\s\s\s\s\r\n
+\r\n
+\s\s\s\sif\sround(t_til_st)\s!=0\sthen\s\r\n
+\s\s\s\s\s\s\s\sst_idx\s=\sfind_interp_point(hw_tenors,\st_til_st,\sst_idx)\r\n
+\s\s\s\s\s\s\s\slog_df_upper_st\s=\slog_df_arr[st_idx]\r\n
+\s\s\s\s\s\s\s\slog_df_lower_st\s=\slog_df_arr[st_idx-1]\r\n
+\s\s\s\s\s\s\s\stenor_upper_st\s=\shw_tenors[st_idx]\r\n
+\s\s\s\s\s\s\s\stenor_lower_st\s=\shw_tenors[st_idx-1]\r\n
+\s\s\s\s\r\n
+\s\s\s\s\s\s\s\slog_df_interp_st\s=\sdo_interp1_(t_til_st,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\stenor_lower_st,\stenor_upper_st,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower_st,\slog_df_upper_st)\r\n
+\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\slog_df_interp_st\s=\s0\r\n
+\s\s\s\s\send\r\n
+\s\r\n
+\s\s\s\s$result\s=\s0\r\n
+\r\n
+\r\n
+\s\s\s\sfor\si\s=\s0\sto\sn_payment-1\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\r\n
+\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&gt;\stime_surv_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ss_idx\s=\sfind_interp_point(time,\st,\ss_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp_new\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\ssurv_interp\s=\sdo_interp1_(t,\stime_surv_lower,\stime_surv_upper,\ssurv_lower,\ssurv_upper)\r\n
+\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&lt;\sstrategy_term_end_year-0.5,\s1e-8)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sAV_beforeW\s=\sAV_postW\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sMAWA\s=\sproj_IncomeBase\s*\smawp\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sAV_postW\s=\sAV_beforeW\s-\sMAWA\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(AV_postW=0,1E-6)\sthen\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s$result/\ssurvivor[step]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sproj_DB\s=\sproj_DB*AV_postW/AV_beforeW\s*(1\s+\smultiplier*fair_value*\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s(1-adj_factor)/exp(log_df_interp_st)/n_step_to_st)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\selif\scompare(t\s&gt;=\sstrategy_term_end_year-0.5,\s1e-8)\sand\scompare(t\s&lt;\sstrategy_term_end_year+0.5,\s1e-8)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sproj_IncomeBase\s=\sproj_IncomeBase*(1\s+\smultiplier*fair_value*(1-adj_factor)/exp(log_df_interp_st))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sAV_beforeW\s=\sAV_postW\s*(1\s+\sfair_value*(1-adj_factor)/exp(log_df_interp_st))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sMAWA\s=\sproj_IncomeBase\s*\smawp\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sAV_postW\s=\sAV_beforeW\s-\sMAWA\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(AV_postW=0,1E-6)\sthen\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s$result/\ssurvivor[step]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sproj_DB\s=\sproj_DB*AV_postW/AV_beforeW\s*(1\s+\smultiplier*fair_value*\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s(1-adj_factor)/exp(log_df_interp_st)/n_step_to_st)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sproj_IncomeBase\s=\sproj_IncomeBase*(1\s+\smultiplier*optionBudget_1yr*exp(log_df_interp_old)/exp(log_df_interp_new))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sAV_beforeW\s=\sAV_postW\s*\s(1\s+\soptionBudget_1yr*exp(log_df_interp_old)/exp(log_df_interp_new))\r\n
+\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sMAWA\s=\sproj_IncomeBase\s*\smawp\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sAV_postW\s=\sAV_beforeW\s-\sMAWA\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sif\scompare(AV_postW=0,1E-6)\sthen\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s$result\s/\ssurvivor[step]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\s\s\s\s\send\r\n
+\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sproj_DB\s=\sproj_DB*AV_postW/AV_beforeW\s*(1\s+\smultiplier*optionBudget_1yr*exp(log_df_interp_old)/exp(log_df_interp_new))\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sproj_DBfloor\s=\sproj_DBfloor*AV_postW/AV_beforeW\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s$result\s=\s$result\s+\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\smax(AV_beforeW,SafeDivide(DF_5pmt,60,1)*max(proj_DBfloor,proj_DB))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s*(surv_interp_prev\s-\ssurv_interp)*exp(log_df_interp_new)\r\n
+\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\ssurv_interp_prev\s=\ssurv_interp\r\n
+\s\s\s\s\s\s\s\slog_df_interp_old\s=\slog_df_interp_new\r\n
+\r\n
+\s\s\s\send\r\n
+\s\s\s\s//$result\s=\sproj_IncomeBase\r\n
+\s\s\s\s//$result\s=\slog_df_interp_st\r\n
+\s\s\s\s$result\s=\s$result\s/\ssurvivor[step]\s\s//divide\sby\s12\sfor\smonthly\spayments\r\n
+\s\s\s\s\r\n
+\s\s\s\s\r\n
+end\r\n
+</udf>
+    <udf name="ann_fac_func_legacy">/*\r\n
+The\sfunction\sof\sannuity\sfactor\swith\srespect\sof\sinterest\srates\sand\ssurvival\sprobabilities.\r\n
+*/\r\n
+\r\n
+real\sann_fac_func_legacy(int\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal[N]\stime,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal[N]\ssurvivor,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal[M]\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal[M]\szero_curve,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint\sn_payment,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\scredit,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\smawa_yte,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreal\spip_ratio)\s\s\s\r\n
+\s\s\s\sif\scompare(survivor[step]\s&lt;=\s0,\s1e-8)\sor\sn_payment\s==\s0\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\st\r\n
+\s\s\s\sreal\sttm\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal\slog_df_upper\s\r\n
+\s\s\s\sreal\slog_df_lower\r\n
+\s\s\s\sreal\stenor_lower\r\n
+\s\s\s\sreal\stenor_upper\r\n
+\s\s\s\sreal\slog_df_interp\r\n
+\s\s\s\sreal\stime_surv_lower\r\n
+\s\s\s\sreal\stime_surv_upper\r\n
+\s\s\s\sreal\ssurv_lower\r\n
+\s\s\s\sreal\ssurv_upper\r\n
+\s\s\s\sreal\ssurv_interp\r\n
+\s\s\s\sint\sd_idx\s=\s1\r\n
+\s\s\s\sint\ss_idx\s=\s1\r\n
+\s\s\s\sreal\smawa_total\r\n
+\s\s\s\sreal\spip_total\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-(0.5*0.055\s+\s0.5*zero_curve[i])\s*\shw_tenors[i]\s\s\s\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx\s-\s1]\r\n
+\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\stenor_lower\s=\shw_tenors[d_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\sfor\si\s=\s0\sto\sn_payment\s-\s1\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\r\n
+\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&gt;\stime_surv_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ss_idx\s=\sfind_interp_point(time,\st,\ss_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\ssurv_interp\s=\sdo_interp1_(t,\stime_surv_lower,\stime_surv_upper,\ssurv_lower,\ssurv_upper)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&lt;=\smawa_yte,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smawa_total\s=\smawa_total\s+\ssurv_interp\s*\sexp(log_df_interp)\s*\sexp(credit*ttm)\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spip_total\s=\spip_total\s+\ssurv_interp\s*\sexp(log_df_interp)\s*\sexp(credit*ttm)\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s//$result\s=\s$result\s+\ssurv_interp\s*\sexp(log_df_interp)\s*\sexp(credit*ttm)\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s(mawa_total\s+\spip_total\s*\spip_ratio)\s/\ssurvivor[step]\s\s//divide\sby\s12\sfor\smonthly\spayments\r\n
+end</udf>
+    <udf name="ann_fac_func_terminal">real\sann_fac_func_terminal(int\sstep,\sreal[N]\stime,\sreal[N]\ssurvivor,\sreal[N]\ssurvivor_base_lapse,\sint\smawa_yte,\sreal[M]\shw_tenors,\sreal[M]\szero_curve,\sint\sn_payment,\sreal\scredit)\s\s\s\r\n
+\s\s\s\s\r\n
+\s\s\s\s//calculate\ssurvivor\swith\slapse\r\n
+\s\s\s\sreal[840]\ssurvivor_with_lapse\r\n
+\s\s\s\sfor\si\s=\s0\sto\sstep\s-\s1\r\n
+\s\s\s\s\s\s\s\ssurvivor_with_lapse[i]\s=\ssurvivor[i]\r\n
+\s\s\s\send\r\n
+\s\s\s\sint\sav_exausted_step\s=\smin(step\s+\sint(mawa_yte\s*\s365.25\s/\s30),\sN\s-\s2)\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\sstep\sto\sav_exausted_step\r\n
+\s\s\s\s\s\s\s\ssurvivor_with_lapse[i]\s=\ssurvivor[i]\s*\ssurvivor_base_lapse[i]\r\n
+\s\s\s\send\r\n
+\s\s\s\sfor\si\s=\sav_exausted_step\s+\s1\sto\sN\s-\s1\r\n
+\s\s\s\s\s\s\s\ssurvivor_with_lapse[i]\s=\ssurvivor[i]\s*\ssurvivor_base_lapse[av_exausted_step]\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(survivor_with_lapse[step]\s&lt;=\s0,\s1e-8)\sor\sn_payment\s==\s0\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\st\r\n
+\s\s\s\sreal\sttm\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal\slog_df_upper\s\r\n
+\s\s\s\sreal\slog_df_lower\r\n
+\s\s\s\sreal\stenor_lower\r\n
+\s\s\s\sreal\stenor_upper\r\n
+\s\s\s\sreal\slog_df_interp\r\n
+\s\s\s\sreal\stime_surv_lower\r\n
+\s\s\s\sreal\stime_surv_upper\r\n
+\s\s\s\sreal\ssurv_lower\r\n
+\s\s\s\sreal\ssurv_upper\r\n
+\s\s\s\sreal\ssurv_interp\r\n
+\s\s\s\sint\sd_idx\s=\s1\r\n
+\s\s\s\sint\ss_idx\s=\s1\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-zero_curve[i]\s*\shw_tenors[i]\s\s\s\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx\s-\s1]\r\n
+\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\stenor_lower\s=\shw_tenors[d_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\ssurv_upper\s=\ssurvivor_with_lapse[s_idx]\r\n
+\s\s\s\ssurv_lower\s=\ssurvivor_with_lapse[s_idx\s-\s1]\r\n
+\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\sfor\si\s=\s0\sto\sn_payment\s-\s1\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\r\n
+\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&gt;\stime_surv_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ss_idx\s=\sfind_interp_point(time,\st,\ss_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_upper\s=\ssurvivor_with_lapse[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_lower\s=\ssurvivor_with_lapse[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\ssurv_interp\s=\sdo_interp1_(t,\stime_surv_lower,\stime_surv_upper,\ssurv_lower,\ssurv_upper)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s$result\s=\s$result\s+\ssurv_interp\s*\sexp(log_df_interp)\s*\sexp(credit*ttm)\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s$result\s/\ssurvivor_with_lapse[step]\s\s//divide\sby\s12\sfor\smonthly\spayments\r\n
+end</udf>
+    <udf name="life_expectancy">real\slife_expectancy(int\sstep,\sreal[N]\stime,\sreal[N]\ssurvivor)\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\sfor\si\s=\sstep\sto\sN-1\r\n
+\s\s\s\s\s\s\s\s$result\s=\s$result\s+\s(survivor[i-1]-survivor[i])\s*\stime[i]\r\n
+\s\s\s\send\r\n
+\s\s\s\s$result\s=\smax($result\s/\ssurvivor[step]\s-\stime[step],\s0)\r\n
+end</udf>
+    <udf name="ann_fac_func_guardian">real\sann_fac_func_guardian(int\sstep,\sreal[N]\stime,\sreal[N]\ssurvivor,\sreal[M]\shw_tenors,\sreal[M]\szero_curve,\sint\sn_payment,\sreal\scredit,\sreal\sfixed_period_yte,\sreal\smawa_ratio)\s\s\r\n
+\s\s\s\sif\scompare(survivor[step]\s&lt;=\s0,\s1e-8)\sor\sn_payment\s==\s0\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\st\r\n
+\s\s\s\sreal\sttm\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal\slog_df_upper\s\r\n
+\s\s\s\sreal\slog_df_lower\r\n
+\s\s\s\sreal\stenor_lower\r\n
+\s\s\s\sreal\stenor_upper\r\n
+\s\s\s\sreal\slog_df_interp\r\n
+\s\s\s\sreal\stime_surv_lower\r\n
+\s\s\s\sreal\stime_surv_upper\r\n
+\s\s\s\sreal\ssurv_lower\r\n
+\s\s\s\sreal\ssurv_upper\r\n
+\s\s\s\sreal\ssurv_interp\r\n
+\s\s\s\sint\sd_idx\s=\s1\r\n
+\s\s\s\sint\ss_idx\s=\s1\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-zero_curve[i]\s*\shw_tenors[i]\s\s\s\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx\s-\s1]\r\n
+\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\stenor_lower\s=\shw_tenors[d_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\sfor\si\s=\s0\sto\sn_payment\s-\s1\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\r\n
+\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&gt;\stime_surv_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ss_idx\s=\sfind_interp_point(time,\st,\ss_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\ssurv_interp\s=\sdo_interp1_(t,\stime_surv_lower,\stime_surv_upper,\ssurv_lower,\ssurv_upper)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s$result\s=\s$result\s+\ssurv_interp\s*\sexp(log_df_interp)\s*\sexp(credit*ttm)\s*\siif(compare(t&lt;=time[step]+fixed_period_yte,1e-6),\smawa_ratio,\s1)\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s$result\s/\ssurvivor[step]\s\s//divide\sby\s12\sfor\smonthly\spayments\r\n
+end</udf>
+    <udf name="compute_lad_cashflow">real\scompute_lad_cashflow(int\slad_output_type,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sint\sstep,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal[N]\stime,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal[N]\ssurvivor,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal[M]\shw_tenors,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal[M]\szero_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\smawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\spip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sreal\sfixed_period_yte,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sint\sn_payment)\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\scompare(survivor[step]\s&lt;=\s0,\s1e-8)\sor\sn_payment\s==\s0\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\slad_host\s=\s0\r\n
+\s\s\s\sreal\slad_index_credit\s=\s0\r\n
+\s\s\s\sreal\slad_withdrawal\s=\s0\r\n
+\s\s\s\sreal\slad_claim\s=\s0\r\n
+\s\s\s\s\r\n
+\s\s\s\sreal\st\r\n
+\s\s\s\sreal\sttm\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal\slog_df_upper\s\r\n
+\s\s\s\sreal\slog_df_lower\r\n
+\s\s\s\sreal\stenor_lower\r\n
+\s\s\s\sreal\stenor_upper\r\n
+\s\s\s\sreal\slog_df_interp\r\n
+\s\s\s\sreal\stime_surv_lower\r\n
+\s\s\s\sreal\stime_surv_upper\r\n
+\s\s\s\sreal\ssurv_lower\r\n
+\s\s\s\sreal\ssurv_upper\r\n
+\s\s\s\sreal\ssurv_interp\r\n
+\s\s\s\sint\sd_idx\s=\s1\r\n
+\s\s\s\sint\ss_idx\s=\s1\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-zero_curve[i]\s*\shw_tenors[i]\s\s\s\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx\s-\s1]\r\n
+\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\stenor_lower\s=\shw_tenors[d_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\r\n
+\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\r\n
+\s\s\s\sint\smawa_period\s=\sint(fixed_period_yte)\r\n
+\s\s\s\sreal\slast_mawa\s=\saccount_value\s-\smawa\s*\smawa_period\r\n
+\s\s\s\sreal\sshadow_gmwv\s=\ssnfl_mwv\r\n
+\s\s\s\sreal\sshadow_premium\s=\spremium\r\n
+\s\s\s\sreal\sshadow_account_value\s=\saccount_value\r\n
+\s\s\s\sreal\sfirst_claim\s=\smawa\s*\s(mawa_period\s+\s1)\s-\saccount_value\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\s0\sto\smin(mawa_period,\sn_payment\s-\s1)\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sreal\scf_withdrawal\r\n
+\s\s\s\s\s\s\s\sif\si\s==\smawa_period\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scf_withdrawal\s=\slast_mawa\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scf_withdrawal\s=\smawa\r\n
+\s\s\s\s\s\s\s\send\r\n
+\r\n
+\s\s\s\s\s\s\s\sreal\sguaranteed_withdrawal\s=\smin(cf_withdrawal,\smax(shadow_gmwv,\sshadow_premium))\r\n
+\s\s\s\s\s\s\s\sshadow_gmwv\s=\smax(shadow_gmwv\s-\sguaranteed_withdrawal,\s0)\r\n
+\s\s\s\s\s\s\s\sshadow_premium\s=\smax(shadow_premium\s-\sguaranteed_withdrawal,\s0)\r\n
+\s\s\s\s\s\s\s\sreal\scf_index_credit\s=\smin(shadow_account_value,\scf_withdrawal\s-\sguaranteed_withdrawal)\r\n
+\s\s\s\s\s\s\s\sshadow_account_value\s=\sshadow_account_value\s-\scf_withdrawal\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\slad_host\s=\slad_host\s+\sguaranteed_withdrawal\s*\sexp(-host_rate\s*\sttm)\r\n
+\s\s\s\s\s\s\s\slad_index_credit\s=\slad_index_credit\s+\scf_index_credit\s*\sexp(log_df_interp)\r\n
+\s\s\s\s\s\s\s\slad_withdrawal\s=\slad_withdrawal\s+\scf_withdrawal\s*\sexp(log_df_interp)\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\slad_output_type\s==\sint(lad_output_type_t.INDEX_CREDIT)\sthen\s//\sindex_credit\r\n
+\s\s\s\s\s\s\s\s$result\s=\slad_index_credit\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\selif\slad_output_type\s==\sint(lad_output_type_t.WITHDRAWAL)\sthen\s//\swithdrawal\r\n
+\s\s\s\s\s\s\s\s$result\s=\slad_withdrawal\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\s//\slad\sclaim\scalculation\r\n
+\s\s\s\sif\smawa_period\s&gt;=\sn_payment\s-\s1\sthen\r\n
+\s\s\s\s\s\s\s\sif\slad_output_type\s==\sint(lad_output_type_t.HOST)\sthen\s//\shost\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\slad_host\s+\sshadow_gmwv\s*\sexp(-host_rate\s*\s(n_payment\s-\s0.5))\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\selif\slad_output_type\s==\sint(lad_output_type_t.CLAIM)\sthen\s//\sclaim\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sfor\si\s=\smawa_period\sto\sn_payment\s-\s1\r\n
+\s\s\s\s\s\s\s\sttm\s=\s(2\s*\si\s+\s1)\s/\s2.0\r\n
+\s\s\s\s\s\s\s\st\s=\stime[step]\s+\sttm\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(ttm\s&gt;\stenor_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sd_idx\s=\sfind_interp_point(hw_tenors,\sttm,\sd_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_upper\s=\slog_df_arr[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slog_df_lower\s=\slog_df_arr[d_idx-1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_upper\s=\shw_tenors[d_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stenor_lower\s=\shw_tenors[d_idx-1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sif\scompare(t\s&gt;\stime_surv_upper,\s1e-3)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s//Find\sthe\stenor\sneighborhood.\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ss_idx\s=\sfind_interp_point(time,\st,\ss_idx)\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_upper\s=\ssurvivor[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssurv_lower\s=\ssurvivor[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_upper\s=\stime[s_idx]\r\n
+\s\s\s\s\s\s\s\s\s\s\s\stime_surv_lower\s=\stime[s_idx\s-\s1]\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//Get\sthe\slog_df\sand\ssurvivorship\sby\slinear\sinterpolation.\r\n
+\s\s\s\s\s\s\s\slog_df_interp\s=\sdo_interp1_(ttm,\stenor_lower,\stenor_upper,\slog_df_lower,\slog_df_upper)\r\n
+\s\s\s\s\s\s\s\ssurv_interp\s=\sdo_interp1_(t,\stime_surv_lower,\stime_surv_upper,\ssurv_lower,\ssurv_upper)\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\s//\sfirst\sclaim\r\n
+\s\s\s\s\s\s\s\sreal\scf_pip\r\n
+\s\s\s\s\s\s\s\sif\si\s==\smawa_period\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scf_pip\s=\sfirst_claim\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\scf_pip\s=\spip\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\s\s\s\s\s\r\n
+\s\s\s\s\s\s\s\sreal\sguaranteed_withdrawal\s=\smin(cf_pip,\smax(shadow_gmwv,\sshadow_premium))\r\n
+\s\s\s\s\s\s\s\sshadow_gmwv\s=\smax(shadow_gmwv\s-\sguaranteed_withdrawal,\s0)\r\n
+\s\s\s\s\s\s\s\sshadow_premium\s=\smax(shadow_premium\s-\sguaranteed_withdrawal,\s0)\r\n
+\s\s\s\s\s\s\s\sreal\scf_claim\s=\scf_pip\s-\sguaranteed_withdrawal\r\n
+\s\s\s\s\s\s\s\slad_host\s=\slad_host\s+\sguaranteed_withdrawal\s*\sexp(-host_rate\s*\sttm)\r\n
+\s\s\s\s\s\s\s\sif\scompare(cf_claim\s!=\s0,\s1e-6)\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_claim\s=\slad_claim\s+\scf_claim\s*\ssurv_interp\s*\sexp(log_df_interp)//\sto\savoid\s0*inf=nan\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\s\s\s\s\sif\si\s==\sn_payment\s-\s1\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_host\s=\slad_host\s+\sshadow_gmwv\s*\sexp(-host_rate\s*\sttm)\r\n
+\s\s\s\s\s\s\s\send\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\slad_output_type\s==\sint(lad_output_type_t.HOST)\sthen\s//\shost\r\n
+\s\s\s\s\s\s\s\s$result\s=\slad_host\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\selif\slad_output_type\s==\sint(lad_output_type_t.CLAIM)\sthen\s//\sclaim\r\n
+\s\s\s\s\s\s\s\s$result\s=\sSafeDivide(lad_claim,survivor[step],0.0)\r\n
+\s\s\s\s\s\s\s\sreturn\r\n
+\s\s\s\send\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="survivor" type="real" shape="*" description="The probability that at least one covered person is alive at the end of this projection period" />
+    <input name="survivor_base_lapse" type="real" shape="*" />
+    <input name="risk_free_curve" type="real" shape="*,*" description="Risk free rates by tenors" />
+    <input name="libor_curve" type="real" shape="*,*" description="Libor rates by tenors" />
+    <input name="hw_tenors" type="real" shape="*" description="Tenors of zero rates" />
+    <input name="n_step" type="int" description="Total number of projection steps" />
+    <input name="time_t" type="real" shape="*" />
+    <input name="is_ann_fac_recalc_date" type="bool" shape="*" />
+    <input name="adj_multi" type="real" />
+    <input name="death_ben" type="real" modifier="Cashflow" />
+    <input name="account_value" type="real" modifier="Cashflow" />
+    <input name="elapsed_strategy_term" type="real" modifier="Cashflow" />
+    <input name="option_budget" type="real" shape="*" />
+    <input name="credit_interest_now" type="bool" shape="*" />
+    <input name="investment_account" type="int" />
+    <input name="policyYear" type="int" shape="*" />
+    <input name="strategy_return" type="real" modifier="Cashflow" />
+    <input name="income_base_inforce" type="real" />
+    <input name="income_base_cf" type="real" modifier="Cashflow" />
+    <input name="mawa_rate" type="real" modifier="Cashflow" />
+    <input name="ob_5yr" type="real" shape="*" />
+    <input name="DB_floor" type="real" modifier="Cashflow" />
+    <input name="corporate_curve" type="real" shape="*,*" />
+    <input name="systematic_withdrawal_started_bop" type="bool" modifier="Cashflow" />
+    <input name="multi" type="real" />
+    <input name="is_annexus_5yr" type="bool" />
+    <input name="is_annexus_10yr" type="bool" />
+    <input name="is_annexus" type="bool" />
+    <input name="mawa" type="real" modifier="Cashflow" />
+    <input name="pip" type="real" modifier="Cashflow" />
+    <input name="account_value_bop" type="real" modifier="Cashflow" />
+    <input name="living_benefit_elected" type="bool" />
+    <input name="apply_lad" type="bool" />
+    <input name="run_first_income_credit_only" type="bool" />
+    <input name="is_after_maturity_date" type="bool" modifier="Cashflow" />
+    <input name="lapse_this_period" type="bool" modifier="Cashflow" />
+    <input name="is_guardian" type="bool" />
+    <input name="fixed_period" type="real" modifier="Cashflow" />
+    <input name="pip_rate" type="real" modifier="Cashflow" />
+    <input name="maturity_payment" type="real" modifier="Cashflow" />
+    <input name="is_lad_period" type="bool" modifier="Cashflow" />
+    <input name="glia" type="real" modifier="Cashflow" />
+    <input name="is_rider_income_builder" type="bool" />
+    <input name="df_type" type="int" />
+    <input name="npa_table" type="real" shape="*,*" />
+    <input name="snfl_mwv" type="real" modifier="Cashflow" />
+    <input name="premium" type="real" modifier="Cashflow" />
+    <input name="host_rate" type="real" />
+    <input name="policy_inforce_ind" type="int" modifier="Cashflow" />
+    <input name="npa_spread_at_issue_zero_table" type="real" shape="*,*" />
+    <input name="npa_total_spread_zero_table" type="real" shape="*,*" />
+    <input name="step_esg" type="int" modifier="Cashflow" />
+    <input name="npa_spread_nippon_life_zero_table" type="real" shape="*,*" />
+  </inputs>
+  <results>
+    <result name="ann_fac" ref="actuarial_present_value_x5.ann_fac" />
+    <result name="apv_lb_x5" ref="actuarial_present_value_x5.apv_lb" />
+    <result name="apv_db" ref="actuarial_present_value_x5.apv_db" />
+    <result name="ann_fac_annexus" ref="actuarial_present_value_x5.ann_fac_annexus" />
+    <result name="ann_fac_legacy" ref="actuarial_present_value_x5.ann_fac_legacy" />
+    <result name="ann_fac_terminal" ref="actuarial_present_value_x5.ann_fac_terminal" />
+    <result name="life_expectancy" ref="actuarial_present_value_x5.life_expectancy" />
+    <result name="cf_lad_host" ref="=actuarial_present_value_x5.cf_lad_host" />
+    <result name="cf_lad_index_credit" ref="=actuarial_present_value_x5.cf_lad_index_credit" />
+    <result name="cf_lad_withdrawal" ref="=actuarial_present_value_x5.cf_lad_withdrawal" />
+    <result name="cf_lad_claim" ref="=actuarial_present_value_x5.cf_lad_claim" />
+    <result name="lad_mawa" ref="=actuarial_present_value_x5.lad_mawa" />
+    <result name="lad_pip" ref="=actuarial_present_value_x5.lad_pip" />
+    <result name="cf_lad_index_credit_ex_credit" ref="=actuarial_present_value_x5.cf_lad_index_credit_ex_credit" />
+    <result name="cf_lad_claim_ex_credit" ref="=actuarial_present_value_x5.cf_lad_claim_ex_credit" />
+    <result name="cf_lad_index_credit_ex_total_curve" ref="=actuarial_present_value_x5.cf_lad_index_credit_ex_total_curve" />
+    <result name="cf_lad_claim_ex_total_curve" ref="=actuarial_present_value_x5.cf_lad_claim_ex_total_curve" />
+    <result name="cf_lad_index_credit_nippon_life" ref="=actuarial_present_value_x5.cf_lad_index_credit_nippon_life" />
+    <result name="cf_lad_claim_nippon_life" ref="=actuarial_present_value_x5.cf_lad_claim_nippon_life" />
+  </results>
+  <calculations>
+    <table name="x5_parameters" type="KeyValue">
+      <c name="alpha_time_value" datatype="real">=0.6</c>
+    </table>
+    <table name="SurvComp" type="Computation">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="t" datatype="real" />
+        <c name="surv" datatype="real" />
+        <c name="surv_base_lapse" datatype="real" />
+        <c name="annual_steps_to_end" datatype="int" />
+      </columns>
+      <row-groups>
+        <rg name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+0</c>
+            <c name="t">=time_t[step]</c>
+            <c name="surv">/*\r\n
+The\sprobability\sthat\sat\sleast\sone\scovered\sperson\sis\salive\r\n
+at\sthe\send\sof\sthis\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=\ssurvivor[step]</c>
+            <c name="surv_base_lapse">=\ssurvivor_base_lapse[step]</c>
+            <c name="annual_steps_to_end">=int((time_t[n_step]\s-\stime_t[step])\s*\s2)</c>
+          </columns>
+        </rg>
+        <rg name="rg2">
+          <repeat>=n_step</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=prev(step)\s+\s1</c>
+            <c name="t">=time_t[step]</c>
+            <c name="surv">/*\r\n
+The\sprobability\sthat\sat\sleast\sone\scovered\sperson\sis\salive\r\n
+at\sthe\send\sof\sthis\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=\ssurvivor[step]</c>
+            <c name="surv_base_lapse">=\ssurvivor_base_lapse[step]</c>
+            <c name="annual_steps_to_end">=int((time_t[n_step]\s-\stime_t[step])\s*\s2)</c>
+          </columns>
+        </rg>
+      </row-groups>
+    </table>
+    <table name="actuarial_present_value_x5" type="CashFlow">
+      <column-groups>
+        <g name="g1" repeat-count="12" />
+        <g name="g2" repeat-count="12" />
+        <g name="g3" repeat-count="12" />
+        <g name="g4" repeat-count="12" />
+        <g name="g5" repeat-count="12" />
+        <g name="g6" repeat-count="12" />
+      </column-groups>
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="zc" datatype="real" group="g5" />
+        <c name="option_budget_st" datatype="real" />
+        <c name="fair_value" datatype="real" />
+        <c name="strategy_term_end_year" datatype="int" />
+        <c name="ann_fac_annexus" datatype="real" />
+        <c name="ib_on_income_activation" datatype="real" />
+        <c name="apv_lb" datatype="real" />
+        <c name="discount_factor_5yr" datatype="real" />
+        <c name="apv_db" datatype="real" />
+        <c name="mawa_yte" datatype="int" />
+        <c name="pip_ratio" datatype="real" />
+        <c name="ann_fac" datatype="real" />
+        <c name="ann_fac_legacy" datatype="real" />
+        <c name="ann_fac_terminal" datatype="real" />
+        <c name="life_expectancy" datatype="real" />
+        <c name="lad_mawa" datatype="real" />
+        <c name="lad_pip" datatype="real" />
+        <c name="risky_curve" datatype="real" group="g4" />
+        <c name="npa_curve" datatype="real" group="g1" />
+        <c name="npa_curve_at_issue" datatype="real" group="g2" />
+        <c name="npa_curve_nippon_life" datatype="real" group="g6" />
+        <c name="npa_total_curve" datatype="real" group="g3" />
+        <c name="cf_lad_host" datatype="real" />
+        <c name="cf_lad_index_credit" datatype="real" />
+        <c name="cf_lad_withdrawal" datatype="real" />
+        <c name="cf_lad_claim" datatype="real" />
+        <c name="cf_lad_index_credit_ex_credit" datatype="real" />
+        <c name="cf_lad_claim_ex_credit" datatype="real" />
+        <c name="cf_lad_index_credit_nippon_life" datatype="real" />
+        <c name="cf_lad_claim_nippon_life" datatype="real" />
+        <c name="cf_lad_index_credit_ex_total_curve" datatype="real" />
+        <c name="cf_lad_claim_ex_total_curve" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">0</c>
+            <c name="zc">=libor_curve[step_esg,$index]</c>
+            <c name="option_budget_st">//The\stotal\soption\sbudget\sfor\sthe\scurrent\sstrategy\sterm\r\n
+//=iif(is_annexus_5yr,\sob_5yr,\soption_budget)\r\n
+0</c>
+            <c name="fair_value">=0</c>
+            <c name="strategy_term_end_year">if\sis_annexus_10yr\sthen\r\n
+\s\s\s\sreturn\s10\r\n
+elif\sis_annexus_5yr\sthen\r\n
+\s\s\s\sreturn\s5\r\n
+\r\n
+else\r\n
+\s\s\s\s\sreturn\s1\r\n
+end</c>
+            <c name="ann_fac_annexus">if\s!is_annexus\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+return\sann_fac_func(\r\n
+\s\s\s\sstep,\s\r\n
+\s\s\s\sSurvComp.t,\r\n
+\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\shw_tenors,\s\r\n
+\s\s\s\szc,\r\n
+\s\s\s\sSurvComp[step].annual_steps_to_end,\s\r\n
+\s\s\s\sadj_multi*option_budget[step_esg],\r\n
+\s\s\s\smawa_yte,\r\n
+\s\s\s\spip_ratio\r\n
+)</c>
+            <c name="ib_on_income_activation">/*Assume\sthe\sincome\sstarts\sfrom\sthe\scurrent\stime\sstep\sand\swithin\sa\sX5\sstrategy\sterm,\s\r\n
+the\sincome\sbase\sis\simmediately\sstepped\sup\sby\s\r\n
+strategy\sreturn*adjustment\sfactor*multiplier\r\n
+*/\r\n
+if\ssystematic_withdrawal_started_bop\sthen\s\r\n
+\s\s\s\sreturn\sincome_base_cf\r\n
+else\s\r\n
+\s\s\s\sreturn\sincome_base_inforce\r\n
+end</c>
+            <c name="apv_lb">if\s!is_annexus\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+return\sX5_apv_func(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\slibor_curve[step_esg,:],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sib_on_income_activation,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\soption_budget[step_esg],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sadj_multi,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\smawa_rate)</c>
+            <c name="discount_factor_5yr">=\sSafeDivide((1-((1+corporate_curve[step_esg,4])^SafeDivide(1,12,0))^(-60)),((1+corporate_curve[step_esg,4])^SafeDivide(1,12,0)-1),0)</c>
+            <c name="apv_db">if\s!is_annexus\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+return\sX5_apv_db_func(\r\n
+\s\s\s\sstep,\s\r\n
+\s\s\s\sSurvComp.t,\r\n
+\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\shw_tenors,\s\r\n
+\s\s\s\szc,\r\n
+\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\sib_on_income_activation,\r\n
+\s\s\s\soption_budget[step_esg],\r\n
+\s\s\s\sadj_multi,\r\n
+\s\s\s\smawa_rate,\r\n
+\s\s\s\saccount_value,\r\n
+\s\s\s\sdeath_ben,\r\n
+\s\s\s\sdiscount_factor_5yr,\r\n
+\s\s\s\sDB_floor\r\n
+\s\s\s\s)</c>
+            <c name="mawa_yte">=\siif(living_benefit_elected\sand\scompare(mawa\s!=\s0,\s1e-3),\r\n
+\s\s\s\sint(ceil(account_value_bop\s/\smawa)),\s0)</c>
+            <c name="pip_ratio">=\siif(living_benefit_elected,\sSafeDivide(pip,\smawa,\s0),\s0)</c>
+            <c name="ann_fac">/*\r\n
+Annuity\sfactor,\swhen\smultiplied\sby\sthe\smaximum\sannual\swithdrawal\samount,\r\n
+shows\sthe\sPV\sof\sfuture\swithdrawal.\r\n
+*/\r\n
+\r\n
+=\sann_fac_func(\r\n
+\s\s\s\sstep,\s\r\n
+\s\s\s\sSurvComp.t,\r\n
+\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\shw_tenors,\s\r\n
+\s\s\s\szc,\r\n
+\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s0,\r\n
+\s\s\s\smawa_yte,\r\n
+\s\s\s\spip_ratio\r\n
+)</c>
+            <c name="ann_fac_legacy">/*\r\n
+Annuity\sfactor,\swhen\smultiplied\sby\sthe\smaximum\sannual\swithdrawal\samount,\r\n
+shows\sthe\sPV\sof\sfuture\swithdrawal.\r\n
+*/\r\n
+\r\n
+=\sann_fac_func_legacy(\r\n
+\s\s\s\sstep,\s\r\n
+\s\s\s\sSurvComp.t,\r\n
+\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\shw_tenors,\s\r\n
+\s\s\s\szc,\r\n
+\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s0,\r\n
+\s\s\s\smawa_yte,\r\n
+\s\s\s\spip_ratio\r\n
+)</c>
+            <c name="ann_fac_terminal">=\s0</c>
+            <c name="life_expectancy"></c>
+            <c name="lad_mawa">=\siif(is_rider_income_builder,\sglia,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(is_guardian,\smaturity_payment,\smawa_rate\s*\sincome_base_cf))</c>
+            <c name="lad_pip">=\siif(is_rider_income_builder,\sglia,\spip_rate\s*\sincome_base_cf)</c>
+            <c name="risky_curve">/*\r\n
+The\sgroup\sof\srisky\srates\sby\stenors\r\n
+*/\r\n
+\r\n
+=corporate_curve[step_esg,$index]</c>
+            <c name="npa_curve">=\snpa_table[step_esg,$index]</c>
+            <c name="npa_curve_at_issue">=\szc[$index]\s+\snpa_spread_at_issue_zero_table[step,\s$index]</c>
+            <c name="npa_curve_nippon_life">=\szc[$index]\s+\snpa_spread_nippon_life_zero_table[step,\s$index]</c>
+            <c name="npa_total_curve">=\szc[$index]\s+\snpa_total_spread_zero_table[step,\s$index]</c>
+            <c name="cf_lad_host">=\s0</c>
+            <c name="cf_lad_index_credit">=\s0</c>
+            <c name="cf_lad_withdrawal">=\s0</c>
+            <c name="cf_lad_claim">=\s0</c>
+            <c name="cf_lad_index_credit_ex_credit">=\s0</c>
+            <c name="cf_lad_claim_ex_credit">=\s0</c>
+            <c name="cf_lad_index_credit_nippon_life">=\s0</c>
+            <c name="cf_lad_claim_nippon_life">=\s0</c>
+            <c name="cf_lad_index_credit_ex_total_curve">=\s0</c>
+            <c name="cf_lad_claim_ex_total_curve">=\s0</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=prev(step)+1</c>
+            <c name="zc">=libor_curve[step_esg,$index]</c>
+            <c name="option_budget_st">//The\stotal\soption\sbudget\sfor\sthe\scurrent\sstrategy\sterm\r\n
+=iif(is_annexus_5yr,\sob_5yr[step_esg],\soption_budget[step_esg])</c>
+            <c name="fair_value">=option_budget_st*(1-elapsed_strategy_term)^X5_parameters.alpha_time_value\s+\sstrategy_return\r\n
+</c>
+            <c name="strategy_term_end_year">if\sis_annexus_10yr\sthen\r\n
+\s\s\s\sif\spolicyYear[step]\s&lt;\s11\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\s10\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\siif(credit_interest_now[step-1],prev(strategy_term_end_year)+1,prev(strategy_term_end_year))\r\n
+\s\s\s\send\r\n
+elif\sinvestment_account\s=\s30\sthen\r\n
+\s\s\s\sif\spolicyYear[step]&lt;6\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\s5\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\siif(credit_interest_now[step-1],prev(strategy_term_end_year)+1,prev(strategy_term_end_year))\r\n
+\s\s\s\send\r\n
+elif\sis_annexus_5yr\sthen\s\r\n
+\s\s\s\sif\spolicyYear[step]\s&lt;\s6\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\s5\r\n
+\s\s\s\selif\spolicyYear[step]&lt;16\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\siif(credit_interest_now[step-1],prev(strategy_term_end_year)+5,prev(strategy_term_end_year))\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\siif(credit_interest_now[step-1],prev(strategy_term_end_year)+1,prev(strategy_term_end_year))\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\s\sreturn\siif(credit_interest_now[step-1],prev(strategy_term_end_year)+1,prev(strategy_term_end_year))\r\n
+end\r\n
+</c>
+            <c name="ann_fac_annexus">if\s!is_annexus\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+return\sann_fac_func(\r\n
+\s\s\s\sstep,\s\r\n
+\s\s\s\sSurvComp.t,\r\n
+\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\shw_tenors,\s\r\n
+\s\s\s\szc,\r\n
+\s\s\s\sSurvComp[step].annual_steps_to_end,\s\r\n
+\s\s\s\sadj_multi*option_budget[step_esg],\r\n
+\s\s\s\smawa_yte,\r\n
+\s\s\s\spip_ratio\r\n
+)</c>
+            <c name="ib_on_income_activation">/*Assume\sthe\sincome\sstarts\sfrom\sthe\scurrent\stime\sstep\sand\swithin\sa\sX5\sstrategy\sterm,\s\r\n
+the\sincome\sbase\sis\simmediately\sstepped\sup\sby\s\r\n
+strategy\sreturn*adjustment\sfactor*multiplier\r\n
+*/\r\n
+if\ssystematic_withdrawal_started_bop\sthen\s\r\n
+\s\s\s\sreturn\sincome_base_cf\r\n
+end\r\n
+\r\n
+if\sis_annexus_5yr\sthen\s\r\n
+\s\s\s\sif\s10\s&lt;\spolicyYear[step-1]\sand\spolicyYear[step]\s&lt;\s16\sthen\s\r\n
+\s\s\s\s\s\s\s\sreturn\sincome_base_cf*(1+\selapsed_strategy_term*multi*strategy_return)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\sincome_base_cf\r\n
+\s\s\s\send\r\n
+else\r\n
+\s\s\s\sreturn\sincome_base_cf\r\n
+end\r\n
+</c>
+            <c name="apv_lb">if\s!is_annexus\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+if\s!is_ann_fac_recalc_date[step-1]\sthen\r\n
+\s\s\sreturn\sprev(apv_lb)\r\n
+end\r\n
+\r\n
+if\sis_annexus_5yr\sand\spolicyYear[step-1]\s&gt;10\sand\spolicyYear[step]\s&lt;\s16\sthen\s\r\n
+\s\s\s\sreturn\sx5_apv_func_2(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\szc,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sib_on_income_activation,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\soption_budget[step_esg],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sadj_multi,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\smawa_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sstrategy_term_end_year,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\selapsed_strategy_term,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sfair_value)\r\n
+else\s\s\s\r\n
+\s\s\s\sreturn\sx5_apv_func(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\szc,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sib_on_income_activation,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\soption_budget[step_esg],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sadj_multi,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\smawa_rate)\r\n
+end</c>
+            <c name="discount_factor_5yr">=\sSafeDivide((1-((1+corporate_curve[step_esg,4])^SafeDivide(1,12,0))^(-60)),((1+corporate_curve[step_esg,4])^SafeDivide(1,12,0)-1),0)</c>
+            <c name="apv_db">if\s!is_annexus\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+if\sis_annexus_5yr\sand\spolicyYear[step-1]\s&gt;\s10\sand\spolicyYear[step]\s&lt;\s16\sthen\s\r\n
+\s\s\s\sreturn\sX5_apv_db_func_2(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\szc,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sib_on_income_activation,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\soption_budget[step_esg],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sadj_multi,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\smawa_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sdeath_ben,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sdiscount_factor_5yr,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDB_floor,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sstrategy_term_end_year,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\selapsed_strategy_term,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sfair_value)\r\n
+else\s\s\s\r\n
+\r\n
+\s\s\s\sreturn\sX5_apv_db_func(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\szc,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sib_on_income_activation,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\soption_budget[step_esg],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sadj_multi,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\smawa_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sdeath_ben,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sdiscount_factor_5yr,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sDB_floor)\r\n
+end\r\n
+</c>
+            <c name="mawa_yte">=\siif(living_benefit_elected\sand\scompare(mawa\s!=\s0,\s1e-3),\r\n
+\s\s\s\sint(ceil(account_value_bop\s/\smawa)),\s0)</c>
+            <c name="pip_ratio">=\siif(living_benefit_elected,\sSafeDivide(pip,\smawa,\s0),\s0)</c>
+            <c name="ann_fac">/*\r\n
+Annuity\sfactor,\swhen\smultiplied\sby\sthe\smaximum\sannual\swithdrawal\samount,\r\n
+shows\sthe\sPV\sof\sfuture\swithdrawal.\r\n
+*/\r\n
+if\s!is_ann_fac_recalc_date[step]\sthen\r\n
+\s\s\s\sreturn\sprev(ann_fac)\r\n
+end\r\n
+\r\n
+return\sann_fac_func(\r\n
+\s\s\s\sstep,\s\r\n
+\s\s\s\sSurvComp.t,\r\n
+\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\shw_tenors,\s\r\n
+\s\s\s\szc,\r\n
+\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s0,\r\n
+\s\s\s\smawa_yte,\r\n
+\s\s\s\spip_ratio\r\n
+)</c>
+            <c name="ann_fac_legacy">/*\r\n
+Annuity\sfactor,\swhen\smultiplied\sby\sthe\smaximum\sannual\swithdrawal\samount,\r\n
+shows\sthe\sPV\sof\sfuture\swithdrawal.\r\n
+*/\r\n
+if\s!is_ann_fac_recalc_date[step]\sthen\r\n
+\s\s\s\sreturn\sprev(ann_fac_legacy)\r\n
+end\r\n
+\r\n
+return\sann_fac_func_legacy(\r\n
+\s\s\s\sstep,\s\r\n
+\s\s\s\sSurvComp.t,\r\n
+\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\shw_tenors,\s\r\n
+\s\s\s\szc,\r\n
+\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s0,\r\n
+\s\s\s\smawa_yte,\r\n
+\s\s\s\spip_ratio\r\n
+)</c>
+            <c name="ann_fac_terminal">0/*if\sstep\s!=\sn_step\sthen\s\r\n
+\s\s\s\sreturn\s0\s\r\n
+end\r\n
+\r\n
+return\sann_fac_func_terminal(\r\n
+\s\s\s\sstep,\s\r\n
+\s\s\s\sSurvComp.t,\r\n
+\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\sSurvComp.surv_base_lapse,\r\n
+\s\s\s\smawa_yte,\r\n
+\s\s\s\shw_tenors,\s\r\n
+\s\s\s\slibor_curve,\r\n
+\s\s\s\sSurvComp[step].annual_steps_to_end,\r\n
+\s\s\s\s0\r\n
+)*/</c>
+            <c name="life_expectancy">if\s!is_guardian\sor\s!is_after_maturity_date\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+endif\r\n
+\r\n
+return\slife_expectancy(step,\sSurvComp.t,\sSurvComp.surv)</c>
+            <c name="lad_mawa">=\siif(is_rider_income_builder,\sglia,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(is_guardian,\smaturity_payment,\smawa_rate\s*\sincome_base_cf))</c>
+            <c name="lad_pip">=\siif(is_rider_income_builder,\sglia,\spip_rate\s*\sincome_base_cf)</c>
+            <c name="risky_curve">/*\r\n
+The\sgroup\sof\srisky\srates\sby\stenors\r\n
+*/\r\n
+\r\n
+=corporate_curve[step_esg,$index]</c>
+            <c name="npa_curve">=\snpa_table[step_esg,$index]</c>
+            <c name="npa_curve_at_issue">=\szc[$index]\s+\snpa_spread_at_issue_zero_table[step,\s$index]</c>
+            <c name="npa_curve_nippon_life">=\szc[$index]\s+\snpa_spread_nippon_life_zero_table[step,\s$index]</c>
+            <c name="npa_total_curve">=\szc[$index]\s+\snpa_total_spread_zero_table[step,\s$index]</c>
+            <c name="cf_lad_host">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.HOST),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="cf_lad_index_credit">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sif\sdf_type\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.INDEX_CREDIT),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.INDEX_CREDIT),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\srisky_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="cf_lad_withdrawal">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sif\sdf_type\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.WITHDRAWAL),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.WITHDRAWAL),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\srisky_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="cf_lad_claim">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sif\sdf_type\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.CLAIM),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.CLAIM),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\srisky_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="cf_lad_index_credit_ex_credit">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sif\sdf_type\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.INDEX_CREDIT),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_curve_at_issue,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.INDEX_CREDIT),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\srisky_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="cf_lad_claim_ex_credit">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sif\sdf_type\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.CLAIM),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_curve_at_issue,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.CLAIM),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\srisky_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="cf_lad_index_credit_nippon_life">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sif\sdf_type\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.INDEX_CREDIT),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_curve_nippon_life,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.INDEX_CREDIT),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\srisky_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="cf_lad_claim_nippon_life">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sif\sdf_type\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.CLAIM),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_curve_nippon_life,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.CLAIM),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\srisky_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="cf_lad_index_credit_ex_total_curve">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sif\sdf_type\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.INDEX_CREDIT),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_total_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.INDEX_CREDIT),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\srisky_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="cf_lad_claim_ex_total_curve">if\spolicy_inforce_ind\s==\s1\sand\sapply_lad\sand\sis_lad_period\sand\sliving_benefit_elected\sthen\r\n
+\s\s\s\sif\sdf_type\s==\s1\sthen\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.CLAIM),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\snpa_total_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sreturn\scompute_lad_cashflow(\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sint(lad_output_type_t.CLAIM),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sstep,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.t,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp.surv,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shw_tenors,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\srisky_curve,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\shost_rate,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_mawa,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\slad_pip,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\saccount_value,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\ssnfl_mwv,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\spremium,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sfixed_period,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sSurvComp[step].annual_steps_to_end\r\n
+\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\send\r\n
+else\s\s\s\s\s\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:actuarial_present_value_x5">
+      <c name="ann_fac" formattype="General" width="80" />
+      <c name="ann_fac_annexus" formattype="General" width="80" />
+      <c name="ann_fac_legacy" formattype="General" width="80" />
+      <c name="ann_fac_terminal" formattype="General" width="101.6" />
+      <c name="apv_db" formattype="General" width="80" />
+      <c name="cf_lad_claim" formattype="General" width="80" />
+      <c name="cf_lad_claim_ex_credit" formattype="General" width="80" />
+      <c name="cf_lad_claim_ex_total_curve" formattype="General" width="80" />
+      <c name="cf_lad_claim_nippon_life" formattype="General" width="80" />
+      <c name="cf_lad_host" formattype="General" width="80" />
+      <c name="cf_lad_index_credit" formattype="General" width="80" />
+      <c name="cf_lad_index_credit_ex_credit" formattype="General" width="80" />
+      <c name="cf_lad_index_credit_ex_total_curve" formattype="General" width="80" />
+      <c name="cf_lad_index_credit_nippon_life" formattype="General" width="80" />
+      <c name="cf_lad_withdrawal" formattype="General" width="80" />
+      <c name="lad_mawa" formattype="General" width="80" />
+      <c name="lad_pip" formattype="General" width="80" />
+      <c name="life_expectancy" formattype="General" width="80" />
+      <c name="mawa_yte" formattype="General" width="80" />
+      <c name="npa_curve[0]" formattype="General" width="80" />
+      <c name="npa_curve_at_issue[0]" formattype="General" width="80" />
+      <c name="npa_curve_nippon_life[0]" formattype="General" width="80" />
+      <c name="npa_total_curve[0]" formattype="General" width="80" />
+      <c name="option_budget_st" formattype="General" width="99.21921921921921" />
+      <c name="pip_ratio" formattype="General" width="80" />
+      <c name="risky_curve[0]" formattype="General" width="80" />
+      <c name="zc[0]" formattype="General" width="80" />
+    </view>
+    <view name="Computation:SurvComp">
+      <c name="annual_steps_to_end" formattype="General" width="80" />
+      <c name="surv" formattype="General" width="139.555555555556" />
+      <c name="surv_base_lapse" formattype="General" width="80" />
+      <c name="t" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>
