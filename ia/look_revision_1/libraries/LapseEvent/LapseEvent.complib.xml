@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="LapseEvent" version="master" format-version="20">
+  <inputs>
+    <input name="lapse_rate" type="real" modifier="Cashflow" />
+    <input name="policy_inforce_ind_bop" type="int" modifier="Cashflow" />
+    <input name="lapse_event_randu" type="real" modifier="Cashflow" />
+    <input name="disable_lapse" type="bool" />
+    <input name="is_after_maturity_date" type="bool" modifier="Cashflow" />
+    <input name="apply_lad" type="bool" />
+    <input name="living_benefit_elected" type="bool" />
+    <input name="is_lad_period" type="bool" modifier="Cashflow" />
+    <input name="after_maturity_at_val_date" type="bool" />
+    <input name="lad_mawa_amount" type="real" modifier="Cashflow" />
+    <input name="lad_pip_amount" type="real" modifier="Cashflow" />
+  </inputs>
+  <results>
+    <result name="lapse_this_period" ref="=Projection.lapse_this_period" />
+    <result name="policy_inforce_ind_eop" ref="=Projection.policy_inforce_ind_eop" />
+  </results>
+  <calculations>
+    <table name="Projection" type="CashFlow">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="lad_mawa" datatype="real" />
+        <c name="lad_pip" datatype="real" />
+        <c name="lapse_this_period" datatype="bool" />
+        <c name="policy_inforce_ind_eop" datatype="int" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="lad_mawa">=\slad_mawa_amount</c>
+            <c name="lad_pip">=\slad_pip_amount</c>
+            <c name="lapse_this_period">=\sFalse</c>
+            <c name="policy_inforce_ind_eop">=\spolicy_inforce_ind_bop</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=prev(step)+1</c>
+            <c name="lad_mawa">=\slad_mawa_amount</c>
+            <c name="lad_pip">=\slad_pip_amount</c>
+            <c name="lapse_this_period">if\sdisable_lapse\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+if\sapply_lad\sand\sis_after_maturity_date\sand\sliving_benefit_elected\r\n
+\s\s\s\sand\scompare(prev(lad_mawa)\s!=\s0,\s1e-03)\sand\scompare(prev(lad_pip)\s!=\s0,\s1e-03)\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+if\spolicy_inforce_ind_bop\s==\s1\sand\sapply_lad\sand\s!living_benefit_elected\sand\s!after_maturity_at_val_date\sand\sis_lad_period\sthen\r\n
+\s\s\s\sreturn\sTrue\r\n
+else\r\n
+\s\s\s\sreturn\siif(policy_inforce_ind_bop\s==\s1,\scompare(lapse_event_randu\s&lt;=\slapse_rate,\s1e-10),\sFalse)\r\n
+end</c>
+            <c name="policy_inforce_ind_eop">if\spolicy_inforce_ind_bop\s==\s0\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+return\siif(lapse_this_period,\s0,\s1)</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="lad_mawa" formattype="General" width="80" />
+      <c name="lad_pip" formattype="General" width="80" />
+      <c name="lapse_this_period" formattype="General" width="143.2" />
+      <c name="policy_inforce_ind_eop" formattype="General" width="178.4" />
+      <c name="step" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>

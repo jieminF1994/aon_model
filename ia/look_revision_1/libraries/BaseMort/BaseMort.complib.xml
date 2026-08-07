@@ -1,0 +1,707 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="BaseMort" version="master" format-version="20" description="Base mortality,&#xD;&#xA;survival percentage calculation">
+  <UserUDFs>
+    <udf name="SafeDivide">/*\r\n
+Safe\sdivide\sfunction\sto\savoid\sinvalid\sdivision\r\n
+*/\r\n
+\r\n
+real\sSafeDivide(real\snom,\sreal\sdenom,\sreal\sdefault_val)\r\n
+\s\s\s\sif\s(compare(denom==0,\s1E-8)\sor\scompare(abs(denom)&gt;1E10,\s1E-11))\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sdefault_val\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\sZeroIfSmall(nom/denom)\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="ZeroIfSmall">/*\r\n
+Set\svery\ssmall\snumber\sto\s0\r\n
+*/\r\n
+\r\n
+real\sZeroIfSmall(real\sarg)\r\n
+\r\n
+\s\s\s\sif\s(compare(arg\s==\s0,\s1E-6))\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\sarg\r\n
+\s\s\s\send\r\n
+end</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="time" type="real" shape="*" description="The beginning of the time period (in year)" />
+    <input name="time_dt" type="real" shape="*" description="The length of the time period (in year)" />
+    <input name="n_step" type="int" description="The total number of time steps" />
+    <input name="proj_date" type="date_t" shape="*" description="The date of the beginning of the time period" />
+    <input name="pol_age_1" type="int" shape="*" description="The age of the first covered person" />
+    <input name="pol_age_2" type="int" shape="*" description="The age of second covered person" />
+    <input name="dob_pa" type="date_t" description="Birthday of the first covered person" />
+    <input name="dob_jt" type="date_t" description="Birthday of the second covered person" />
+    <input name="mortality_rate_shock_multiplier" type="real" />
+    <input name="mortality_improvement_shock_multiplier" type="real" />
+    <input name="valuation_date" type="date_t" />
+    <input name="mortality_base_rate_1" type="real" shape="*" />
+    <input name="mortality_base_rate_2" type="real" shape="*" />
+    <input name="mortality_mult_glb_1" type="real" shape="*" />
+    <input name="mortality_mult_glb_2" type="real" shape="*" />
+    <input name="mortality_scale_g2_1" type="real" shape="*" />
+    <input name="mortality_scale_g2_2" type="real" shape="*" />
+    <input name="mortality_study_date" type="date_t" shape="*" />
+    <input name="mortality_base_rate_1_spouse" type="real" shape="*" />
+    <input name="mortality_mult_glb_1_spouse" type="real" shape="*" />
+    <input name="mortality_mult_no_glb_1_spouse" type="real" shape="*" />
+    <input name="mortality_scale_g2_1_spouse" type="real" shape="*" />
+    <input name="gender_1" type="int" />
+    <input name="mortality_study_date_at_issue" type="date_t" />
+    <input name="use_at_issue_assumptions" type="bool" />
+    <input name="living_benefit_elected" type="bool" />
+    <input name="mortality_mult_no_glb_1" type="real" shape="*" />
+    <input name="mortality_mult_no_glb_2" type="real" shape="*" />
+    <input name="use_2023_q3_mortality_assumptions" type="bool" />
+    <input name="mortality_study_date_2023" type="date_t" />
+    <input name="use_2024_q3_mortality_assumptions" type="bool" />
+    <input name="mortality_study_date_2024" type="date_t" />
+  </inputs>
+  <results>
+    <result name="survivor" ref="=Computation.Survivor" description="The probability that at least one covered person is alive at the end of this projection period" />
+    <result name="g2_1_base" ref="=Computation.G2_1_base" description="Mortality improvement factor of first person for base" />
+    <result name="g2_2_base" ref="=Computation.G2_2_base" description="Mortality improvement factor of second person for base" />
+    <result name="base_mort" ref="=Computation.Base_Mort" description="Base mortality rate of the first person" />
+    <result name="base_mort_2" ref="=Computation.Base_Mort2" description="Base mortality rate of the second person" />
+    <result name="g2_1_glwb" ref="=Computation.G2_1_glwb" description="Mortality improvement factor of first person for glwb" />
+    <result name="g2_2_glwb" ref="=Computation.G2_2_glwb" description="Mortality improvement factor of second person for glwb" />
+    <result name="final_mort" ref="=Computation.Final_Mort" />
+    <result name="final_mort_2" ref="=Computation.Final_Mort2" />
+    <result name="death_prob" ref="=Computation.death_prob" />
+    <result name="final_mort_spouse" ref="=Computation.Final_Mort_spouse" description="final mortality rate of the first person's potential spouse after flex" />
+    <result name="policy_age_1_spouse" ref="=Computation.PolicyAge1_spouse" description="age of the first person's potential spouse after flex" />
+  </results>
+  <calculations>
+    <table name="BaseMortParameters" type="KeyValue">
+      <column-groups>
+        <g name="g1" repeat-count="2" />
+        <g name="g2" repeat-count="2" />
+      </column-groups>
+      <c name="mort_study_date" datatype="date_t" group="g1">/*\r\n
+The\sdate\sof\sthe\slatest\smortality\sstudy,\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+=\siif(use_at_issue_assumptions,\smortality_study_date_at_issue,\r\n
+\s\s\s\siif(use_2024_q3_mortality_assumptions,\smortality_study_date_2024,\r\n
+\s\s\s\siif(use_2023_q3_mortality_assumptions,\smortality_study_date_2023,\r\n
+\s\s\s\smortality_study_date[$index])))</c>
+      <c name="mort_study_time_length" datatype="real" group="g2">/*\r\n
+The\stime\sin\syear\sbetween\sthe\slatest\smortality\sstudy\sdate\sand\sthe\stape\sdate,\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+=\sday_count_int(BaseMortParameters.mort_study_date[$index],\svaluation_date)\s/\s365.25</c>
+    </table>
+    <table name="Computation" type="Computation">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="projection_date" datatype="date_t" />
+        <c name="PolicyAge1" datatype="int" />
+        <c name="PolicyAge2" datatype="int" />
+        <c name="PolicyAge1_spouse" datatype="int" />
+        <c name="Base_Mort" datatype="real" />
+        <c name="Base_Mort2" datatype="real" />
+        <c name="Base_Mort_spouse" datatype="real" />
+        <c name="Mort_mult1" datatype="real" />
+        <c name="Mort_mult2" datatype="real" />
+        <c name="Mort_mult1_spouse" datatype="real" />
+        <c name="G2_1_base" datatype="real" />
+        <c name="G2_1_glwb" datatype="real" />
+        <c name="G2_1_base_spouse" datatype="real" />
+        <c name="G2_1_glwb_spouse" datatype="real" />
+        <c name="G2_2_base" datatype="real" />
+        <c name="G2_2_glwb" datatype="real" />
+        <c name="MortTM" datatype="real" />
+        <c name="MortTM2" datatype="real" />
+        <c name="MortTM_spouse" datatype="real" />
+        <c name="NCMProp" datatype="real" />
+        <c name="NCMProp2" datatype="real" />
+        <c name="NCMProp_spouse" datatype="real" />
+        <c name="Final_Mort" datatype="real" />
+        <c name="Final_Mort2" datatype="real" />
+        <c name="Final_Mort_spouse" datatype="real" />
+        <c name="XY" datatype="real" />
+        <c name="XD" datatype="real" />
+        <c name="DY" datatype="real" />
+        <c name="DD" datatype="real" />
+        <c name="death_prob" datatype="real" />
+        <c name="Survivor" datatype="real" />
+      </columns>
+      <row-groups>
+        <rg name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="projection_date">/*\r\n
+The\sprojection\sdate\r\n
+*/\r\n
+\r\n
+=proj_date[step]</c>
+            <c name="PolicyAge1">/*\r\n
+The\sage\sof\sthe\sfirst\scovered\sperson\r\n
+*/\r\n
+\r\n
+=pol_age_1[step]</c>
+            <c name="PolicyAge2">/*\r\n
+The\sage\sof\sthe\ssecond\scovered\sperson,\r\n
+set\sto\s0\sif\sthere\sis\sno\ssecond\sperson.\r\n
+*/\r\n
+\r\n
+=pol_age_2[step]</c>
+            <c name="PolicyAge1_spouse">=\smax(0,iif(gender_1\s=\s0,\sPolicyAge1\s-\s2,\sPolicyAge1\s+\s2))</c>
+            <c name="Base_Mort">/*\r\n
+Base\smortality\srate\sof\sthe\sfirst\sperson\r\n
+*/\r\n
+\r\n
+=iif(PolicyAge1\s&lt;\s121,\smortality_base_rate_1[PolicyAge1],\s1000.0)\s/\s1000.0</c>
+            <c name="Base_Mort2">/*\r\n
+Base\smortality\srate\sof\sthe\ssecond\sperson\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\siif(PolicyAge2\s&lt;\s121,\smortality_base_rate_2[PolicyAge2],\s1000.0)\s/\s1000.0\r\n
+end</c>
+            <c name="Base_Mort_spouse">/*\r\n
+Base\smortality\srate\sof\sthe\sfirst\sperson's\spotential\sspouse\safter\sflex\r\n
+*/\r\n
+\r\n
+=\smortality_rate_shock_multiplier\s*\siif(PolicyAge1_spouse\s&lt;\s121,\r\n
+\s\s\s\smortality_base_rate_1_spouse[PolicyAge1_spouse],\s1000.0)\s/\s1000.0</c>
+            <c name="Mort_mult1">/*\r\n
+Mortality\smultiplier\sfor\sthe\sfirst\sperson,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+=\siif(living_benefit_elected,\smortality_mult_glb_1[min(120,\sPolicyAge1)],\smortality_mult_no_glb_1[min(120,\sPolicyAge1)])</c>
+            <c name="Mort_mult2">/*\r\n
+Mortality\smultiplier\sfor\sthe\ssecond\sperson,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\s\s\s\s\r\n
+return\siif(living_benefit_elected,\smortality_mult_glb_2[min(120,\sPolicyAge2)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smortality_mult_no_glb_2[min(120,\sPolicyAge2)])</c>
+            <c name="Mort_mult1_spouse">/*\r\n
+Mortality\smultiplier\sof\sthe\sfirst\sperson's\spotential\sspouse\safter\sflex,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+=\siif(living_benefit_elected,\smortality_mult_glb_1_spouse[min(120,\sPolicyAge1_spouse)],\r\n
+\s\s\s\smortality_mult_no_glb_1_spouse[min(120,\sPolicyAge1_spouse)])</c>
+            <c name="G2_1_base">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge1\s&lt;\s120)\sthen\s\r\n
+\s\s\s\sreturn\s(1\s-\smortality_scale_g2_1[PolicyAge1])\s^\sBaseMortParameters.mort_study_time_length[0]\r\n
+\s\s\s\s\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_1[PolicyAge1])\s^\stime[step]\r\n
+else\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="G2_1_glwb">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge1\s&lt;\s120)\sthen\s\r\n
+\s\s\s\sreturn\s(1\s-\smortality_scale_g2_1[PolicyAge1])\s^\sBaseMortParameters.mort_study_time_length[1]\r\n
+\s\s\s\s\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_1[PolicyAge1])\s^\stime[step]\r\n
+else\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="G2_1_base_spouse">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson's\spotential\sspouse\safter\sflex,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+=\s(1\s-\smortality_scale_g2_1_spouse[min(120,PolicyAge1_spouse)])\s^\sBaseMortParameters.mort_study_time_length[0]\r\n
+\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_1_spouse[min(120,PolicyAge1_spouse)])\s^\stime[step]</c>
+            <c name="G2_1_glwb_spouse">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson's\spotential\sspouse\safter\sflex,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+=\s(1\s-\smortality_scale_g2_1_spouse[min(120,PolicyAge1_spouse)])\s^\sBaseMortParameters.mort_study_time_length[1]\r\n
+\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_1_spouse[min(120,PolicyAge1_spouse)])\s^\stime[step]</c>
+            <c name="G2_2_base">/*\r\n
+Mortality\simprovement\sfactor\sof\ssecond\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0\sor\sPolicyAge2\s&gt;=\s120)\sthen\r\n
+\s\s\s\sreturn\s0\s\r\n
+else\r\n
+\s\s\s\sreturn\s(1\s-\smortality_scale_g2_2[PolicyAge2])\s^\sBaseMortParameters.mort_study_time_length[0]\r\n
+\s\s\s\s\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_2[PolicyAge2])\s^\stime[step]\r\n
+end</c>
+            <c name="G2_2_glwb">/*\r\n
+Mortality\simprovement\sfactor\sof\ssecond\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0\sor\sPolicyAge2\s&gt;=\s120)\sthen\r\n
+\s\s\s\sreturn\s0\s\r\n
+else\r\n
+\s\s\s\sreturn\s(1\s-\smortality_scale_g2_2[PolicyAge2])\s^\sBaseMortParameters.mort_study_time_length[1]\r\n
+\s\s\s\s\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_2[PolicyAge2])\s^\stime[step]\r\n
+end</c>
+            <c name="MortTM">/*\r\n
+Mortality\srate\sof\sthe\sfirst\sperson\sfor\sGLWB\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+=\s1\s-\s(1\s-\smin(1,\sBase_Mort\s*\sMort_mult1)\s*\siif(living_benefit_elected,\sG2_1_glwb,\sG2_1_base))\s^\sTime_dt[step]</c>
+            <c name="MortTM2">/*\r\n
+Mortality\srate\sof\sthe\ssecond\sperson\sfor\sGLWB\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\s\s\s\s\r\n
+\s\s\s\sreturn\s1\s-\s(1\s-\smin(1,\sBase_Mort2\s*\sMort_mult2)\s*\siif(living_benefit_elected,\sG2_2_glwb,\sG2_2_base))\s^\sTime_dt[step]\r\n
+end</c>
+            <c name="MortTM_spouse">/*\r\n
+Mortality\srate\sof\sthe\sfirst\sperson's\spotential\sspouse\safter\sflex,\r\n
+for\sGLWB\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+=\s1\s-\s(1\s-\smin(1,\sBase_Mort_spouse\s*\sMort_mult1_spouse)\s*\siif(living_benefit_elected,\sG2_1_glwb_spouse,\sG2_1_base_spouse))\s^\sTime_dt[step]</c>
+            <c name="NCMProp">/*\r\n
+If\sthe\sage\sof\sthe\sfirst\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+=0\r\n
+</c>
+            <c name="NCMProp2">/*\r\n
+If\sthe\sage\sof\sthe\ssecond\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="NCMProp_spouse">/*\r\n
+If\sthe\sage\sof\sthe\sfirst\sperson's\spotential\sspouse\safter\sflex\r\n
+changes\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+\r\n
+=0\r\n
+</c>
+            <c name="Final_Mort">/*\r\n
+Final\smortality\srate\sof\sthe\sfirst\sperson\safter\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(compare(NCMProp\s==\s0,1E-3))\sthen\r\n
+\s\s\s\sreturn\sMortTM\r\n
+else\r\n
+\s\s\s\sreturn\s1\s-\s(1-\sprev(MortTM))^(1-NCMProp)\s*\s(1-MortTM)^NCMProp\r\n
+end</c>
+            <c name="Final_Mort2">/*\r\n
+Final\smortality\srate\sof\sthe\ssecond\sperson\safter\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\r\n
+return\s0\r\n
+end\r\n
+\r\n
+if\s(compare(NCMProp2\s==\s0,1E-3))\sthen\r\n
+\s\s\s\sreturn\sMortTM2\r\n
+else\r\n
+\s\s\s\sreturn\s1\s-\s(1-\sprev(MortTM2))^((1-NCMProp2))\s*\s(1-MortTM2)^(NCMProp2)\s\r\n
+end</c>
+            <c name="Final_Mort_spouse">/*\r\n
+Final\smortality\srate\sof\sthe\sfirst\sperson's\spotential\sspouse\safter\sflex\r\n
+after\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(compare(NCMProp_spouse\s==\s0,1E-3))\sthen\r\n
+\s\s\s\sreturn\sMortTM_spouse\r\n
+else\r\n
+\s\s\s\sreturn\s1\s-\s(1-\sprev(MortTM_spouse))^(1-NCMProp_spouse)\s*\s(1-MortTM_spouse)^NCMProp_spouse\r\n
+end</c>
+            <c name="XY">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\salive\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=iif(PolicyAge2=0,\s0,\s1)</c>
+            <c name="XD">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\salive\sbut\sthe\ssecond\sperson\sis\sdead\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=iif(PolicyAge2\s=\s0\s,\s1,\s0)</c>
+            <c name="DY">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\salive\sbut\sthe\ssecond\sperson\sis\sdead\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+Set\sto\s0\sat\sthe\sbeginning.\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="DD">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\sdead\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+Set\sto\s0\sat\sthe\sbeginning.\r\n
+*/\r\n
+\r\n
+=0</c>
+            <c name="death_prob">=\s0</c>
+            <c name="Survivor">/*\r\n
+The\sprobability\sthat\sat\sleast\sone\scovered\sperson\sis\salive\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=XY+XD+DY</c>
+          </columns>
+        </rg>
+        <rg name="rg2">
+          <repeat>=n_step\r\n
+</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=prev(step)+1</c>
+            <c name="projection_date">/*\r\n
+The\sprojection\sdate\r\n
+*/\r\n
+\r\n
+=proj_date[step]</c>
+            <c name="PolicyAge1">=pol_age_1[step]</c>
+            <c name="PolicyAge2">/*\r\n
+The\sage\sof\sthe\ssecond\scovered\sperson,\r\n
+set\sto\s0\sif\sthere\sis\sno\ssecond\sperson.\r\n
+*/\r\n
+\r\n
+=pol_age_2[step]</c>
+            <c name="PolicyAge1_spouse">=\smax(0,iif(gender_1\s=\s0,\sPolicyAge1\s-\s2,\sPolicyAge1\s+\s2))</c>
+            <c name="Base_Mort">/*\r\n
+Base\smortality\srate\sof\sthe\sfirst\sperson\r\n
+*/\r\n
+\r\n
+=\smortality_rate_shock_multiplier\s*\siif(PolicyAge1\s&lt;\s121,\smortality_base_rate_1[PolicyAge1],\s1000.0)\s/\s1000.0</c>
+            <c name="Base_Mort2">/*\r\n
+Base\smortality\srate\sof\sthe\ssecond\sperson\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\smortality_rate_shock_multiplier\r\n
+\s\s\s\s\s\s\s\s*\siif(PolicyAge2\s&lt;\s121,\smortality_base_rate_2[PolicyAge2],\s1000.0)\s/\s1000.0\r\n
+end</c>
+            <c name="Base_Mort_spouse">/*\r\n
+Base\smortality\srate\sof\sthe\sfirst\sperson's\spotential\sspouse\safter\sflex\r\n
+*/\r\n
+\r\n
+=\smortality_rate_shock_multiplier\s*\siif(PolicyAge1_spouse\s&lt;\s121,\r\n
+\s\s\s\smortality_base_rate_1_spouse[PolicyAge1_spouse],\s1000.0)\s/\s1000.0</c>
+            <c name="Mort_mult1">/*\r\n
+Mortality\smultiplier\sfor\sthe\sfirst\sperson,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+=\siif(living_benefit_elected,\smortality_mult_glb_1[min(120,\sPolicyAge1)],\smortality_mult_no_glb_1[min(120,\sPolicyAge1)])</c>
+            <c name="Mort_mult2">/*\r\n
+Mortality\smultiplier\sfor\sthe\ssecond\sperson,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\s\s\s\s\r\n
+return\siif(living_benefit_elected,\smortality_mult_glb_2[min(120,\sPolicyAge2)],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\smortality_mult_no_glb_2[min(120,\sPolicyAge2)])</c>
+            <c name="Mort_mult1_spouse">/*\r\n
+Mortality\smultiplier\sof\sthe\sfirst\sperson's\spotential\sspouse\safter\sflex,\r\n
+depends\son\swhether\sthe\sliving\sbenefit\srider\sis\sselected.\r\n
+*/\r\n
+\r\n
+=\siif(living_benefit_elected,\smortality_mult_glb_1_spouse[min(120,\sPolicyAge1_spouse)],\r\n
+\s\s\s\smortality_mult_no_glb_1_spouse[min(120,\sPolicyAge1_spouse)])</c>
+            <c name="G2_1_base">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge1\s&lt;\s120)\sthen\s\r\n
+\s\s\s\sreturn\s(1\s-\smortality_scale_g2_1[PolicyAge1])\s^\sBaseMortParameters.mort_study_time_length[0]\r\n
+\s\s\s\s\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_1[PolicyAge1])\s^\stime[step]\r\n
+else\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="G2_1_glwb">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge1\s&lt;\s120)\sthen\s\r\n
+\s\s\s\sreturn\s(1\s-\smortality_scale_g2_1[PolicyAge1])\s^\sBaseMortParameters.mort_study_time_length[1]\r\n
+\s\s\s\s\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_1[PolicyAge1])\s^\stime[step]\r\n
+else\s\s\s\r\n
+\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="G2_1_base_spouse">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson's\spotential\sspouse\safter\sflex,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+=\s(1\s-\smortality_scale_g2_1_spouse[min(120,PolicyAge1_spouse)])\s^\sBaseMortParameters.mort_study_time_length[0]\r\n
+\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_1_spouse[min(120,PolicyAge1_spouse)])\s^\stime[step]</c>
+            <c name="G2_1_glwb_spouse">/*\r\n
+Mortality\simprovement\sfactor\sof\sfirst\sperson's\spotential\sspouse\safter\sflex,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+=\s(1\s-\smortality_scale_g2_1_spouse[min(120,PolicyAge1_spouse)])\s^\sBaseMortParameters.mort_study_time_length[1]\r\n
+\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_1_spouse[min(120,PolicyAge1_spouse)])\s^\stime[step]</c>
+            <c name="G2_2_base">/*\r\n
+Mortality\simprovement\sfactor\sof\ssecond\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0\sor\sPolicyAge2\s&gt;=\s120)\sthen\r\n
+\s\s\s\sreturn\s0\s\r\n
+else\r\n
+\s\s\s\sreturn\s(1\s-\smortality_scale_g2_2[PolicyAge2])\s^\sBaseMortParameters.mort_study_time_length[0]\r\n
+\s\s\s\s\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_2[PolicyAge2])\s^\stime[step]\r\n
+end</c>
+            <c name="G2_2_glwb">/*\r\n
+Mortality\simprovement\sfactor\sof\ssecond\sperson,\r\n
+used\sin\sfinal\smortality\srate\scalculation.\r\n
+0\sfor\sbase,\s1\sfor\sGLWB\s\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0\sor\sPolicyAge2\s&gt;=\s120)\sthen\r\n
+\s\s\s\sreturn\s0\s\r\n
+else\r\n
+\s\s\s\sreturn\s(1\s-\smortality_scale_g2_2[PolicyAge2])\s^\sBaseMortParameters.mort_study_time_length[1]\r\n
+\s\s\s\s\s\s\s\s*\s(1\s-\smortality_improvement_shock_multiplier\s*\smortality_scale_g2_2[PolicyAge2])\s^\stime[step]\r\n
+end</c>
+            <c name="MortTM">/*\r\n
+Mortality\srate\sof\sthe\sfirst\sperson\sfor\sGLWB\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+=\s1\s-\s(1\s-\smin(1,\sBase_Mort\s*\sMort_mult1)\s*\siif(living_benefit_elected,\sG2_1_glwb,\sG2_1_base))\s^\sTime_dt[step]</c>
+            <c name="MortTM2">/*\r\n
+Mortality\srate\sof\sthe\ssecond\sperson\sfor\sGLWB\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\s\r\n
+\s\s\s\sreturn\s0\r\n
+else\s\s\s\s\r\n
+\s\s\s\sreturn\s1\s-\s(1\s-\smin(1,\sBase_Mort2\s*\sMort_mult2)\s*\siif(living_benefit_elected,\sG2_2_glwb,\sG2_2_base))\s^\sTime_dt[step]\r\n
+end</c>
+            <c name="MortTM_spouse">/*\r\n
+Mortality\srate\sof\sthe\sfirst\sperson's\spotential\sspouse\safter\sflex,\r\n
+for\sGLWB\sin\sthis\sprojection\speriod.\r\n
+\r\n
+It\sdepends\son\sbase\smortality\srate,\r\n
+mortality\smultiplier\s(different\sfor\sliving\sbenefit\sand\snon\sliving\sbenefit),\r\n
+and\smortality\simprovement\sfactor\s(for\sa\sgiven\sage,\r\n
+death\sprobability\swill\sdecrease\salong\stime\sbecause\sof\snew\stechnology).\r\n
+*/\r\n
+\r\n
+=\s1\s-\s(1\s-\smin(1,\sBase_Mort_spouse\s*\sMort_mult1_spouse)\s*\siif(living_benefit_elected,\sG2_1_glwb_spouse,\sG2_1_base_spouse))\s^\sTime_dt[step]</c>
+            <c name="NCMProp">/*\r\n
+If\sthe\sage\sof\sthe\sfirst\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+0\r\n
+/*if(PolicyAge1\s==\sprev(PolicyAge1))\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sMax(projection_date.day\s-\sdob_pa.day,0.0)/projection_date.day\r\n
+end*/\r\n
+</c>
+            <c name="NCMProp2">/*\r\n
+If\sthe\sage\sof\sthe\ssecond\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+0\r\n
+/*if(PolicyAge2\s==\sprev(PolicyAge2))\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sMax(projection_date.day\s-\sdob_jt.day,0.0)/projection_date.day\r\n
+end*/\r\n
+</c>
+            <c name="NCMProp_spouse">/*\r\n
+If\sthe\sage\sof\sthe\sfirst\sperson\s's\spotential\sspouse\safter\sflex\r\n
+changes\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+i.e.\sthe\sbirthday\sis\sin\sthe\speroid,\r\n
+return\sthe\spercentage\sof\sdays\sin\smonth\sthat\shis/her\sage\sis\sn.\r\n
+It\sis\sused\sin\sfinal\smortality\srate\scalculation.\r\n
+*/\r\n
+0\r\n
+/*\r\n
+if(PolicyAge1_spouse\s==\sprev(PolicyAge1_spouse))\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+else\r\n
+\s\s\s\sreturn\sMax(projection_date.day\s-\sdob_pa.day,0.0)/projection_date.day\r\n
+end*/</c>
+            <c name="Final_Mort">/*\r\n
+Final\smortality\srate\sof\sthe\sfirst\sperson\safter\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(compare(NCMProp\s==\s0,1E-3))\sthen\r\n
+\s\s\s\sreturn\sMortTM\r\n
+else\r\n
+\s\s\s\sreturn\s1\s-\s(1-\sprev(MortTM))^(1-NCMProp)\s*\s(1-MortTM)^NCMProp\s\r\n
+end</c>
+            <c name="Final_Mort2">/*\r\n
+Final\smortality\srate\sof\sthe\ssecond\sperson\safter\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(PolicyAge2\s==\s0)\sthen\r\n
+return\s0\r\n
+end\r\n
+\r\n
+if\s(compare(NCMProp2\s==\s0,1E-3))\sthen\r\n
+\s\s\s\sreturn\sMortTM2\r\n
+else\r\n
+\s\s\s\sreturn\s1\s-\s(1-\sprev(MortTM2))^((1-NCMProp2))\s*\s(1-MortTM2)^(NCMProp2)\s\r\n
+end</c>
+            <c name="Final_Mort_spouse">/*\r\n
+Final\smortality\srate\sof\sthe\sfirst\sperson's\spotential\sspouse\safter\sflex\r\n
+after\sbirthday\sadjustment.\r\n
+\r\n
+If\sthe\sage\sof\sthe\sperson\schanges\sfrom\sn\sto\sn+1\sin\sthis\sprojection\speriod,\r\n
+the\smortality\srates\sof\sboth\sage\sn\sand\sage\sn+1\sare\sused\sin\sthe\scalculation.\r\n
+*/\r\n
+\r\n
+if\s(compare(NCMProp_spouse\s==\s0,1E-3))\sthen\r\n
+\s\s\s\sreturn\sMortTM_spouse\r\n
+else\r\n
+\s\s\s\sreturn\s1\s-\s(1-\sprev(MortTM_spouse))^(1-NCMProp_spouse)\s*\s(1-MortTM_spouse)^NCMProp_spouse\r\n
+end</c>
+            <c name="XY">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\salive\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=prev(XY)*(1-Final_Mort)\s*(1-Final_Mort2)</c>
+            <c name="XD">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\salive\sbut\sthe\ssecond\sperson\sis\sdead\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=prev(XY)*(1-Final_Mort)*Final_Mort2\r\n
++prev(XD)*(1-Final_Mort)</c>
+            <c name="DY">/*\r\n
+The\sprobability\sthat\sthe\sfirst\sperson\sis\sdead\sbut\sthe\ssecond\sperson\sis\salive\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=prev(XY)*Final_mort*(1-Final_Mort2)\r\n
++prev(DY)*(1-Final_Mort2)</c>
+            <c name="DD">/*\r\n
+The\sprobability\sthat\sboth\scovered\spersons\sare\sdead\sat\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=prev(XY)*Final_Mort*Final_Mort2\r\n
++prev(XD)*Final_Mort\r\n
++prev(DY)*Final_Mort2\r\n
++prev(DD)</c>
+            <c name="death_prob">=\s1\s-\sSafeDivide(survivor,\sprev(survivor),\s0)</c>
+            <c name="Survivor">/*\r\n
+The\sprobability\sthat\sat\sleast\sone\scovered\sperson\sis\salive\r\n
+at\sthe\send\sof\sthis\sprojection\speriod.\r\n
+*/\r\n
+\r\n
+=XY+XD+DY</c>
+          </columns>
+        </rg>
+      </row-groups>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Computation:Computation">
+      <c name="Base_Mort_spouse" formattype="General" width="123" />
+      <c name="death_prob" formattype="General" width="80" />
+      <c name="Final_Mort" formattype="General" width="104" />
+      <c name="Final_Mort_spouse" formattype="General" width="168" />
+      <c name="G2_1_base" formattype="General" width="80" />
+      <c name="G2_1_base_spouse" formattype="General" width="127" />
+      <c name="G2_1_glwb" formattype="General" width="80" />
+      <c name="G2_1_glwb_spouse" formattype="General" width="126" />
+      <c name="G2_2_base" formattype="General" width="80" />
+      <c name="G2_2_glwb" formattype="General" width="80" />
+      <c name="MortTM_spouse" formattype="General" width="80" />
+      <c name="Mort_mult1_spouse" formattype="General" width="126" />
+      <c name="NCMProp_spouse" formattype="General" width="80" />
+      <c name="PolicyAge1_spouse" formattype="General" width="124.666666666667" />
+    </view>
+  </view-customizations>
+</computation-library-root>

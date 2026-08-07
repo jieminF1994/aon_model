@@ -1,0 +1,1095 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="RateSetting" version="master" format-version="20" description="Dynamic option parameters setting,&#xD;&#xA;used for crediting interest calculation.">
+  <UserUDFs>
+    <udf name="interp1_constant">/*\r\n
+Linear\sinterpolation\sfunction\swith\sflat\sextension\sout\sof\sthe\srange\r\n
+*/\r\n
+\r\n
+real\sinterp1_constant(real\st,\sreal[N]\sx_orig,\sreal[N]\sy_orig)\r\n
+\s\s\s\sreal[N]\sx\r\n
+\s\s\s\sreal[N]\sy\s\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\sx_orig[1]\s&lt;\sx_orig[0]\sthen\r\n
+\s\s\s\s\s\s\s\sx\s=\sreverse_array(x_orig)\r\n
+\s\s\s\s\s\s\s\sy\s=\sreverse_array(y_orig)\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\sx\s=\scopy_array(x_orig)\r\n
+\s\s\s\s\s\s\s\sy\s=\scopy_array(y_orig)\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sif\st\s&lt;=\sx[0]\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sy[0]\r\n
+\s\s\s\selif\st\s&gt;=\sx[N-1]\sthen\r\n
+\s\s\s\s\s\s\s\s$result\s=\sy[N-1]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\sinterp1(t,x,y)\r\n
+\s\s\s\send\r\n
+\r\n
+end</udf>
+    <udf name="reverse_array">real[N]\sreverse_array(real[N]\sarr)\s\s\s\r\n
+\s\s\s\sfor\si=0\sto\sN-1\r\n
+\s\s\s\s\s\s\s\s$result[N\s-\s1\s-\si]\s=\sarr[i]\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="copy_array">real[N]\scopy_array(real[N]\sarr)\r\n
+\s\s\s\sfor\si\s=\s0\sto\sN\s-\s1\r\n
+\s\s\s\s\s\s\s\s$result[i]\s=\sarr[i]\r\n
+\s\s\s\send\r\n
+end</udf>
+    <udf name="ann_fac_st">/*\r\n
+This\sfunction\sreads\sin\srates\sand\sreturns\sthe\sn\syear\sannuity\sfactor\r\n
+*/\r\n
+\r\n
+real\sann_fac_st(real[M]\srate,\sreal[M]\shw_tenors,\sint\sn_year)\r\n
+\s\s\s\sreal[M]\slog_df_arr\r\n
+\s\s\s\sreal[M]\sdf\r\n
+\s\s\s\sreal\sdf_0_4\r\n
+\s\s\s\sreal\sdf_0_6\r\n
+\s\s\s\sreal\sdf_0_8\r\n
+\s\s\s\sreal\sdf_0_9\r\n
+\r\n
+\s\s\s\sfor\si\s=\s0\sto\sM-1\r\n
+\s\s\s\s\s\s\s\slog_df_arr[i]\s=\s-rate[i]\s*\shw_tenors[i]\s\r\n
+\s\s\s\s\s\s\s\sdf[i]\s=\sexp(log_df_arr[i])\r\n
+\s\s\s\send\r\n
+\s\s\s\s\r\n
+\s\s\s\sdf_0_4\s=\sdo_interp1_(4,\shw_tenors[3],\shw_tenors[4],\sdf[3],\sdf[4])\r\n
+\s\s\s\sdf_0_6\s=\sdo_interp1_(6,\shw_tenors[4],\shw_tenors[5],\sdf[4],\sdf[5])\r\n
+\s\s\s\sdf_0_8\s=\sdo_interp1_(8,\shw_tenors[5],\shw_tenors[6],\sdf[5],\sdf[6])\r\n
+\s\s\s\sdf_0_9\s=\sdo_interp1_(9,\shw_tenors[5],\shw_tenors[6],\sdf[5],\sdf[6])\r\n
+\s\s\s\sif\sn_year\s=\s5\sthen\s\r\n
+\s\s\s\s\s\s\s\s$result\s=\sdf[0]+df[1]+df[2]+df[3]+df_0_4\r\n
+\s\s\s\selif\sn_year\s=\s10\sthen\s\r\n
+\s\s\s\s\s\s\s\s$result\s=\sdf[0]+df[1]+df[2]+df[3]+df_0_4+df[4]+df_0_6+df[5]+df_0_8+df_0_9+df[6]\r\n
+\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s$result\s=\s0\r\n
+\s\s\s\send\r\n
+\r\n
+end\r\n
+</udf>
+  </UserUDFs>
+  <inputs>
+    <input name="scenarios_ga_yield" type="real" description="Annual yield of the general account" modifier="Cashflow" />
+    <input name="esg_ap2p_cap" type="real" shape="*" description="Annual P2P index rate caps (6 different values), used in dynamic cap calculation" />
+    <input name="investment_account" type="int" description="The type of investment account of the inforce" />
+    <input name="esg_strike" type="real" shape="*" description="MLSB P2P strike (index rate - spread, at 6 different values), used in dynamic cap calculation" />
+    <input name="is_anniversary" type="bool" shape="*" description="True if index interest is credited at the moment" />
+    <input name="inforce_cap" type="real" description="The index rate cap of the account, applicable when investment_account = 1, 2, 7" />
+    <input name="inforce_fixed_rate" type="real" description="The fixed rate of the account, only applicable to fixed account (investment_account = 0)" />
+    <input name="inforce_participation_rate" type="real" description="The participation rate of the account, applicable when investment_account = 6" />
+    <input name="inforce_spread" type="real" description="The index rate spread of the account, applicable when investment_account = 3, 4, 5" />
+    <input name="use_gas_station_rate_setting" type="bool" description="True if using gas station rate setting" />
+    <input name="use_constant_option_budget" type="bool" />
+    <input name="constant_option_budget" type="real" />
+    <input name="disable_rate_setting" type="bool" />
+    <input name="policy_year" type="int" shape="*" />
+    <input name="reset_rate_now" type="bool" shape="*" />
+    <input name="crediting_term_post_ratesetting" type="int" />
+    <input name="first_credit_now" type="bool" shape="*" />
+    <input name="guaranteed_minimum_interest_rate" type="real" />
+    <input name="surrender_charge_period" type="int" />
+    <input name="net_earned_rate_at_issue_date" type="real" />
+    <input name="option_cost_at_issue_date" type="real" />
+    <input name="reinvestment_percentage_table" type="composite" shape="*">
+      <field name="min_sc_period" type="int" />
+      <field name="reinvestment_percentage" type="real" shape="*,*" />
+    </input>
+    <input name="living_benefit_elected" type="bool" />
+    <input name="dt" type="real" shape="*" />
+    <input name="net_earned_rate_at_tape_date" type="real" />
+    <input name="ga_yield_at_issue_date" type="real" />
+    <input name="ga_yield_at_tape_date" type="real" />
+    <input name="issue_date" type="date_t" />
+    <input name="tape_date" type="date_t" />
+    <input name="hw_tenors" type="real" shape="*" />
+    <input name="corporate_curve" type="real" shape="*" modifier="Cashflow" />
+    <input name="is_5th_anniversary" type="bool" shape="*" />
+    <input name="is_annexus" type="bool" />
+    <input name="esg_participation_rate" type="real" shape="*" />
+    <input name="is_annexus_10yr" type="bool" />
+    <input name="is_annexus_5yr" type="bool" />
+    <input name="esg_participation_rate_cliquet" type="real" shape="*" />
+    <input name="esg_participation_rate_aqr_ab" type="real" shape="*" />
+    <input name="option_budget_gaap" type="real" />
+    <input name="option_budget_type" type="int" />
+    <input name="num_steps" type="int" />
+    <input name="rate_setting_parameters" type="composite">
+      <field name="rate_setting_id" type="int" />
+      <field name="liquidity_spread" type="real" />
+      <field name="alpha_during_cdsc" type="real" />
+      <field name="alpha_after_cdsc" type="real" />
+      <field name="beta_up" type="real" />
+      <field name="beta_down" type="real" />
+    </input>
+    <input name="is_guardian" type="bool" />
+    <input name="inforce_declared_index_rate" type="real" />
+    <input name="strategy_type" type="int" />
+    <input name="ig_atm_call" type="real" modifier="Cashflow" />
+    <input name="ig_otm_calls" type="real" shape="*" modifier="Cashflow" />
+    <input name="bs_atm_call" type="real" modifier="Cashflow" />
+    <input name="bs_otm_calls" type="real" shape="*" modifier="Cashflow" />
+    <input name="atm_calls_par_rate" type="real" shape="*" modifier="Cashflow" />
+    <input name="x5_5yr_atm_par_cliquet" type="real" shape="*" modifier="Cashflow" />
+    <input name="traded_idx" type="int" />
+    <input name="hybrid_index" type="int" />
+    <input name="minimum_declared_index_rate" type="real" />
+    <input name="ig_trigger_calls" type="real" shape="*" modifier="Cashflow" />
+    <input name="ig_strike" type="real" shape="*" />
+    <input name="ig_renewed_otm_call" type="real" modifier="Cashflow" />
+    <input name="bs_renewed_otm_call" type="real" modifier="Cashflow" />
+    <input name="no_rate_setting" type="bool" />
+    <input name="use_extended_option_grid" type="bool" />
+    <input name="treasury_rate" type="real" shape="*" modifier="Cashflow" />
+  </inputs>
+  <results>
+    <result name="declared_parameter" ref="Projection.declared_parameter" description="Dynamic option parameter used in interest crediting" />
+    <result name="option_budget" ref="Projection.final_option_budget " description="The option budget for the interest crediting accounts" />
+    <result name="inforce_option_price" ref="Projection.inforce_option_price " description="The option price calculated using the latest dynamic option parameter" />
+    <result name="competitor_crediting_rate" ref="Projection.competitor_crediting_rate" />
+    <result name="interpolated_option_budget" ref="Projection.interpolated_option_budget" />
+    <result name="net_earned_rate" ref="Projection.net_earned_rate" />
+    <result name="net_earned_rate_change" ref="Projection.net_earned_rate_change" />
+    <result name="option_budget_5yr" ref="Projection.option_budget_5yr" />
+  </results>
+  <calculations>
+    <table name="Dictionary" type="KeyValue">
+      <column-groups>
+        <g name="g2" repeat-count="6" />
+      </column-groups>
+      <c name="initial_param" datatype="real">/*\r\n
+The\sbasic\sidea\sof\srate\ssetting\sis,\sfor\sa\sspecific\screditing\sstrategy,\r\n
+create\sa\sgroup\sof\s6\soptions\swith\sdifferent\sfixed\soption\sparameter.\r\n
+For\sany\snew\soption\sof\sthe\ssame\screditing\sstrategy\swith\sa\snew\soption\sparameter,\r\n
+the\soption\sprice\scan\sbe\scomputed\sby\slinear\sregression\susing\sthe\sgroup\sof\soptions.\r\n
+\r\n
+The\soption\sprice\sis\sused\sto\scalculate\sthe\sdynamic\soption\sparameter.\r\n
+The\sdynamic\soption\sparameter\sis\sreseted\severy\syear\s(every\stwo\syears\sfor\s2y\sMLSB\sP2P).\r\n
+\r\n
+Different\screditing\sstrategies\suse\sdifferent\soption\sparameters.\r\n
+This\sinput\sis\sthe\soriginal\soption\sparameter\sof\sthe\sinforce.\r\n
+*/\r\n
+if\sinvestment_account\s=\s3\sthen\s//\sfor\smonthly\sspx\swith\sspread,\sthe\sinitial\sparam\sis\sspread,\sbut\sit\swill\srenew\sas\scap\r\n
+\s\s\s\sreturn\sinforce_spread\r\n
+endif\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s0:\s//\sFixed\r\n
+\s\s\s\s\s\s\s\sreturn\sinforce_fixed_rate\r\n
+\s\s\s\scase\s1:\s//\sPar\r\n
+\s\s\s\s\s\s\s\sreturn\sinforce_participation_rate\r\n
+\s\s\s\scase\s2:\s//\sPar\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sinforce_participation_rate\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sinforce_spread\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\sinforce_cap\r\n
+\s\s\s\scase\s5:\s//X5\s5X3\r\n
+\s\s\s\s\s\s\s\sreturn\sinforce_participation_rate\r\n
+\s\s\s\scase\s6:\s//trigger\r\n
+\s\s\s\s\s\s\s\sreturn\sinforce_declared_index_rate\r\n
+\s\s\s\scase\s7:\s//\sbinary\r\n
+\s\s\s\s\s\s\s\sreturn\sinforce_fixed_rate\r\n
+\s\s\s\scase\s8:\s//put\r\n
+\s\s\s\s\s\s\s\sreturn\sinforce_spread\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s1/0\s\s\s\s\s\s\r\n
+end</c>
+      <c name="fixed_rate_min" datatype="real">/*\r\n
+Floor\sof\sfixed\srate\s(for\sfixed\saccount)\r\n
+*/\r\n
+\r\n
+=\sguaranteed_minimum_interest_rate</c>
+      <c name="ap2p_cap_min" datatype="real">/*\r\n
+Floor\sof\sdynamic\sindex\srate\scap\s(for\sannual\sP2P\sand\smonthly\saverage\saccount)\r\n
+*/\r\n
+if\sis_guardian\sthen\r\n
+\s\s\s\sreturn\s0.01\r\n
+else\r\n
+\s\s\s\sreturn\s0.01\r\n
+endif</c>
+      <c name="mp2p_cap_min" datatype="real">/*\r\n
+Floor\sof\sdynamic\sindex\srate\scap\s(for\smonthly\sP2P\saccount)\r\n
+*/\r\n
+\r\n
+0.005</c>
+      <c name="spread_min" datatype="real">/*\r\n
+Floor\sof\sdynamic\sindex\srate\sspread\s(for\sMLSB\sP2P\sand\smonthly\saverage\saccount)\r\n
+*/\r\n
+\r\n
+0.0</c>
+      <c name="spread_max" datatype="real">/*\r\n
+Cap\sof\sdynamic\sindex\srate\sspread\s(for\sMLSB\sP2P\sand\smonthly\saverage\saccount)\r\n
+*/\r\n
+\r\n
+0.12</c>
+      <c name="participation_rate_min" datatype="real">/*\r\n
+Floor\sof\sdynamic\sparticipation\srate\s(for\sannual\sP2P\saccount)\r\n
+\r\n
+For\sAnnexus,\r\n
+A\sproportion\sapplied\sto\sthe\sindex\sreturn\sto\sdetermine\sthe\sIndex\sTerm\sPerformance\sfor\sone\sIndex\sTerm.\s\s\r\n
+The\sParticipation\sRate\sis\sreset\sat\sthe\send\sof\seach\sIndex\sTerm.\r\n
+The\sGuaranteed\sMinimum\sParticipation\sRate\sis\s25%\sfor\sthe\s1-year\sPTP,\s\r\n
+50%\sfor\sthe\s5x1\sand\s100%\sfor\sthe\s10x2.\sThis\sentry\sreturns\sthe\smin\spar\srate\sfor\s1\syr\sPTP\r\n
+\r\n
+*/\r\n
+\r\n
+if\sis_annexus\sthen\r\n
+\s\s\s\sreturn\s0.25\r\n
+elif\sis_guardian\sthen\r\n
+\s\s\s\sreturn\s0.05\r\n
+else\r\n
+\s\s\s\sreturn\s0.3\r\n
+end</c>
+      <c name="participation_rate_max" datatype="real">/*\r\n
+Cap\sof\sdynamic\sparticipation\srate\s(for\sannual\sP2P\saccount)\r\n
+*/\r\n
+\r\n
+10000</c>
+      <c name="is_increasing" datatype="bool">/*\r\n
+A\sflag\sindicating\swhether\sthe\soption\svalue\sis\sincreasing\sin\sthe\sparameter.\r\n
+When\sthe\sparameter\sis\sa\scap\sor\sparticipation\srate\sit\sis\sincreasing.\r\n
+If\sthe\sparameter\sis\sa\sspread\sit\sis\sdecreasing.\r\n
+*/\r\n
+\r\n
+switch\sinvestment_account\r\n
+\s\s\s\scase\s3:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s4:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s5:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s12:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s13:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s25:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s27:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s37:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s38:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s49:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s50:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\scase\s57:\r\n
+\s\s\s\s\s\s\s\sreturn\sFalse\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\strue\r\n
+end</c>
+      <c name="change_threshold" datatype="real">/*\r\n
+The\sthreshold\sof\sthe\schange\sof\soption\sparameters\safter\sresetting\r\n
+*/\r\n
+\r\n
+switch\sinvestment_account\r\n
+\s\s\s\scase\s0:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0011\r\n
+\s\s\s\scase\s1:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s2:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0011\r\n
+\s\s\s\scase\s3:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0027\r\n
+\s\s\s\scase\s4:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0039\r\n
+\s\s\s\scase\s5:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0029\r\n
+\s\s\s\scase\s6:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s7:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0030\r\n
+\s\s\s\scase\s8:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.005\r\n
+\s\s\s\scase\s9:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0044\r\n
+\s\s\s\scase\s10:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0091\r\n
+\s\s\s\scase\s11:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s12:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0039\r\n
+\s\s\s\scase\s13:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0029\r\n
+\s\s\s\scase\s14:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0044\r\n
+\s\s\s\scase\s15:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0091\r\n
+\s\s\s\scase\s16:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s17:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s18:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s19:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s20:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s21:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s22:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s23:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s24:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s25:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s26:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s27:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s28:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s29:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s30:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s31:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s32:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s33:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s34:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s35:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s36:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s37:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0039\r\n
+\s\s\s\scase\s38:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0029\r\n
+\s\s\s\scase\s39:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0044\r\n
+\s\s\s\scase\s40:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0091\r\n
+\s\s\s\scase\s41:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s42:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s43:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s44:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s45:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s46:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s47:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s48:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.005\r\n
+\s\s\s\scase\s49:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0039\r\n
+\s\s\s\scase\s50:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0029\r\n
+\s\s\s\scase\s51:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s52:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s53:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s54:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s55:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.02\r\n
+\s\s\s\scase\s56:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s57:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s58:\r\n
+\s\s\s\s\s\s\s\sreturn\s0.0025\r\n
+\s\s\s\scase\s59:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s60:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s61:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s62:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s63:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s64:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s65:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\s//case\s66-69\sfor\sgenerating\sfirst\scredit\soption\svalue\sin\soption\sgrid\sonly\r\n
+\s\s\s\scase\s66:\s//\sSPX\sP2P\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s67://\sSPX\sP2P\s6-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s68:\s//\sSPX\sP2P\sput\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s69://\sSPX\sP2P\sput\s6-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s70:\s//\sSPX\sP2P\sput\s1-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s71://\sSPX\sP2P\sput\s6-year\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s72:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s73:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s74:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s75:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s76:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s77:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s1\s/\s0\r\n
+end</c>
+      <c name="target_pricing_spread" datatype="real">=\siif(surrender_charge_period\s&lt;\s10,\s0.02,\s0.022)</c>
+      <c name="rate_hold_period" datatype="int">if\soption_budget_type\s!=\s0\sthen\s\r\n
+\s\s\s\sreturn\s1\r\n
+else\s\r\n
+\s\s\s\sreturn\siif(surrender_charge_period\s&lt;\s10,\siif(surrender_charge_period\s&lt;\s7,\s3,\s4),\s5)\r\n
+end</c>
+      <c name="migration_period_end_year" datatype="int">//Migration\sPeriod\r\n
+\r\n
+if\sis_annexus\sthen\s\r\n
+\s\s\s\sreturn\s15\r\n
+else\s\r\n
+\s\s\s\sreturn\ssurrender_charge_period\s+\s2\r\n
+end</c>
+      <c name="option_cost_vector" datatype="real" group="g2">0//=\smseh_atm_cliquets_part_rate[0,\s$index]</c>
+      <c name="baseline_option_budget" datatype="real">=\soption_cost_at_issue_date</c>
+      <c name="initial_pricing_spread" datatype="real">=\snet_earned_rate_at_issue_date\s/\s(1\s+\snet_earned_rate_at_issue_date)\s-\siif(is_annexus,\sbaseline_option_budget,\soption_cost_at_issue_date)</c>
+      <c name="policy_year_at_tape_dates" datatype="real">=\sday_count_int(issue_date,\stape_date)\s/\s365.25</c>
+      <c name="X5_st_min_par_rate" datatype="real">//Minimum\sparticipation\srate\sfor\sthe\sfirst\sstrategy\sterm\r\n
+\r\n
+if\sis_annexus_10yr\sthen\r\n
+\s\s\s\sreturn\s1\r\n
+elif\sis_annexus_5yr\sthen\r\n
+\s\s\s\sreturn\s0.5\r\n
+else\r\n
+\s\s\s\sreturn\s0.25\r\n
+end</c>
+      <c name="liquidity_spread" datatype="real">=rate_setting_parameters.liquidity_spread</c>
+      <c name="alpha_during_cdsc" datatype="real">=rate_setting_parameters.alpha_during_cdsc</c>
+      <c name="alpha_after_cdsc" datatype="real">=rate_setting_parameters.alpha_after_cdsc</c>
+      <c name="beta_up" datatype="real">=rate_setting_parameters.beta_up</c>
+      <c name="beta_down" datatype="real">=rate_setting_parameters.beta_down</c>
+    </table>
+    <table name="Computation" type="Computation">
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="reinvestment_percentage" datatype="real" />
+      </columns>
+      <row-groups>
+        <rg name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">=\s0</c>
+            <c name="reinvestment_percentage">i\s=\siif(living_benefit_elected,\s1,\s0)\r\n
+if\ssurrender_charge_period\s&lt;\sreinvestment_percentage_table[1].min_sc_period\sthen\r\n
+\s\s\s\sreturn\sreinvestment_percentage_table[0].reinvestment_percentage[step,\si]\r\n
+elif\ssurrender_charge_period\s&lt;\sreinvestment_percentage_table[2].min_sc_period\sthen\r\n
+\s\s\s\sreturn\sreinvestment_percentage_table[1].reinvestment_percentage[step,\si]\r\n
+else\r\n
+\s\s\s\sreturn\sreinvestment_percentage_table[2].reinvestment_percentage[step,\si]\r\n
+end</c>
+          </columns>
+        </rg>
+        <rg name="rg2">
+          <repeat>=79</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=\sprev(step)\s+\s1</c>
+            <c name="reinvestment_percentage">i\s=\siif(living_benefit_elected,\s1,\s0)\r\n
+if\ssurrender_charge_period\s&lt;\sreinvestment_percentage_table[1].min_sc_period\sthen\r\n
+\s\s\s\sreturn\sreinvestment_percentage_table[0].reinvestment_percentage[step,\si]\r\n
+elif\ssurrender_charge_period\s&lt;\sreinvestment_percentage_table[2].min_sc_period\sthen\r\n
+\s\s\s\sreturn\sreinvestment_percentage_table[1].reinvestment_percentage[step,\si]\r\n
+else\r\n
+\s\s\s\sreturn\sreinvestment_percentage_table[2].reinvestment_percentage[step,\si]\r\n
+end</c>
+          </columns>
+        </rg>
+      </row-groups>
+    </table>
+    <table name="Projection" type="CashFlow">
+      <column-groups>
+        <g name="g1" max-repeat-count="16" repeat-count="6" />
+        <g name="g2" max-repeat-count="16" repeat-count="16" />
+      </column-groups>
+      <columns>
+        <c name="step" datatype="int" />
+        <c name="option_parameters" datatype="real" group="g1" />
+        <c name="option_prices" datatype="real" group="g1" />
+        <c name="option_parameters_ig_otm" datatype="real" group="g2" />
+        <c name="option_prices_ig_otm" datatype="real" group="g2" />
+        <c name="inforce_option_price" datatype="real" />
+        <c name="ga_yield_spread" datatype="real" />
+        <c name="ga_yield" datatype="real" />
+        <c name="new_money_yield" datatype="real" />
+        <c name="reinvestment_percentage" datatype="real" />
+        <c name="net_earned_rate" datatype="real" />
+        <c name="target_option_budget" datatype="real" />
+        <c name="interpolated_option_budget" datatype="real" />
+        <c name="net_earned_rate_change" datatype="real" />
+        <c name="final_option_budget" datatype="real" />
+        <c name="ann_fac_5yr" datatype="real" />
+        <c name="option_budget_5yr" datatype="real" />
+        <c name="competitor_crediting_rate" datatype="real" />
+        <c name="indicated_parameter_calc" datatype="real" />
+        <c name="indicated_parameter" datatype="real" />
+        <c name="is_leq" datatype="bool" />
+        <c name="declared_parameter_calc" datatype="real" />
+        <c name="is_past_threshold" datatype="bool" />
+        <c name="declared_parameter" datatype="real" />
+      </columns>
+      <data>
+        <row-group name="rg1">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+0</c>
+            <c name="option_parameters">/*\r\n
+A\sgroup\sof\s6\sdifferent\soption\sparameters\swhich\swill\sbe\sused\sin\slinear\sregression.\r\n
+Different\stypes\sof\saccounts\suse\sdifferent\soption\sparameters.\r\n
+Fixed\saccount,\sAnnual\sP2P\sparticipation\srate\saccount\sand\sperformance\strigger\saccount(strategy\stype\s=\s0,\s1\sand\s6)\r\n
+are\snot\sapplicable\sto\slinear\sregression.\r\n
+*/\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s0:\s//\sFixed\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s1:\s//\sPar\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s2:\s//\sPar\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(hybrid_index=5\sor\shybrid_index=10,\sesg_participation_rate_aqr_ab[$index],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(hybrid_index=11,\sesg_participation_rate_cliquet[$index],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sesg_participation_rate[$index]))\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sesg_strike[$index]*\screditing_term_post_ratesetting\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\sesg_strike[$index]*\screditing_term_post_ratesetting\r\n
+\s\s\s\scase\s5:\s//X5\s5X3\r\n
+\s\s\s\s\s\s\s\sreturn\siif(policy_year[step]\s&lt;\s16,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sesg_participation_rate_cliquet[$index],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sesg_participation_rate[$index])\r\n
+\s\s\s\scase\s6:\s//trigger\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\s\s\s\s\s\s\r\n
+end</c>
+            <c name="option_prices">\r\n
+/*\r\n
+A\sgroup\sof\s6\soption\sprices\swith\sdifferent\soption\sparameters\r\n
+which\swill\sbe\sused\sin\slinear\sregression.\r\n
+Different\stypes\sof\saccounts\suse\sdifferent\soption\sprices.\r\n
+Fixed\saccount,\sAnnual\sP2P\sparticipation\srate\saccount\sand\sperformance\strigger\saccount(strategy\stype\s=\s0,\s1\sand\s6)\r\n
+are\snot\sapplicable\sto\slinear\sregression.\r\n
+*/\r\n
+if\s!reset_rate_now[step]\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s0:\s//\sFixed\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s1:\s//\sPar\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s2:\s//\sPar\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\satm_calls_par_rate[$index]\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sbs_otm_calls[$index]\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\sbs_atm_call\s-\sbs_otm_calls[$index]\r\n
+\s\s\s\scase\s5:\s//X5\s5X3\r\n
+\s\s\s\s\s\s\s\sreturn\siif(policy_year[step]\s&lt;\s16,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sx5_5yr_atm_par_cliquet[$index],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\satm_calls_par_rate[$index])\r\n
+\s\s\s\scase\s6:\s//trigger\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s1/0\s\s\s\s\s\s\r\n
+end</c>
+            <c name="option_parameters_ig_otm">/*\r\n
+Extended\soption\sgrid\swith\s16\sstrikes,\sonly\sfor\straded\sindex\sOTM\soptions\r\n
+*/\r\n
+if\straded_idx\s=\s-1\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sig_strike[$index]*\screditing_term_post_ratesetting\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\sig_strike[$index]*\screditing_term_post_ratesetting\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+end</c>
+            <c name="option_prices_ig_otm">\r\n
+/*\r\n
+Extended\soption\sgrid\swith\s16\sstrikes,\sonly\sfor\straded\sindex\sOTM\soptions\r\n
+*/\r\n
+if\s!reset_rate_now[step]\sor\straded_idx\s=\s-1\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sig_otm_calls[$index]\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\sig_atm_call\s-\sig_otm_calls[$index]\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\s\s\s\s\s\s\r\n
+end</c>
+            <c name="inforce_option_price">/*\r\n
+The\soption\sprice\swith\sthe\sinitial\soption\sparameter.\r\n
+\r\n
+It\sis\scomputed\sby\slinear\sregression\r\n
+using\sthe\sinitial\soption\sparameter,\sthe\sgroup\sof\sfixed\soption\sparameters,\r\n
+and\stheir\scorresponding\soption\sprices.\r\n
+\r\n
+For\sfixed\saccount,\sthe\soption\sprice\sis\sjust\sthe\sfixed\srate\sof\sthe\sinforce.\r\n
+For\sAnnual\sP2P\sparticipation\srate\saccount,\r\n
+the\soption\sprice\sis\scalculated\sby\sthe\smultiplation\sof\s\r\n
+participation\srate\sand\sat\sthen\smoney\scall\sprice.\r\n
+\r\n
+The\soption\sprice\sis\sused\sto\sdetermine\sthe\starget\sspread\sof\sthe\sgeneral\saccount.\r\n
+*/\r\n
+if\s!reset_rate_now[step]\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s0:\s//\sFixed\r\n
+\s\s\s\s\s\s\s\sreturn\sdeclared_parameter\r\n
+\s\s\s\scase\s1:\s//\sPar\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1,ig_atm_call,\sbs_atm_call)\s*\sdeclared_parameter\r\n
+\s\s\s\scase\s2:\s//\sPar\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1,ig_atm_call,\sbs_atm_call)\s*\sdeclared_parameter\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1,\sig_renewed_otm_call,\sbs_renewed_otm_call)\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1,\sig_atm_call-ig_renewed_otm_call,\sbs_atm_call-bs_renewed_otm_call)\r\n
+\s\s\s\scase\s5:\s//X5\s5X3\r\n
+\s\s\s\s\s\s\s\sreturn\siif(policy_year[step]\s&lt;\s16,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sinterp1_constant(declared_parameter,\soption_parameters,\soption_prices),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sbs_atm_call*declared_parameter)\r\n
+\s\s\s\scase\s6:\s//\strigger\r\n
+\s\s\s\s\s\s\s\sreturn\sig_trigger_calls[2]\s*\sdeclared_parameter\s\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\r\n
+end\r\n
+</c>
+            <c name="ga_yield_spread">=ga_yield_at_tape_date\s-\sscenarios_ga_yield</c>
+            <c name="ga_yield">/*\r\n
+Annual\syield\sof\sgeneral\saccount\r\n
+*/\r\n
+\r\n
+=\sscenarios_ga_yield\s+\sga_yield_spread</c>
+            <c name="new_money_yield">=\sga_yield\s+\s(net_earned_rate_at_issue_date\s-\sga_yield_at_issue_date)</c>
+            <c name="reinvestment_percentage">=\sComputation[policy_year[step]].reinvestment_percentage\s*\sdt[step]</c>
+            <c name="net_earned_rate">=\snet_earned_rate_at_tape_date</c>
+            <c name="target_option_budget">=\sDictionary.baseline_option_budget\s-\sDictionary.liquidity_spread\r\n
+\s\s\s\s+\s(iif\s(policy_year[step]\s&lt;=\ssurrender_charge_period,\sDictionary.alpha_during_cdsc,\sDictionary.alpha_after_cdsc)\s-\s1)\r\n
+\s\s\s\s*\s(Dictionary.target_pricing_spread\s-\sDictionary.initial_pricing_spread)</c>
+            <c name="interpolated_option_budget">=iif(policy_year[step]\s&gt;\sDictionary.migration_period_end_year\s+\s1,\starget_option_budget,\r\n
+\s\s\s\s\s\siif(policy_year[step]\s&lt;=\sDictionary.rate_hold_period,\sDictionary.baseline_option_budget,\r\n
+\s\s\s\s\s\s\s\s\s\sDictionary.baseline_option_budget\s+\s(target_option_budget\s-\sDictionary.baseline_option_budget)\r\n
+\s\s\s\s\s\s\s\s\s\s*\s(policy_year[step]\s-\sDictionary.rate_hold_period)\s/\s(Dictionary.migration_period_end_year\s+\s1\s-\sDictionary.rate_hold_period)\r\n
+\s\s\s\s\s\s\s\s\s\s)\r\n
+\s\s\s\s\s)</c>
+            <c name="net_earned_rate_change">=\snet_earned_rate\s/\s(1\s+\snet_earned_rate)\r\n
+\s\s\s\s-\snet_earned_rate_at_issue_date\s/\s(1\s+\snet_earned_rate_at_issue_date)</c>
+            <c name="final_option_budget">if\soption_budget_type\s=\s2\sthen\r\n
+\s\s\s\sreturn\soption_cost_at_issue_date\s*\screditing_term_post_ratesetting\r\n
+elif\soption_budget_type\s=\s1\sthen\r\n
+\s\s\s\sreturn\soption_budget_gaap\s*\screditing_term_post_ratesetting\r\n
+elif\suse_constant_option_budget\sthen\r\n
+\s\s\s\sreturn\sconstant_option_budget\r\n
+else\r\n
+\s\s\s\sreturn\s\r\n
+\s\s\s\siif(policy_year[step]\s&lt;=\sDictionary.rate_hold_period,\sinterpolated_option_budget,\r\n
+\s\s\s\s\s\s\s\smax(0,\sinterpolated_option_budget\s+\siif(compare(net_earned_rate_change&gt;0,1E-08),\sDictionary.beta_up,\sDictionary.beta_down)\s*\snet_earned_rate_change)\s\r\n
+\s\s\s\s)\s*\screditing_term_post_ratesetting\r\n
+end\s\s\s</c>
+            <c name="ann_fac_5yr">if\s!is_annexus_5yr\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+return\sann_fac_st(corporate_curve,hw_tenors,5)</c>
+            <c name="option_budget_5yr">=\sfinal_option_budget\s*\sAnn_Fac_5yr</c>
+            <c name="competitor_crediting_rate">=\streasury_rate[5]\s+\s0.0065</c>
+            <c name="indicated_parameter_calc">/*\r\n
+Dynamic\soption\sparameter,\ssame\sas\sinitial\sparameter\sat\sthe\sbeginning\r\n
+*/\r\n
+\r\n
+=\sDictionary.initial_param</c>
+            <c name="indicated_parameter">/*\r\n
+Dynamic\soption\sparameter\safter\sapplying\scap\sand\sfloor\r\n
+*/\r\n
+\r\n
+=\sindicated_parameter_calc</c>
+            <c name="is_leq">/*\r\n
+Flag\sindicating\sthe\sindicated\sparameter\sis\sless\sthan\sor\sequal\sto\s\r\n
+the\sprevious\sdeclared\srate.\r\n
+*/\r\n
+\r\n
+=\sFalse</c>
+            <c name="declared_parameter_calc">/*\r\n
+Adjusted\sdynamic\soption\sparameter,\r\n
+by\sapplying\sgas\sstation\srate\ssetting\srule\s(or\snot)\r\n
+*/\r\n
+\r\n
+=\sindicated_parameter</c>
+            <c name="is_past_threshold">/*\r\n
+True\sif\sthe\schange\sof\soption\sparameters\safter\sreseting\r\n
+is\shigher\sthe\sthreshold.\r\n
+*/\r\n
+\r\n
+=\sFalse</c>
+            <c name="declared_parameter">/*\r\n
+Final\sdynamic\soption\sparameter,\r\n
+after\schecking\sif\sthe\schange\safter\sreseting\smeet\sthe\sthreshold.\r\n
+*/\r\n
+\r\n
+=\sindicated_parameter</c>
+          </columns>
+        </row-group>
+        <row-group name="rg2">
+          <repeat>=1</repeat>
+          <columns>
+            <c name="step">/*\s\r\n
+The\sindex\sof\sprojection\speriod\r\n
+*/\r\n
+\r\n
+=\sprev(step)\s+\s1</c>
+            <c name="option_parameters">/*\r\n
+A\sgroup\sof\s6\sdifferent\soption\sparameters\swhich\swill\sbe\sused\sin\slinear\sregression.\r\n
+Different\stypes\sof\saccounts\suse\sdifferent\soption\sparameters.\r\n
+Fixed\saccount,\sAnnual\sP2P\sparticipation\srate\saccount\sand\sperformance\strigger\saccount(strategy\stype\s=\s0,\s1\sand\s6)\r\n
+are\snot\sapplicable\sto\slinear\sregression.\r\n
+*/\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s0:\s//\sFixed\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s1:\s//\sPar\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s2:\s//\sPar\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(hybrid_index=5\sor\shybrid_index=10,\sesg_participation_rate_aqr_ab[$index],\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(hybrid_index=11,\sesg_participation_rate_cliquet[$index],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sesg_participation_rate[$index]))\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sesg_strike[$index]*\screditing_term_post_ratesetting\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\sesg_strike[$index]*\screditing_term_post_ratesetting\r\n
+\s\s\s\scase\s5:\s//X5\s5X3\r\n
+\s\s\s\s\s\s\s\sreturn\siif(policy_year[step]\s&lt;\s16,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sesg_participation_rate_cliquet[$index],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sesg_participation_rate[$index])\r\n
+\s\s\s\scase\s6:\s//trigger\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\s\s\s\s\s\s\r\n
+end</c>
+            <c name="option_prices">\r\n
+/*\r\n
+A\sgroup\sof\s6\soption\sprices\swith\sdifferent\soption\sparameters\r\n
+which\swill\sbe\sused\sin\slinear\sregression.\r\n
+Different\stypes\sof\saccounts\suse\sdifferent\soption\sprices.\r\n
+Fixed\saccount,\sAnnual\sP2P\sparticipation\srate\saccount\sand\sperformance\strigger\saccount(strategy\stype\s=\s0,\s1\sand\s6)\r\n
+are\snot\sapplicable\sto\slinear\sregression.\r\n
+*/\r\n
+if\s!reset_rate_now[step]\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s0:\s//\sFixed\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s1:\s//\sPar\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\scase\s2:\s//\sPar\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\satm_calls_par_rate[$index]\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx!=-1,\sig_otm_calls[$index],\sbs_otm_calls[$index])\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx!=-1,\sig_atm_call\s-\sig_otm_calls[$index],\sbs_atm_call\s-\sbs_otm_calls[$index])\r\n
+\s\s\s\scase\s5:\s//X5\s5X3\r\n
+\s\s\s\s\s\s\s\sreturn\siif(policy_year[step]\s&lt;\s16,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sx5_5yr_atm_par_cliquet[$index],\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\satm_calls_par_rate[$index])\r\n
+\s\s\s\scase\s6:\s//trigger\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s1/0\s\s\s\s\s\s\r\n
+end</c>
+            <c name="option_parameters_ig_otm">/*\r\n
+Extended\soption\sgrid\swith\s16\sstrikes,\sonly\sfor\straded\sindex\sOTM\soptions\r\n
+*/\r\n
+if\straded_idx\s=\s-1\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sig_strike[$index]*\screditing_term_post_ratesetting\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\sig_strike[$index]*\screditing_term_post_ratesetting\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\s\s\s\s\s\s\r\n
+end</c>
+            <c name="option_prices_ig_otm">\r\n
+/*\r\n
+Extended\soption\sgrid\swith\s16\sstrikes,\sonly\sfor\straded\sindex\sOTM\soptions\r\n
+*/\r\n
+if\s!reset_rate_now[step]\sor\straded_idx\s=\s-1\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sig_otm_calls[$index]\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\sig_atm_call\s-\sig_otm_calls[$index]\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\s\s\s\s\s\s\r\n
+end</c>
+            <c name="inforce_option_price">/*\r\n
+The\soption\sprice\swith\sthe\sinitial\soption\sparameter.\r\n
+\r\n
+It\sis\scomputed\sby\slinear\sregression\r\n
+using\sthe\sinitial\soption\sparameter,\sthe\sgroup\sof\sfixed\soption\sparameters,\r\n
+and\stheir\scorresponding\soption\sprices.\r\n
+\r\n
+For\sfixed\saccount,\sthe\soption\sprice\sis\sjust\sthe\sfixed\srate\sof\sthe\sinforce.\r\n
+For\sAnnual\sP2P\sparticipation\srate\saccount,\r\n
+the\soption\sprice\sis\scalculated\sby\sthe\smultiplation\sof\s\r\n
+participation\srate\sand\sat\sthen\smoney\scall\sprice.\r\n
+\r\n
+The\soption\sprice\sis\sused\sto\sdetermine\sthe\starget\sspread\sof\sthe\sgeneral\saccount.\r\n
+*/\r\n
+if\s!reset_rate_now[step]\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s0:\s//\sFixed\r\n
+\s\s\s\s\s\s\s\sreturn\sdeclared_parameter\r\n
+\s\s\s\scase\s1:\s//\sPar\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1,ig_atm_call,\sbs_atm_call)\s*\sdeclared_parameter\r\n
+\s\s\s\scase\s2:\s//\sPar\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1,ig_atm_call,\sbs_atm_call)\s*\sdeclared_parameter\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1,\sig_renewed_otm_call,\sbs_renewed_otm_call)\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1,\sig_atm_call-ig_renewed_otm_call,\sbs_atm_call-bs_renewed_otm_call)\r\n
+\s\s\s\scase\s5:\s//X5\s5X3\r\n
+\s\s\s\s\s\s\s\sreturn\siif(policy_year[step]\s&lt;\s16,\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sinterp1_constant(declared_parameter,\soption_parameters,\soption_prices),\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\sbs_atm_call*declared_parameter)\r\n
+\s\s\s\scase\s6:\s//\strigger\r\n
+\s\s\s\s\s\s\s\sreturn\sig_trigger_calls[2]\s*\sdeclared_parameter\s\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\r\n
+end\r\n
+</c>
+            <c name="ga_yield_spread">=prev(ga_yield_spread)</c>
+            <c name="ga_yield">/*\r\n
+Annual\syield\sof\sgeneral\saccount\r\n
+*/\r\n
+\r\n
+=\sscenarios_ga_yield\s+\sga_yield_spread</c>
+            <c name="new_money_yield">=\sga_yield\s+\s(net_earned_rate_at_issue_date\s-\sga_yield_at_issue_date)</c>
+            <c name="reinvestment_percentage">=\sComputation[min(policy_year[step],\s79)].reinvestment_percentage\s*\sdt[step]</c>
+            <c name="net_earned_rate">=\sprev(net_earned_rate)\s*\s(1\s-\sreinvestment_percentage)\s+\snew_money_yield\s*\sreinvestment_percentage</c>
+            <c name="target_option_budget">=\sDictionary.baseline_option_budget\s-\sDictionary.liquidity_spread\r\n
+\s\s\s\s+\s(iif\s(policy_year[step]\s&lt;=\ssurrender_charge_period,\sDictionary.alpha_during_cdsc,\sDictionary.alpha_after_cdsc)\s-\s1)\r\n
+\s\s\s\s*\s(Dictionary.target_pricing_spread\s-\sDictionary.initial_pricing_spread)</c>
+            <c name="interpolated_option_budget">=iif(policy_year[step]\s&gt;\sDictionary.migration_period_end_year\s+\s1\sor\spolicy_year[step]\s&lt;=\sDictionary.rate_hold_period,\r\n
+\s\s\s\s\sprev(interpolated_option_budget),\r\n
+\s\s\s\s\sDictionary.baseline_option_budget\s+\s(target_option_budget\s-\sDictionary.baseline_option_budget)\r\n
+\s\s\s\s\s*\s(policy_year[step]\s-\sDictionary.rate_hold_period)\s/\s(Dictionary.migration_period_end_year\s+\s1\s-\sDictionary.rate_hold_period)\r\n
+\s\s\s\s\s)</c>
+            <c name="net_earned_rate_change">=\snet_earned_rate\s/\s(1\s+\snet_earned_rate)\r\n
+\s\s\s\s-\snet_earned_rate_at_issue_date\s/\s(1\s+\snet_earned_rate_at_issue_date)</c>
+            <c name="final_option_budget">if\soption_budget_type\s=\s2\sthen\r\n
+\s\s\s\sreturn\soption_cost_at_issue_date\s*\screditing_term_post_ratesetting\r\n
+elif\soption_budget_type\s=\s1\sthen\r\n
+\s\s\s\sreturn\soption_budget_gaap\s*\screditing_term_post_ratesetting\r\n
+elif\suse_constant_option_budget\sthen\r\n
+\s\s\s\sreturn\sconstant_option_budget\r\n
+else\r\n
+\s\s\s\sreturn\s\r\n
+\s\s\s\siif(policy_year[step]\s&lt;=\sDictionary.rate_hold_period,\sinterpolated_option_budget,\r\n
+\s\s\s\s\s\s\s\smax(0,\sinterpolated_option_budget\s+\siif(compare(net_earned_rate_change&gt;0,1E-08),\sDictionary.beta_up,\sDictionary.beta_down)\s*\snet_earned_rate_change)\s\r\n
+\s\s\s\s)\s*\screditing_term_post_ratesetting\r\n
+end\s\s\s</c>
+            <c name="ann_fac_5yr">if\s!is_annexus_5yr\sthen\r\n
+\s\s\s\sreturn\s0\r\n
+end\r\n
+\r\n
+return\sann_fac_st(corporate_curve,hw_tenors,5)</c>
+            <c name="option_budget_5yr">=\siif(is_5th_anniversary[step],\sfinal_option_budget\s*\sAnn_Fac_5yr,\sprev(option_budget_5yr))</c>
+            <c name="competitor_crediting_rate">=\streasury_rate[5]\s+\s0.0065</c>
+            <c name="indicated_parameter_calc">/*\r\n
+Dynamic\soption\sparameter,\sreseted\swhen\screditing\sinterest.\r\n
+\r\n
+The\sdynamic\soption\sparameter\sis\scalculated\sfrom\sthe\soption\sbudget.\r\n
+This\scalculation\sis\sthe\sreverse\sof\sthe\scalculation\r\n
+from\sinitial\soption\sparameter\sto\sinitial\soption\sbudget.\r\n
+\r\n
+For\sfixed\saccount,\sit\sis\ssame\sas\soption\sbudget.\r\n
+For\sparticipation\srate\sannual\sP2P\sand\sperformance\strigger\sfund,\sit\sis\soption\sbudget\sdivided\sby\sparticipation\srate.\r\n
+For\sthe\sothers,\sit\sis\scomputed\sby\slinear\sregression\sin\sthe\sopposite\sway.\r\n
+*/\r\n
+if\s!reset_rate_now[step]\sthen\r\n
+\s\s\s\sreturn\sprev(indicated_parameter_calc)\r\n
+end\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s0:\s//\sFixed\r\n
+\s\s\s\s\s\s\s\sreturn\sfinal_option_budget\r\n
+\s\s\s\scase\s1:\s//\sPar\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1,\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(compare(ig_atm_call\s&gt;\s0,\s1e-10),\smin(final_option_budget\s/\sig_atm_call,\s1.0),\s1.0),\s\r\n
+\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\siif(compare(bs_atm_call\s&gt;\s0,\s1e-10),\smin(final_option_budget\s/\sbs_atm_call,\s1.0),\s1.0))\r\n
+\s\s\s\scase\s2:\s//\sPar\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\sinterp1_constant(final_option_budget,\soption_prices,\soption_parameters)\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1\sand\suse_extended_option_grid,\s\r\n
+\s\s\s\s\s\s\s\sinterp1_constant(final_option_budget,\soption_prices_ig_otm,\soption_parameters_ig_otm),\r\n
+\s\s\s\s\s\s\s\sinterp1_constant(final_option_budget,\soption_prices,\soption_parameters))\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\siif(traded_idx\s!=\s-1\sand\suse_extended_option_grid,\s\r\n
+\s\s\s\s\s\s\s\sinterp1_constant(final_option_budget,\soption_prices_ig_otm,\soption_parameters_ig_otm),\r\n
+\s\s\s\s\s\s\s\sinterp1_constant(final_option_budget,\soption_prices,\soption_parameters))\r\n
+\s\s\s\scase\s5:\r\n
+\s\s\s\s\s\s\s\sif\spolicy_year[step]\s&gt;\s5\sand\spolicy_year[step]\s&lt;\s16\sthen\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\smax(iif(compare(option_prices[5]\s=\s0,\s1e-10),\s0,\sinterp1(option_budget_5yr,\soption_prices,\soption_parameters)),Dictionary.X5_st_min_par_rate)\r\n
+\s\s\s\s\s\s\s\selse\r\n
+\s\s\s\s\s\s\s\s\s\s\s\sreturn\sinterp1_constant(final_option_budget,\soption_prices,\soption_parameters)\r\n
+\s\s\s\s\s\s\s\sendif\r\n
+\s\s\s\scase\s6:\s//\strigger\r\n
+\s\s\s\s\s\s\s\sreturn\siif(compare(ig_trigger_calls[2]\s&gt;\s0,\s1e-10),\smin(final_option_budget\s/\sig_trigger_calls[2],\s1.0),\s1.0)\s\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s0\r\n
+\s\s\s\s\r\n
+end</c>
+            <c name="indicated_parameter">/*\r\n
+Dynamic\soption\sparameter\safter\sapplying\scap\sand\sfloor\r\n
+*/\r\n
+if\s!reset_rate_now[step]\sthen\r\n
+\s\s\s\sreturn\sprev(indicated_parameter)\r\n
+end\r\n
+switch\sstrategy_type\r\n
+\s\s\s\scase\s0:\s//\sFixed\r\n
+\s\s\s\s\s\s\s\sreturn\smax(indicated_parameter_calc,\sDictionary.fixed_rate_min)\r\n
+\s\s\s\scase\s1:\s//\sPar\r\n
+\s\s\s\s\s\s\s\sreturn\smin(max(indicated_parameter_calc,\sDictionary.participation_rate_min),\sDictionary.participation_rate_max)\r\n
+\s\s\s\scase\s2:\s//\sPar\swith\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smin(max(indicated_parameter_calc,\sDictionary.participation_rate_min),\sDictionary.participation_rate_max)\r\n
+\s\s\s\scase\s3:\s//\sspread\r\n
+\s\s\s\s\s\s\s\sreturn\smin(max(indicated_parameter_calc,\sDictionary.spread_min),\sDictionary.spread_max)\r\n
+\s\s\s\scase\s4:\s//\scap\r\n
+\s\s\s\s\s\s\s\sreturn\smax(indicated_parameter_calc,\sDictionary.ap2p_cap_min)\r\n
+\s\s\s\scase\s5:\s//X5\s5X3\r\n
+\s\s\s\s\s\s\s\sreturn\smax(indicated_parameter_calc,\sDictionary.participation_rate_min)\r\n
+\s\s\s\scase\s6:\s//trigger\r\n
+\s\s\s\s\s\s\s\sreturn\smax(indicated_parameter_calc,\sminimum_declared_index_rate)\r\n
+\s\s\s\sdefault:\r\n
+\s\s\s\s\s\s\s\sreturn\s1/0\s\s\s\s\s\s\r\n
+end</c>
+            <c name="is_leq">/*\r\n
+Flag\sindicating\sthe\sindicated\sparameter\sis\sless\sthan\sor\sequal\sto\s\r\n
+the\sprevious\sdeclared\srate.\r\n
+*/\r\n
+\r\n
+=\scompare(indicated_parameter\s&lt;=\sprev(declared_parameter),\s1e-3)</c>
+            <c name="declared_parameter_calc">/*\r\n
+Adjusted\sdynamic\soption\sparameter,\r\n
+by\sapplying\sgas\sstation\srate\ssetting\srule\s(or\snot)\r\n
+*/\r\n
+\r\n
+if\s!reset_rate_now[step]\sthen\r\n
+\s\s\s\sreturn\sprev(declared_parameter_calc)\r\n
+end\r\n
+\r\n
+if\s!use_gas_station_rate_setting\sthen\r\n
+\s\s\s\sreturn\sindicated_parameter\r\n
+end\r\n
+\r\n
+//\sfor\s5y\sfund,\sdoes\snot\sapply\sthe\s80/20\srule\sat\sthe\sfirst\screditing\sdate\r\n
+//\sbecause\sit's\shard\sto\scalculate\sthe\sequivalent\s1y\sindex\scap.\r\n
+if\sinvestment_account\s==\s11\sand\sfirst_credit_now[step]\sthen\r\n
+\s\s\s\sreturn\sindicated_parameter\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sis_leq\s==\sDictionary.is_increasing,\r\n
+\s\s\s\s0.8\s*\sindicated_parameter\s+\s0.2\s*\sprev(declared_parameter_calc),\r\n
+\s\s\s\s0.2\s*\sindicated_parameter\s+\s0.8\s*\sprev(declared_parameter_calc)\r\n
+)</c>
+            <c name="is_past_threshold">/*\r\n
+True\sif\sthe\schange\sof\soption\sparameters\safter\sreseting\r\n
+is\shigher\sthe\sthreshold.\r\n
+*/\r\n
+\r\n
+if\s!use_gas_station_rate_setting\sthen\r\n
+\s\s\s\sreturn\sFalse\r\n
+end\r\n
+\r\n
+return\scompare(\r\n
+\s\s\s\sabs(declared_parameter_calc\s-\sprev(declared_parameter))\s&gt;\sDictionary.change_threshold,\s\r\n
+\s\s\s\s1e-3\r\n
+)\s\s\s</c>
+            <c name="declared_parameter">/*\r\n
+Final\sdynamic\soption\sparameter,\r\n
+after\schecking\sif\sthe\schange\safter\sreseting\smeet\sthe\sthreshold.\r\n
+*/\r\n
+if\s!reset_rate_now[step]\sor\sno_rate_setting\sor\sdisable_rate_setting\sor\spolicy_year[step]\s&lt;=\sDictionary.rate_hold_period\sthen\r\n
+\s\s\s\sreturn\sprev(declared_parameter)\r\n
+end\r\n
+\r\n
+if\s!use_gas_station_rate_setting\sthen\r\n
+\s\s\s\sreturn\sindicated_parameter\r\n
+end\r\n
+\r\n
+return\siif(\r\n
+\s\s\s\sis_past_threshold,\r\n
+\s\s\s\sdeclared_parameter_calc,\r\n
+\s\s\s\sprev(declared_parameter)\r\n
+)</c>
+          </columns>
+        </row-group>
+      </data>
+    </table>
+  </calculations>
+  <view-customizations>
+    <view name="Cashflow:Projection">
+      <c name="ann_fac_5yr" formattype="General" width="80" />
+      <c name="competitor_crediting_rate" formattype="General" width="250" />
+      <c name="final_option_budget" formattype="General" width="80" />
+      <c name="ga_yield_spread" formattype="General" width="90.3999999999999" />
+      <c name="indicated_parameter" formattype="General" width="138" />
+      <c name="indicated_parameter_calc" formattype="General" width="93.27327327327475" />
+      <c name="inforce_option_price" formattype="General" width="128" />
+      <c name="interpolated_option_budget" formattype="General" width="80" />
+      <c name="net_earned_rate" formattype="General" width="80" />
+      <c name="net_earned_rate_change" formattype="General" width="165.333333333333" />
+      <c name="new_money_yield" formattype="General" width="80" />
+      <c name="option_budget_5yr" formattype="General" width="80" />
+      <c name="option_parameters[0]" formattype="General" width="80" />
+      <c name="option_parameters_ig_otm[0]" formattype="General" width="80" />
+      <c name="option_prices[0]" formattype="General" width="80" />
+      <c name="option_prices_ig_otm[0]" formattype="General" width="80" />
+      <c name="reinvestment_percentage" formattype="General" width="172" />
+      <c name="target_option_budget" formattype="General" width="80" />
+    </view>
+    <view name="Computation:Computation">
+      <c name="reinvestment_percentage" formattype="General" width="161.666666666667" />
+      <c name="step" formattype="General" width="80" />
+    </view>
+  </view-customizations>
+</computation-library-root>
