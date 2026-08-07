@@ -239,13 +239,6 @@ end</udf>
     <input name="npa_risk_margin_ap" type="real" />
     <input name="npa_risk_margin_lb" type="real" />
     <input name="is_secure_cap" type="bool" />
-    <input name="pricing_projection_date" type="date_t" description="Pricing projection month anchor from inforce" />
-    <input name="pricing_issue_date" type="date_t" description="Pricing issue month anchor from inforce" />
-    <input name="pricing_maturity_step" type="int" description="Pricing t_high maturity step" />
-    <input name="issue_age_for_maturity" type="int" description="Older applicable issue age for joint-policy maturity" />
-    <input name="maturity_age" type="int" description="Policy maturity age" />
-    <input name="primary_tail_step" type="int" description="Pricing primary tail period" />
-    <input name="maturity_benefit_min_years" type="int" description="Minimum maturity-benefit projection years" />
   </inputs>
   <results>
     <result name="perr" ref="Computation.perr" description="Premium enhancement recapture rate" />
@@ -322,17 +315,9 @@ end</udf>
     <result name="npa_spread_df_nippon_life" ref="=Computation.npa_spread_df_nippon_life" />
     <result name="npa_spread_nippon_life_zero_table" ref="=Computation.npa_spread_nippon_life_zero_table" />
     <result name="npa_risk_margin" ref="=LivingBenefitParams.npa_risk_margin" />
-    <result name="pricing_start_elapsed_months" ref="=Dictionary.pricing_start_elapsed_months" description="Pricing months since issue at projection start" />
-    <result name="pricing_commencement_step" ref="=Dictionary.pricing_commencement_step" description="First Pricing commencement boundary" />
-    <result name="pricing_maturity_step_value" ref="=Dictionary.pricing_maturity_step_value" description="Stable Pricing maturity step" />
-    <result name="pricing_maturity_benefit_step" ref="=Dictionary.pricing_maturity_benefit_step" description="Stable Pricing maturity-benefit trigger step" />
   </results>
   <calculations>
     <table name="Dictionary" type="KeyValue">
-      <c name="pricing_start_elapsed_months" datatype="int">=(pricing_projection_date.year-pricing_issue_date.year)*12+pricing_projection_date.month-pricing_issue_date.month+1</c>
-      <c name="pricing_commencement_step" datatype="int">=max(0,-pricing_start_elapsed_months)</c>
-      <c name="pricing_maturity_step_value" datatype="int">=pricing_maturity_step</c>
-      <c name="pricing_maturity_benefit_step" datatype="int">=max(min(primary_tail_step,(maturity_age-issue_age_for_maturity)*12-pricing_start_elapsed_months),maturity_benefit_min_years*12)</c>
       <c name="min_issue_age" datatype="int">=\siif(is_joint_policy,\smin(issue_age_1,\sissue_age_2),\sissue_age_1)</c>
       <c name="crediting_term" datatype="int">//\swe\streat\s5\syear\sSPX\sP2P\scap\sas\s1\syear\sin\sthe\srate\ssetting\sto\sget\r\n
 //\sits\sfifth\syear\sannual\scap,\sfor\sthe\sgas\sstation\srule\scalculation.\r\n

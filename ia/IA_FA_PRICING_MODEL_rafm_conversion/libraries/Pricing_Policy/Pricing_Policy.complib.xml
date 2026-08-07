@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<computation-library-root name="Pricing_Policy" version="master" format-version="20" description="Stable Pricing policy inputs and derived scalars">
+  <inputs>
+    <input name="pricing_projection_date" type="date_t" description="Pricing projection month anchor from pricing inforce" />
+    <input name="pricing_issue_date" type="date_t" description="Pricing issue month anchor from pricing inforce" />
+    <input name="pricing_maturity_step" type="int" description="Pricing t_high maturity step" />
+    <input name="issue_age_for_maturity" type="int" description="Older applicable issue age for joint-policy maturity" />
+    <input name="maturity_age" type="int" description="Policy maturity age" />
+    <input name="primary_tail_step" type="int" description="Pricing primary tail period" />
+    <input name="maturity_benefit_min_years" type="int" description="Minimum maturity-benefit projection years" />
+  </inputs>
+  <results>
+    <result name="pricing_start_elapsed_months" ref="=Dictionary.pricing_start_elapsed_months" description="Pricing months since issue at projection start" />
+    <result name="pricing_commencement_step" ref="=Dictionary.pricing_commencement_step" description="First Pricing commencement boundary" />
+    <result name="pricing_maturity_step_value" ref="=Dictionary.pricing_maturity_step_value" description="Stable Pricing maturity step" />
+    <result name="pricing_maturity_benefit_step" ref="=Dictionary.pricing_maturity_benefit_step" description="Stable Pricing maturity-benefit trigger step" />
+  </results>
+  <calculations>
+    <table name="Dictionary" type="KeyValue">
+      <c name="pricing_start_elapsed_months" datatype="int">=(pricing_projection_date.year-pricing_issue_date.year)*12+pricing_projection_date.month-pricing_issue_date.month+1</c>
+      <c name="pricing_commencement_step" datatype="int">=max(0,-pricing_start_elapsed_months)</c>
+      <c name="pricing_maturity_step_value" datatype="int">=pricing_maturity_step</c>
+      <c name="pricing_maturity_benefit_step" datatype="int">=max(min(primary_tail_step,(maturity_age-issue_age_for_maturity)*12-pricing_start_elapsed_months),maturity_benefit_min_years*12)</c>
+    </table>
+  </calculations>
+</computation-library-root>

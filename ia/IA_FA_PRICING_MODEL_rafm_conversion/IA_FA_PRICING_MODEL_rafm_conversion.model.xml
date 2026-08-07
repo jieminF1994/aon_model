@@ -18,7 +18,10 @@
       <dataset name="market_roll_foward" type="Assumptions" size-type="DynamicSize" dtype="{'descr':\s[('market_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('',\s'|V4'),\s('swap_rate_spot',\s'&lt;f8',\s(12,2,)),\s('swap_spread_spot',\s'&lt;f8',\s(12,2,)),\s('credit_spread_spot',\s'&lt;f8',\s(12,2,)),\s('npa_spread_spot',\s'&lt;f8',\s(12,2,)),\s('libor_spot_proxy',\s'&lt;f8',\s(12,2,)),\s('libor_sofr_spread',\s'&lt;f8'),\s('spot',\s'&lt;f8'),\s('spot_mxea',\s'&lt;f8'),\s('spot_rty',\s'&lt;f8'),\s('spot_nasdaq',\s'&lt;f8'),\s('spot_sptr',\s'&lt;f8'),\s('spot_mlsb',\s'&lt;f8'),\s('spot_pimco',\s'&lt;f8'),\s('spot_mseh',\s'&lt;f8'),\s('spot_ab',\s'&lt;f8'),\s('spot_pimco_gem',\s'&lt;f8'),\s('spot_spx_rc',\s'&lt;f8'),\s('spot_lm',\s'&lt;f8'),\s('spot_dap',\s'&lt;f8'),\s('spot_aqr',\s'&lt;f8'),\s('spot_ab_global_allocator',\s'&lt;f8'),\s('spot_pimbap',\s'&lt;f8'),\s('spot_dfa',\s'&lt;f8'),\s('spot_invesco',\s'&lt;f8'),\s('spot_jpm_mom',\s'&lt;f8'),\s('spot_jpm_qua',\s'&lt;f8'),\s('spot_jpm_asc',\s'&lt;f8')],\s'fortran_order':\sFalse,\s'shape':\s(1,),\s}" />
     </datasource>
     <datasource name="inforce" file="data/inforce.npz">
-      <dataset name="policies" alias="Inforce" type="Inforce" size-type="DynamicSize" dtype="{'descr':\s[('tape_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('is_joint_policy',\s'|b1'),\s('',\s'|V3'),\s('gender_1',\s'&lt;i4'),\s('gender_2',\s'&lt;i4'),\s('issue_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('issue_age_1',\s'&lt;i4'),\s('dob_1',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('issue_age_2',\s'&lt;i4'),\s('dob_2',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('',\s'|V4'),\s('accum_fee_history',\s'&lt;f8'),\s('accum_withdrawal_history',\s'&lt;f8'),\s('withdrawal_since_last_anniversary',\s'&lt;f8'),\s('income_base',\s'&lt;f8'),\s('income_credit_base',\s'&lt;f8'),\s('income_credit_percentage',\s'&lt;f8'),\s('multiplier',\s'&lt;f8'),\s('adjusted_multiplier',\s'&lt;f8'),\s('premium_enhancment_base',\s'&lt;f8'),\s('highest_account_value',\s'&lt;f8'),\s('participation_rate',\s'&lt;f8'),\s('valuation_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('index_at_tape_date',\s'&lt;f8'),\s('initial_premium',\s'&lt;f8'),\s('index_at_last_renewal',\s'&lt;f8'),\s('index_at_last_fix',\s'&lt;f8'),\s('next_crediting_renewal_year',\s'&lt;i4'),\s('',\s'|V4'),\s('accum_index_credit',\s'&lt;f8'),\s('investment_account',\s'&lt;i4'),\s('',\s'|V4'),\s('account_value',\s'&lt;f8'),\s('fixed_rate',\s'&lt;f8'),\s('index_cap',\s'&lt;f8'),\s('index_spread',\s'&lt;f8'),\s('index_floor',\s'&lt;f8'),\s('index_strike',\s'&lt;f8'),\s('guaranteed_minimum_interest_rate',\s'&lt;f8'),\s('interest_bonus_rate',\s'&lt;f8'),\s('mwv_enum',\s'&lt;i4'),\s('mwv_id',\s'&lt;i4'),\s('systematic_withdrawal_started',\s'|b1'),\s('',\s'|V7'),\s('mawp',\s'&lt;f8'),\s('pipp',\s'&lt;f8'),\s('mawa_id',\s'&lt;i4'),\s('pip_id',\s'&lt;i4'),\s('glb_id',\s'&lt;i4'),\s('gmwb_fee_id',\s'&lt;i4'),\s('surrender_charge_id',\s'&lt;i4'),\s('earliest_age_first_withdrawal',\s'&lt;i4'),\s('mva_period',\s'&lt;i4'),\s('',\s'|V4'),\s('mva_yield_at_issue_date',\s'&lt;f8'),\s('full_surrender_enum',\s'&lt;i4'),\s('first_partial_withdrawal_enum',\s'&lt;i4'),\s('free_withdrawal_enum',\s'&lt;i4'),\s('premium_enhancement_recapture_enum',\s'&lt;i4'),\s('net_earned_rate_at_tape_date',\s'&lt;f8'),\s('net_earned_rate_at_issue_date',\s'&lt;f8'),\s('ga_yield_at_tape_date',\s'&lt;f8'),\s('ga_yield_at_issue_date',\s'&lt;f8'),\s('option_cost_at_issue_date',\s'&lt;f8'),\s('death_benefit_adj_factor',\s'&lt;f8'),\s('income_base_floor_pct',\s'&lt;f8'),\s('participating_income_base',\s'&lt;f8'),\s('is_annexus_product',\s'|b1'),\s('current_strategy_term_start_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('',\s'|V7'),\s('index_term_spread',\s'&lt;f8'),\s('accum_index_term_return',\s'&lt;f8'),\s('maximum_gross_wdl',\s'&lt;f8'),\s('host_rate_net',\s'&lt;f8'),\s('index_min_withdrawal_value',\s'&lt;f8'),\s('next_index_valuation_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('is_flex',\s'&lt;i4'),\s('flex_mawa_id_single',\s'&lt;i4'),\s('flex_mawa_id_joint',\s'&lt;i4'),\s('flex_pip_id_single',\s'&lt;i4'),\s('flex_pip_id_joint',\s'&lt;i4'),\s('is_confinement_eligible',\s'|b1'),\s('is_confined',\s'|b1'),\s('',\s'|V2'),\s('remaining_enhanced_income_period',\s'&lt;i4'),\s('',\s'|V4'),\s('remaining_enhanced_income_amount',\s'&lt;f8'),\s('enhanced_income_multiplier',\s'&lt;f8'),\s('option_budget_gaap',\s'&lt;f8'),\s('is_mav_product',\s'|b1'),\s('',\s'|V7'),\s('minimum_growth_rate',\s'&lt;f8'),\s('minimum_accumulation_value',\s'&lt;f8'),\s('income_percentage',\s'&lt;f8'),\s('income_percentage_increase',\s'&lt;f8'),\s('guaranteed_lifetime_income_amount',\s'&lt;f8'),\s('glip_id',\s'&lt;i4'),\s('at_issue_npa_id',\s'&lt;i4'),\s('option_value_dac',\s'&lt;f8'),\s('option_budget_dac',\s'&lt;f8'),\s('rate_setting_id',\s'&lt;i4'),\s('enhanced_income_eligible_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('income_rider_death_benefit_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('',\s'|V4'),\s('x5_income_wait_period',\s'&lt;f8'),\s('is_annexus_accelerator',\s'|b1'),\s('is_guardian',\s'|b1'),\s('',\s'|V6'),\s('epr_fee_pct',\s'&lt;f8'),\s('account_value_at_term_start_date',\s'&lt;f8'),\s('qualified_ind',\s'|b1'),\s('',\s'|V7'),\s('declared_index_rate',\s'&lt;f8'),\s('minimum_index_change_value',\s'&lt;f8'),\s('minimum_declared_index_rate',\s'&lt;f8'),\s('has_advisory_fee',\s'|b1'),\s('',\s'|V7'),\s('advisory_fee',\s'&lt;f8'),\s('next_advisory_fee_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('advisory_fee_frequency',\s'&lt;i4'),\s('issue_age_guardian_ny',\s'&lt;i4'),\s('seed',\s'&lt;i4'),\s('nippon_life_npa_id',\s'&lt;i4'),\s('gmav_elected',\s'|b1'),\s('gmav_avail_dte',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('gmav_elect_dte',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('',\s'|V7'),\s('gmav_pgp_rate',\s'&lt;f8'),\s('gmav_pgp_value',\s'&lt;f8'),\s('gmav_base_amt',\s'&lt;f8'),\s('secure_cap_ind',\s'|b1'),\s('',\s'|V7'),\s('pricing_projection_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('pricing_issue_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('last_projection_step',\s'&lt;i4'),\s('pricing_maturity_step',\s'&lt;i4'),\s('issue_age',\s'&lt;i4'),\s('issue_age_male',\s'&lt;i4'),\s('issue_age_female',\s'&lt;i4'),\s('issue_age_for_maturity',\s'&lt;i4'),\s('maturity_age',\s'&lt;i4'),\s('primary_tail_step',\s'&lt;i4'),\s('maturity_benefit_min_years',\s'&lt;i4')],\s'fortran_order':\sFalse,\s'shape':\s(3,),\s}" />
+      <dataset name="policies" alias="Inforce" type="Inforce" size-type="DynamicSize" dtype="{'descr':\s[('tape_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('is_joint_policy',\s'|b1'),\s('',\s'|V3'),\s('gender_1',\s'&lt;i4'),\s('gender_2',\s'&lt;i4'),\s('issue_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('issue_age_1',\s'&lt;i4'),\s('dob_1',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('issue_age_2',\s'&lt;i4'),\s('dob_2',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('',\s'|V4'),\s('accum_fee_history',\s'&lt;f8'),\s('accum_withdrawal_history',\s'&lt;f8'),\s('withdrawal_since_last_anniversary',\s'&lt;f8'),\s('income_base',\s'&lt;f8'),\s('income_credit_base',\s'&lt;f8'),\s('income_credit_percentage',\s'&lt;f8'),\s('multiplier',\s'&lt;f8'),\s('adjusted_multiplier',\s'&lt;f8'),\s('premium_enhancment_base',\s'&lt;f8'),\s('highest_account_value',\s'&lt;f8'),\s('participation_rate',\s'&lt;f8'),\s('valuation_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('index_at_tape_date',\s'&lt;f8'),\s('initial_premium',\s'&lt;f8'),\s('index_at_last_renewal',\s'&lt;f8'),\s('index_at_last_fix',\s'&lt;f8'),\s('next_crediting_renewal_year',\s'&lt;i4'),\s('',\s'|V4'),\s('accum_index_credit',\s'&lt;f8'),\s('investment_account',\s'&lt;i4'),\s('',\s'|V4'),\s('account_value',\s'&lt;f8'),\s('fixed_rate',\s'&lt;f8'),\s('index_cap',\s'&lt;f8'),\s('index_spread',\s'&lt;f8'),\s('index_floor',\s'&lt;f8'),\s('index_strike',\s'&lt;f8'),\s('guaranteed_minimum_interest_rate',\s'&lt;f8'),\s('interest_bonus_rate',\s'&lt;f8'),\s('mwv_enum',\s'&lt;i4'),\s('mwv_id',\s'&lt;i4'),\s('systematic_withdrawal_started',\s'|b1'),\s('',\s'|V7'),\s('mawp',\s'&lt;f8'),\s('pipp',\s'&lt;f8'),\s('mawa_id',\s'&lt;i4'),\s('pip_id',\s'&lt;i4'),\s('glb_id',\s'&lt;i4'),\s('gmwb_fee_id',\s'&lt;i4'),\s('surrender_charge_id',\s'&lt;i4'),\s('earliest_age_first_withdrawal',\s'&lt;i4'),\s('mva_period',\s'&lt;i4'),\s('',\s'|V4'),\s('mva_yield_at_issue_date',\s'&lt;f8'),\s('full_surrender_enum',\s'&lt;i4'),\s('first_partial_withdrawal_enum',\s'&lt;i4'),\s('free_withdrawal_enum',\s'&lt;i4'),\s('premium_enhancement_recapture_enum',\s'&lt;i4'),\s('net_earned_rate_at_tape_date',\s'&lt;f8'),\s('net_earned_rate_at_issue_date',\s'&lt;f8'),\s('ga_yield_at_tape_date',\s'&lt;f8'),\s('ga_yield_at_issue_date',\s'&lt;f8'),\s('option_cost_at_issue_date',\s'&lt;f8'),\s('death_benefit_adj_factor',\s'&lt;f8'),\s('income_base_floor_pct',\s'&lt;f8'),\s('participating_income_base',\s'&lt;f8'),\s('is_annexus_product',\s'|b1'),\s('current_strategy_term_start_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('',\s'|V7'),\s('index_term_spread',\s'&lt;f8'),\s('accum_index_term_return',\s'&lt;f8'),\s('maximum_gross_wdl',\s'&lt;f8'),\s('host_rate_net',\s'&lt;f8'),\s('index_min_withdrawal_value',\s'&lt;f8'),\s('next_index_valuation_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('is_flex',\s'&lt;i4'),\s('flex_mawa_id_single',\s'&lt;i4'),\s('flex_mawa_id_joint',\s'&lt;i4'),\s('flex_pip_id_single',\s'&lt;i4'),\s('flex_pip_id_joint',\s'&lt;i4'),\s('is_confinement_eligible',\s'|b1'),\s('is_confined',\s'|b1'),\s('',\s'|V2'),\s('remaining_enhanced_income_period',\s'&lt;i4'),\s('',\s'|V4'),\s('remaining_enhanced_income_amount',\s'&lt;f8'),\s('enhanced_income_multiplier',\s'&lt;f8'),\s('option_budget_gaap',\s'&lt;f8'),\s('is_mav_product',\s'|b1'),\s('',\s'|V7'),\s('minimum_growth_rate',\s'&lt;f8'),\s('minimum_accumulation_value',\s'&lt;f8'),\s('income_percentage',\s'&lt;f8'),\s('income_percentage_increase',\s'&lt;f8'),\s('guaranteed_lifetime_income_amount',\s'&lt;f8'),\s('glip_id',\s'&lt;i4'),\s('at_issue_npa_id',\s'&lt;i4'),\s('option_value_dac',\s'&lt;f8'),\s('option_budget_dac',\s'&lt;f8'),\s('rate_setting_id',\s'&lt;i4'),\s('enhanced_income_eligible_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('income_rider_death_benefit_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('',\s'|V4'),\s('x5_income_wait_period',\s'&lt;f8'),\s('is_annexus_accelerator',\s'|b1'),\s('is_guardian',\s'|b1'),\s('',\s'|V6'),\s('epr_fee_pct',\s'&lt;f8'),\s('account_value_at_term_start_date',\s'&lt;f8'),\s('qualified_ind',\s'|b1'),\s('',\s'|V7'),\s('declared_index_rate',\s'&lt;f8'),\s('minimum_index_change_value',\s'&lt;f8'),\s('minimum_declared_index_rate',\s'&lt;f8'),\s('has_advisory_fee',\s'|b1'),\s('',\s'|V7'),\s('advisory_fee',\s'&lt;f8'),\s('next_advisory_fee_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('advisory_fee_frequency',\s'&lt;i4'),\s('issue_age_guardian_ny',\s'&lt;i4'),\s('seed',\s'&lt;i4'),\s('nippon_life_npa_id',\s'&lt;i4'),\s('gmav_elected',\s'|b1'),\s('gmav_avail_dte',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('gmav_elect_dte',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('',\s'|V7'),\s('gmav_pgp_rate',\s'&lt;f8'),\s('gmav_pgp_value',\s'&lt;f8'),\s('gmav_base_amt',\s'&lt;f8'),\s('secure_cap_ind',\s'|b1'),\s('',\s'|V7')],\s'fortran_order':\sFalse,\s'shape':\s(3,),\s}" />
+    </datasource>
+    <datasource name="pricing_inforce" file="data/pricing_inforce.npz">
+      <dataset name="model_points" alias="PricingInforce" type="Inforce" size-type="DynamicSize" dtype="{'descr':\s[('pricing_projection_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('pricing_issue_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('last_projection_step',\s'&lt;i4'),\s('pricing_maturity_step',\s'&lt;i4'),\s('issue_age',\s'&lt;i4'),\s('issue_age_male',\s'&lt;i4'),\s('issue_age_female',\s'&lt;i4'),\s('issue_age_for_maturity',\s'&lt;i4'),\s('maturity_age',\s'&lt;i4'),\s('primary_tail_step',\s'&lt;i4'),\s('maturity_benefit_min_years',\s'&lt;i4')],\s'fortran_order':\sFalse,\s'shape':\s(3,),\s}" />
     </datasource>
     <datasource name="params" file="data/params.npz">
       <dataset name="run" type="Assumptions" size-type="FixedSize" dtype="{'descr':\s[('seed',\s'&lt;i4'),\s('num_paths',\s'&lt;i4'),\s('use_antithetic_variates',\s'|b1'),\s('',\s'|V3'),\s('use_extended_outer_loop',\s'&lt;i4'),\s('run_deterministic_rate',\s'|b1'),\s('run_deterministic_df_only',\s'|b1'),\s('is_running_dac',\s'|b1'),\s('is_esg_generator',\s'|b1'),\s('eop_date',\s[('year',\s'&lt;i4'),\s('month',\s'&lt;i4'),\s('day',\s'&lt;i4')]),\s('num_years_to_project',\s'&lt;i4'),\s('num_annual_steps',\s'&lt;i4'),\s('shock_index',\s'&lt;f4'),\s('use_sofr',\s'|b1'),\s('',\s'|V3'),\s('steps_per_month',\s'&lt;f4'),\s('min_step_length',\s'&lt;i4'),\s('monthly_starting_year',\s'&lt;i4')],\s'fortran_order':\sFalse,\s'shape':\s(),\s}" />
@@ -753,13 +756,6 @@ end</udf>
         <param name="npa_risk_margin_ap">=gaap_margin.npa_risk_margin_ap</param>
         <param name="npa_risk_margin_lb">=gaap_margin.npa_risk_margin_lb</param>
         <param name="is_secure_cap">=Inforce.secure_cap_ind</param>
-        <param name="pricing_projection_date">=Inforce.pricing_projection_date</param>
-        <param name="pricing_issue_date">=Inforce.pricing_issue_date</param>
-        <param name="pricing_maturity_step">=Inforce.pricing_maturity_step</param>
-        <param name="issue_age_for_maturity">=Inforce.issue_age_for_maturity</param>
-        <param name="maturity_age">=Inforce.maturity_age</param>
-        <param name="primary_tail_step">=Inforce.primary_tail_step</param>
-        <param name="maturity_benefit_min_years">=Inforce.maturity_benefit_min_years</param>
         <convert-result name="perr" ref="Computation.perr" />
         <convert-result name="wcp" ref="Computation.wcp&#xD;&#xA;" />
         <convert-result name="mawp" ref="Computation.mawp&#xD;&#xA;" />
@@ -900,11 +896,22 @@ end</udf>
         <result-map model="npa_spread_df_nippon_life" lib="npa_spread_df_nippon_life" />
         <result-map model="npa_spread_nippon_life_zero_table" lib="npa_spread_nippon_life_zero_table" />
         <result-map model="npa_risk_margin" lib="npa_risk_margin" />
+        <projection lib="" main="Cashflow" />
+      </ImportCompLib>
+    </Category>
+    <Category name="Pricing_Policy">
+      <ImportCompLib ref="libraries\Pricing_Policy\Pricing_Policy.complib.xml" refID="R17">
+        <param name="pricing_projection_date">=PricingInforce.pricing_projection_date</param>
+        <param name="pricing_issue_date">=PricingInforce.pricing_issue_date</param>
+        <param name="pricing_maturity_step">=PricingInforce.pricing_maturity_step</param>
+        <param name="issue_age_for_maturity">=PricingInforce.issue_age_for_maturity</param>
+        <param name="maturity_age">=PricingInforce.maturity_age</param>
+        <param name="primary_tail_step">=PricingInforce.primary_tail_step</param>
+        <param name="maturity_benefit_min_years">=PricingInforce.maturity_benefit_min_years</param>
         <result-map model="pricing_start_elapsed_months" lib="pricing_start_elapsed_months" />
         <result-map model="pricing_commencement_step" lib="pricing_commencement_step" />
         <result-map model="pricing_maturity_step_value" lib="pricing_maturity_step_value" />
         <result-map model="pricing_maturity_benefit_step" lib="pricing_maturity_benefit_step" />
-        <projection lib="" main="Cashflow" />
       </ImportCompLib>
     </Category>
     <Category name="BaseMort">
@@ -2740,12 +2747,12 @@ end</c>
             <c name="step">=0</c>
             <c name="dt">=0</c>
             <c name="time_years">=0</c>
-            <c name="projection_date">=Inforce.pricing_projection_date</c>
+            <c name="projection_date">=PricingInforce.pricing_projection_date</c>
             <c name="projection_month_start">=date(projection_date.year,projection_date.month,1)</c>
-            <c name="start_elapsed_months">=Policy.pricing_start_elapsed_months</c>
+            <c name="start_elapsed_months">=Pricing_Policy.pricing_start_elapsed_months</c>
             <c name="months_since_issue">=start_elapsed_months</c>
-            <c name="commencement_step">=Policy.pricing_commencement_step</c>
-            <c name="is_active_projection_step">=step&gt;commencement_step\sand\sstep&lt;=Inforce.last_projection_step</c>
+            <c name="commencement_step">=Pricing_Policy.pricing_commencement_step</c>
+            <c name="is_active_projection_step">=step&gt;commencement_step\sand\sstep&lt;=PricingInforce.last_projection_step</c>
             <c name="is_first_active_step">=step==commencement_step+1</c>
             <c name="policy_month">=iif(months_since_issue&gt;0,(months_since_issue-1)%12+1,0)</c>
             <c name="policy_year">=iif(months_since_issue&gt;0,int(floor((months_since_issue-1)/12.0))+1,0)</c>
@@ -2754,18 +2761,18 @@ end</c>
             <c name="calendar_year_relative">=1</c>
             <c name="calendar_year">=projection_date.year</c>
             <c name="calendar_quarter">=int(floor((calendar_month-1)/3.0))+1</c>
-            <c name="attained_age">=iif(policy_year&gt;0,Inforce.issue_age+policy_year-1,0)</c>
-            <c name="attained_age_male">=iif(policy_year&gt;0,Inforce.issue_age_male+policy_year-1,0)</c>
-            <c name="attained_age_female">=iif(policy_year&gt;0,Inforce.issue_age_female+policy_year-1,0)</c>
-            <c name="last_period_indicator">=step==Inforce.last_projection_step</c>
-            <c name="maturity_step">=Policy.pricing_maturity_step_value</c>
+            <c name="attained_age">=iif(policy_year&gt;0,PricingInforce.issue_age+policy_year-1,0)</c>
+            <c name="attained_age_male">=iif(policy_year&gt;0,PricingInforce.issue_age_male+policy_year-1,0)</c>
+            <c name="attained_age_female">=iif(policy_year&gt;0,PricingInforce.issue_age_female+policy_year-1,0)</c>
+            <c name="last_period_indicator">=step==PricingInforce.last_projection_step</c>
+            <c name="maturity_step">=Pricing_Policy.pricing_maturity_step_value</c>
             <c name="is_maturity_step">=step==maturity_step</c>
-            <c name="maturity_benefit_step">=Policy.pricing_maturity_benefit_step</c>
+            <c name="maturity_benefit_step">=Pricing_Policy.pricing_maturity_benefit_step</c>
             <c name="is_maturity_benefit_step">=step==maturity_benefit_step</c>
           </columns>
         </rg>
         <rg name="rg1" max-steps="900">
-          <repeat>=Inforce.last_projection_step</repeat>
+          <repeat>=PricingInforce.last_projection_step</repeat>
           <columns>
             <c name="step">=prev(step)+1</c>
             <c name="dt">=1.0/12.0</c>
@@ -2775,7 +2782,7 @@ end</c>
             <c name="start_elapsed_months">=prev(start_elapsed_months)</c>
             <c name="months_since_issue">=prev(months_since_issue)+1</c>
             <c name="commencement_step">=prev(commencement_step)</c>
-            <c name="is_active_projection_step">=step&gt;commencement_step\sand\sstep&lt;=Inforce.last_projection_step</c>
+            <c name="is_active_projection_step">=step&gt;commencement_step\sand\sstep&lt;=PricingInforce.last_projection_step</c>
             <c name="is_first_active_step">=step==commencement_step+1</c>
             <c name="policy_month">=iif(months_since_issue&gt;0,(months_since_issue-1)%12+1,0)</c>
             <c name="policy_year">=iif(months_since_issue&gt;0,int(floor((months_since_issue-1)/12.0))+1,0)</c>
@@ -2784,10 +2791,10 @@ end</c>
             <c name="calendar_year_relative">=iif(calendar_month==1,prev(calendar_year_relative)+1,prev(calendar_year_relative))</c>
             <c name="calendar_year">=projection_date.year</c>
             <c name="calendar_quarter">=int(floor((calendar_month-1)/3.0))+1</c>
-            <c name="attained_age">=iif(policy_year&gt;0,Inforce.issue_age+policy_year-1,0)</c>
-            <c name="attained_age_male">=iif(policy_year&gt;0,Inforce.issue_age_male+policy_year-1,0)</c>
-            <c name="attained_age_female">=iif(policy_year&gt;0,Inforce.issue_age_female+policy_year-1,0)</c>
-            <c name="last_period_indicator">=step==Inforce.last_projection_step</c>
+            <c name="attained_age">=iif(policy_year&gt;0,PricingInforce.issue_age+policy_year-1,0)</c>
+            <c name="attained_age_male">=iif(policy_year&gt;0,PricingInforce.issue_age_male+policy_year-1,0)</c>
+            <c name="attained_age_female">=iif(policy_year&gt;0,PricingInforce.issue_age_female+policy_year-1,0)</c>
+            <c name="last_period_indicator">=step==PricingInforce.last_projection_step</c>
             <c name="maturity_step">=prev(maturity_step)</c>
             <c name="is_maturity_step">=step==maturity_step</c>
             <c name="maturity_benefit_step">=prev(maturity_benefit_step)</c>
